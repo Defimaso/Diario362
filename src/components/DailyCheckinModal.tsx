@@ -93,7 +93,7 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           onClick={e => e.stopPropagation()}
-          className="w-full max-w-md card-premium-gold rounded-2xl p-6"
+          className="w-full max-w-md card-elegant-accent rounded-2xl p-6"
         >
           {/* Progress */}
           <div className="flex gap-1 mb-6">
@@ -142,7 +142,7 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Depleted</span>
-                      <span className="text-2xl font-bold gold-text">{recovery}</span>
+                      <span className="text-2xl font-bold gradient-text">{recovery}</span>
                       <span>Fully Recharged</span>
                     </div>
                   </div>
@@ -153,10 +153,10 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                   <div className="flex gap-4">
                     <button
                       onClick={() => setNutritionHit(true)}
-                      className={cn(
+                        className={cn(
                         "flex-1 p-6 rounded-xl border-2 transition-all duration-300",
                         nutritionHit === true 
-                          ? "border-primary bg-primary/10 gold-glow" 
+                          ? "border-primary bg-primary/10 teal-glow"
                           : "border-muted hover:border-muted-foreground/30"
                       )}
                     >
@@ -197,7 +197,7 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Low Energy</span>
-                      <span className="text-2xl font-bold gold-text">{energy}</span>
+                      <span className="text-2xl font-bold gradient-text">{energy}</span>
                       <span>Peak Energy</span>
                     </div>
                   </div>
@@ -216,7 +216,7 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
                       <span>Struggling</span>
-                      <span className="text-2xl font-bold gold-text">{mindset}</span>
+                      <span className="text-2xl font-bold gradient-text">{mindset}</span>
                       <span>Laser Focused</span>
                     </div>
                   </div>
@@ -271,7 +271,7 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
             <Button
               onClick={handleNext}
               disabled={!canProceed()}
-              className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90 gold-glow"
+              className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 coral-glow"
             >
               {currentStep === steps.length - 1 ? "Complete" : "Next"}
               <ChevronRight className="w-4 h-4 ml-1" />

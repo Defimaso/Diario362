@@ -56,7 +56,7 @@ const AdminDashboard = () => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="card-premium rounded-xl p-4 text-center"
+            className="card-elegant rounded-xl p-4 text-center"
           >
             <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-success/20 flex items-center justify-center">
               <TrendingUp className="w-5 h-5 text-success" />
@@ -69,7 +69,7 @@ const AdminDashboard = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="card-premium rounded-xl p-4 text-center"
+            className="card-elegant rounded-xl p-4 text-center"
           >
             <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-warning/20 flex items-center justify-center">
               <Users className="w-5 h-5 text-warning" />
@@ -82,7 +82,7 @@ const AdminDashboard = () => {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="card-premium rounded-xl p-4 text-center"
+            className="card-elegant rounded-xl p-4 text-center"
           >
             <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-destructive/20 flex items-center justify-center">
               <AlertTriangle className="w-5 h-5 text-destructive" />
@@ -105,7 +105,7 @@ const AdminDashboard = () => {
               className={cn(
                 "px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-200",
                 filter === btn.id
-                  ? "bg-primary text-primary-foreground gold-glow"
+                  ? "bg-primary text-primary-foreground teal-glow"
                   : "bg-muted text-muted-foreground hover:bg-muted/80"
               )}
             >
@@ -151,7 +151,7 @@ const AdminDashboard = () => {
         transition={{ delay: 0.5 }}
         className="pb-8 text-center"
       >
-        <span className="text-sm gold-text font-bold">362°</span>
+        <span className="text-sm gradient-text font-bold">362°</span>
         <span className="text-sm text-muted-foreground ml-1">Navigator • Coach View</span>
       </motion.div>
     </div>

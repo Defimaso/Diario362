@@ -25,9 +25,9 @@ const QuickActionCard = ({
       className={cn(
         "w-full p-5 rounded-xl text-left transition-all duration-300",
         "flex items-start gap-4",
-        variant === "default" && "card-premium hover:border-muted-foreground/30",
-        variant === "gold" && "card-premium-gold hover:shadow-[0_0_30px_hsla(51,100%,50%,0.4)]",
-        variant === "primary" && "bg-primary text-primary-foreground hover:bg-primary/90 gold-glow",
+        variant === "default" && "card-elegant hover:border-primary/30",
+        variant === "gold" && "card-elegant-accent hover:shadow-[0_0_30px_hsla(174,52%,45%,0.3)]",
+        variant === "primary" && "bg-accent text-accent-foreground hover:bg-accent/90 coral-glow",
         className
       )}
       whileHover={{ scale: 1.02 }}

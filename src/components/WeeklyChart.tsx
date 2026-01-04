@@ -29,7 +29,7 @@ const WeeklyChart = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="card-premium rounded-xl p-5"
+        className="card-elegant rounded-xl p-5"
       >
         <h3 className="font-semibold mb-4">Weekly Progress</h3>
         <div className="h-[120px] flex items-center justify-center text-muted-foreground text-sm">
@@ -43,23 +43,23 @@ const WeeklyChart = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card-premium rounded-xl p-5"
+      className="card-elegant rounded-xl p-5"
     >
       <h3 className="font-semibold mb-4">Weekly Progress</h3>
       <div className="h-[120px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={last7Days}>
             <defs>
-              <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(51, 100%, 50%)" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="hsl(51, 100%, 50%)" stopOpacity={0} />
+              <linearGradient id="tealGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(174, 52%, 45%)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="hsl(174, 52%, 45%)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis 
               dataKey="date" 
               axisLine={false} 
               tickLine={false}
-              tick={{ fill: 'hsl(215, 16%, 57%)', fontSize: 12 }}
+              tick={{ fill: 'hsl(180, 10%, 45%)', fontSize: 12 }}
             />
             <YAxis 
               domain={[0, 10]} 
@@ -67,20 +67,20 @@ const WeeklyChart = () => {
             />
             <Tooltip
               contentStyle={{
-                background: 'hsl(0, 0%, 7%)',
-                border: '1px solid hsl(0, 0%, 15%)',
+                background: 'hsl(0, 0%, 100%)',
+                border: '1px solid hsl(165, 20%, 88%)',
                 borderRadius: '8px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
               }}
-              labelStyle={{ color: 'white' }}
-              itemStyle={{ color: 'hsl(51, 100%, 50%)' }}
+              labelStyle={{ color: 'hsl(180, 25%, 20%)' }}
+              itemStyle={{ color: 'hsl(174, 52%, 45%)' }}
             />
             <Area
               type="monotone"
               dataKey="score"
-              stroke="hsl(51, 100%, 50%)"
+              stroke="hsl(174, 52%, 45%)"
               strokeWidth={2}
-              fill="url(#goldGradient)"
+              fill="url(#tealGradient)"
             />
           </AreaChart>
         </ResponsiveContainer>
