@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, FileText, ChevronRight, Settings } from "lucide-react";
+import { GraduationCap, ClipboardCheck, FileText, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -39,7 +39,7 @@ const Dashboard = () => {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
           >
-            <p className="text-sm text-muted-foreground">Welcome back,</p>
+            <p className="text-sm text-muted-foreground">Bentornato,</p>
             <h1 className="text-2xl font-bold">{profile.name}</h1>
           </motion.div>
           <div className="flex items-center gap-3">
@@ -66,7 +66,7 @@ const Dashboard = () => {
           transition={{ delay: 0.2 }}
           className="text-center text-sm text-muted-foreground italic"
         >
-          "Don't settle for 360°. Find your extra 2%."
+          "Non accontentarti di 360°. Trova il tuo 2% extra."
         </motion.p>
 
         {/* Momentum Circle */}
@@ -87,8 +87,8 @@ const Dashboard = () => {
             transition={{ delay: 0.4 }}
           >
             <QuickActionCard
-              title="Daily Check-in"
-              description={hasCheckedInToday ? "Completed today ✓" : "Log your 2% progress"}
+              title="Check-in Giornaliero"
+              description={hasCheckedInToday ? "Completato oggi ✓" : "Registra il tuo progresso"}
               icon={ClipboardCheck}
               variant={hasCheckedInToday ? "default" : "primary"}
               onClick={() => setIsCheckinOpen(true)}
@@ -101,8 +101,8 @@ const Dashboard = () => {
             transition={{ delay: 0.5 }}
           >
             <QuickActionCard
-              title="Academy Hub"
-              description="Access your training library"
+              title="Academy"
+              description="Accedi alla tua libreria di formazione"
               icon={GraduationCap}
               variant="gold"
               onClick={() => window.open('https://teachable.com', '_blank')}
@@ -115,8 +115,8 @@ const Dashboard = () => {
             transition={{ delay: 0.6 }}
           >
             <QuickActionCard
-              title="My Blueprint"
-              description="View your diet & training plans"
+              title="Il Mio Percorso"
+              description="Visualizza i tuoi piani di dieta e allenamento"
               icon={FileText}
               onClick={() => {}}
             />

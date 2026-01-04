@@ -16,7 +16,7 @@ const StreakBadge = ({ streak }: StreakBadgeProps) => {
       <Flame className="w-5 h-5 text-accent animate-pulse-glow" />
       <span className="text-sm font-medium">
         <span className="coral-text font-bold">{streak}</span>
-        <span className="text-muted-foreground ml-1">day streak</span>
+        <span className="text-muted-foreground ml-1">giorni</span>
       </span>
     </motion.div>
   );
