@@ -139,7 +139,7 @@ const Dashboard = () => {
           transition={{ delay: 0.8 }}
           className="pt-4 text-center"
         >
-          <span className="text-sm gold-text font-bold">362°</span>
+          <span className="text-sm gradient-text font-bold">362°</span>
           <span className="text-sm text-muted-foreground ml-1">Navigator</span>
         </motion.div>
       </main>

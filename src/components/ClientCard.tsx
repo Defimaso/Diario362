@@ -31,9 +31,9 @@ const ClientCard = ({ client }: ClientCardProps) => {
       animate={{ opacity: 1, y: 0 }}
       className={cn(
         "p-4 rounded-xl transition-all duration-300",
-        client.status === 'red' && "card-premium border-l-4 border-l-destructive",
-        client.status === 'yellow' && "card-premium border-l-4 border-l-warning",
-        client.status === 'green' && "card-premium border-l-4 border-l-success",
+        client.status === 'red' && "card-elegant border-l-4 border-l-destructive",
+        client.status === 'yellow' && "card-elegant border-l-4 border-l-warning",
+        client.status === 'green' && "card-elegant border-l-4 border-l-success",
       )}
     >
       <div className="flex items-start justify-between">
