@@ -17,7 +17,7 @@ const MomentumCircle = ({ percentage, size = 240, strokeWidth = 8 }: MomentumCir
       <div 
         className="absolute inset-0 rounded-full opacity-20 blur-xl"
         style={{ 
-          background: `radial-gradient(circle, hsl(51, 100%, 50%) 0%, transparent 70%)` 
+          background: `radial-gradient(circle, hsl(174, 52%, 45%) 0%, transparent 70%)` 
         }}
       />
       
@@ -32,7 +32,7 @@ const MomentumCircle = ({ percentage, size = 240, strokeWidth = 8 }: MomentumCir
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="hsl(0, 0%, 15%)"
+          stroke="hsl(165, 20%, 88%)"
           strokeWidth={strokeWidth}
         />
       </svg>

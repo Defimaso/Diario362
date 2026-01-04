@@ -14,14 +14,14 @@ const ClientCard = ({ client }: ClientCardProps) => {
   
   const handleSendMessage = (type: 'keep-going' | 'recalibrate' | 'intervention') => {
     const messages = {
-      'keep-going': "Keep going! Your consistency is inspiring. 🔥",
-      'recalibrate': "Time for a quick recalibration. Let's jump on a call this week.",
-      'intervention': "Hey, I noticed you might need some extra support. I'm reaching out directly.",
+      'keep-going': "Continua così! La tua costanza è ispiratrice. 🔥",
+      'recalibrate': "È il momento di una ricalibrazione. Fissiamo una call questa settimana.",
+      'intervention': "Hey, ho notato che potresti aver bisogno di supporto extra. Ti contatto direttamente.",
     };
     
     toast({
-      title: "Message sent",
-      description: `Sent to ${client.name}: "${messages[type]}"`,
+      title: "Messaggio inviato",
+      description: `Inviato a ${client.name}: "${messages[type]}"`,
     });
   };
 
@@ -44,7 +44,7 @@ const ClientCard = ({ client }: ClientCardProps) => {
           <div>
             <h4 className="font-semibold">{client.name}</h4>
             <p className="text-sm text-muted-foreground">
-              {client.streak > 0 ? `${client.streak} day streak` : 'No active streak'}
+              {client.streak > 0 ? `${client.streak} giorni di streak` : 'Nessuna streak attiva'}
             </p>
           </div>
         </div>
@@ -65,15 +65,15 @@ const ClientCard = ({ client }: ClientCardProps) => {
       {client.lastCheckin && (
         <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
           <div className="text-center p-2 rounded bg-muted/50">
-            <div className="text-muted-foreground">Recovery</div>
+            <div className="text-muted-foreground">Recupero</div>
             <div className="font-semibold">{client.lastCheckin.recovery}</div>
           </div>
           <div className="text-center p-2 rounded bg-muted/50">
-            <div className="text-muted-foreground">Nutrition</div>
+            <div className="text-muted-foreground">Nutrizione</div>
             <div className="font-semibold">{client.lastCheckin.nutritionHit ? '✓' : '✗'}</div>
           </div>
           <div className="text-center p-2 rounded bg-muted/50">
-            <div className="text-muted-foreground">Energy</div>
+            <div className="text-muted-foreground">Energia</div>
             <div className="font-semibold">{client.lastCheckin.energy}</div>
           </div>
           <div className="text-center p-2 rounded bg-muted/50">
@@ -85,7 +85,7 @@ const ClientCard = ({ client }: ClientCardProps) => {
 
       {client.lastCheckin?.twoPercentEdge && (
         <div className="mt-3 p-2 rounded bg-primary/5 border border-primary/20">
-          <p className="text-xs text-muted-foreground">2% Edge:</p>
+          <p className="text-xs text-muted-foreground">2% Extra:</p>
           <p className="text-sm">{client.lastCheckin.twoPercentEdge}</p>
         </div>
       )}
@@ -99,7 +99,7 @@ const ClientCard = ({ client }: ClientCardProps) => {
             onClick={() => handleSendMessage('keep-going')}
           >
             <MessageCircle className="w-4 h-4 mr-1" />
-            Keep Going
+            Continua Così
           </Button>
         )}
         {client.status === 'yellow' && (
@@ -110,7 +110,7 @@ const ClientCard = ({ client }: ClientCardProps) => {
             onClick={() => handleSendMessage('recalibrate')}
           >
             <Send className="w-4 h-4 mr-1" />
-            Recalibrate
+            Ricalibra
           </Button>
         )}
         {client.status === 'red' && (
@@ -120,7 +120,7 @@ const ClientCard = ({ client }: ClientCardProps) => {
             onClick={() => handleSendMessage('intervention')}
           >
             <AlertCircle className="w-4 h-4 mr-1" />
-            Intervene Now
+            Intervieni Ora
           </Button>
         )}
       </div>

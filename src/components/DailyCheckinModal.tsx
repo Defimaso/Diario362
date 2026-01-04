@@ -14,11 +14,11 @@ interface DailyCheckinModalProps {
 }
 
 const steps = [
-  { id: 'recovery', title: 'Recovery', subtitle: 'How well did you recover?', icon: Battery },
-  { id: 'nutrition', title: 'Nutrition', subtitle: 'Did you hit your macros today?', icon: Utensils },
-  { id: 'energy', title: 'Energy', subtitle: 'Rate your energy levels', icon: Zap },
-  { id: 'mindset', title: 'Mindset', subtitle: 'How sharp is your focus?', icon: Brain },
-  { id: 'edge', title: 'The 2% Edge', subtitle: "What was your extra 2% action today?", icon: Sparkles },
+  { id: 'recovery', title: 'Recupero', subtitle: 'Come ti sei ripreso oggi?', icon: Battery },
+  { id: 'nutrition', title: 'Nutrizione', subtitle: 'Hai rispettato i tuoi macro?', icon: Utensils },
+  { id: 'energy', title: 'Energia', subtitle: 'Valuta il tuo livello di energia', icon: Zap },
+  { id: 'mindset', title: 'Mindset', subtitle: 'Quanto sei focalizzato?', icon: Brain },
+  { id: 'edge', title: 'Il 2% Extra', subtitle: "Qual è stata la tua azione extra oggi?", icon: Sparkles },
 ];
 
 const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalProps) => {
@@ -141,9 +141,9 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Depleted</span>
+                      <span>Scarico</span>
                       <span className="text-2xl font-bold gradient-text">{recovery}</span>
-                      <span>Fully Recharged</span>
+                      <span>Ricaricato</span>
                     </div>
                   </div>
                 )}
@@ -153,7 +153,7 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                   <div className="flex gap-4">
                     <button
                       onClick={() => setNutritionHit(true)}
-                        className={cn(
+                      className={cn(
                         "flex-1 p-6 rounded-xl border-2 transition-all duration-300",
                         nutritionHit === true 
                           ? "border-primary bg-primary/10 teal-glow"
@@ -164,7 +164,7 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                         "w-8 h-8 mx-auto mb-2",
                         nutritionHit === true ? "text-primary" : "text-muted-foreground"
                       )} />
-                      <span className="font-medium">Yes</span>
+                      <span className="font-medium">Sì</span>
                     </button>
                     <button
                       onClick={() => setNutritionHit(false)}
@@ -196,9 +196,9 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Low Energy</span>
+                      <span>Bassa</span>
                       <span className="text-2xl font-bold gradient-text">{energy}</span>
-                      <span>Peak Energy</span>
+                      <span>Al massimo</span>
                     </div>
                   </div>
                 )}
@@ -215,9 +215,9 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>Struggling</span>
+                      <span>In difficoltà</span>
                       <span className="text-2xl font-bold gradient-text">{mindset}</span>
-                      <span>Laser Focused</span>
+                      <span>Super focalizzato</span>
                     </div>
                   </div>
                 )}
@@ -239,19 +239,19 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                             rel="noopener noreferrer"
                             className="text-primary underline hover:no-underline"
                           >
-                            Feeling low? Watch this mindset video in the Academy
+                            Ti senti giù? Guarda questo video sul mindset in Academy
                           </a>
                         </p>
                       </motion.div>
                     )}
                     <Textarea
-                      placeholder="Cold shower, extra 10 min meditation, chose the stairs..."
+                      placeholder="Doccia fredda, 10 min extra di meditazione, ho scelto le scale..."
                       value={twoPercentEdge}
                       onChange={e => setTwoPercentEdge(e.target.value)}
                       className="min-h-[100px] bg-muted border-muted focus:border-primary"
                     />
                     <p className="text-xs text-muted-foreground text-center italic">
-                      "Don't settle for 360°. Find your extra 2%."
+                      "Non accontentarti di 360°. Trova il tuo 2% extra."
                     </p>
                   </div>
                 )}
@@ -266,14 +266,14 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
               onClick={currentStep === 0 ? onClose : () => setCurrentStep(prev => prev - 1)}
               className="flex-1"
             >
-              {currentStep === 0 ? "Cancel" : "Back"}
+              {currentStep === 0 ? "Annulla" : "Indietro"}
             </Button>
             <Button
               onClick={handleNext}
               disabled={!canProceed()}
               className="flex-1 bg-accent text-accent-foreground hover:bg-accent/90 coral-glow"
             >
-              {currentStep === steps.length - 1 ? "Complete" : "Next"}
+              {currentStep === steps.length - 1 ? "Completa" : "Avanti"}
               <ChevronRight className="w-4 h-4 ml-1" />
             </Button>
           </div>

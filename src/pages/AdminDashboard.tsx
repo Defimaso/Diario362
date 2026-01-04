@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Users, TrendingUp, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import ClientCard from "@/components/ClientCard";
-import { getMockClients, Client } from "@/lib/storage";
+import { getMockClients } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 
 type FilterStatus = 'all' | 'green' | 'yellow' | 'red';
@@ -23,10 +23,10 @@ const AdminDashboard = () => {
   };
 
   const filterButtons: { id: FilterStatus; label: string; count?: number }[] = [
-    { id: 'all', label: 'All', count: clients.length },
-    { id: 'green', label: 'Stable', count: statusCounts.green },
-    { id: 'yellow', label: 'Alert', count: statusCounts.yellow },
-    { id: 'red', label: 'Urgent', count: statusCounts.red },
+    { id: 'all', label: 'Tutti', count: clients.length },
+    { id: 'green', label: 'Stabili', count: statusCounts.green },
+    { id: 'yellow', label: 'Attenzione', count: statusCounts.yellow },
+    { id: 'red', label: 'Urgenti', count: statusCounts.red },
   ];
 
   return (
@@ -44,8 +44,8 @@ const AdminDashboard = () => {
             </motion.button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Coach Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Traffic Light System</p>
+            <h1 className="text-2xl font-bold">Dashboard Coach</h1>
+            <p className="text-sm text-muted-foreground">Sistema Semaforo</p>
           </div>
         </div>
       </header>
@@ -62,7 +62,7 @@ const AdminDashboard = () => {
               <TrendingUp className="w-5 h-5 text-success" />
             </div>
             <div className="text-2xl font-bold text-success">{statusCounts.green}</div>
-            <div className="text-xs text-muted-foreground">Stable</div>
+            <div className="text-xs text-muted-foreground">Stabili</div>
           </motion.div>
 
           <motion.div
@@ -75,7 +75,7 @@ const AdminDashboard = () => {
               <Users className="w-5 h-5 text-warning" />
             </div>
             <div className="text-2xl font-bold text-warning">{statusCounts.yellow}</div>
-            <div className="text-xs text-muted-foreground">Alert</div>
+            <div className="text-xs text-muted-foreground">Attenzione</div>
           </motion.div>
 
           <motion.div
@@ -88,7 +88,7 @@ const AdminDashboard = () => {
               <AlertTriangle className="w-5 h-5 text-destructive" />
             </div>
             <div className="text-2xl font-bold text-destructive">{statusCounts.red}</div>
-            <div className="text-xs text-muted-foreground">Urgent</div>
+            <div className="text-xs text-muted-foreground">Urgenti</div>
           </motion.div>
         </div>
       </section>
@@ -139,7 +139,7 @@ const AdminDashboard = () => {
             animate={{ opacity: 1 }}
             className="text-center py-12 text-muted-foreground"
           >
-            No clients in this category
+            Nessun cliente in questa categoria
           </motion.div>
         )}
       </section>
@@ -152,7 +152,7 @@ const AdminDashboard = () => {
         className="pb-8 text-center"
       >
         <span className="text-sm gradient-text font-bold">362°</span>
-        <span className="text-sm text-muted-foreground ml-1">Navigator • Coach View</span>
+        <span className="text-sm text-muted-foreground ml-1">Navigator • Vista Coach</span>
       </motion.div>
     </div>
   );

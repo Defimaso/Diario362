@@ -6,7 +6,7 @@ const WeeklyChart = () => {
   const checkins = getWeeklyCheckins();
   
   const data = checkins.map(c => ({
-    date: new Date(c.date).toLocaleDateString('en-US', { weekday: 'short' }),
+    date: new Date(c.date).toLocaleDateString('it-IT', { weekday: 'short' }),
     score: calculateDailyScore(c),
     recovery: c.recovery,
     energy: c.energy,
@@ -14,13 +14,13 @@ const WeeklyChart = () => {
   }));
 
   // Fill in missing days
-  const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const days = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab'];
   const today = new Date().getDay();
   const last7Days = [];
   for (let i = 6; i >= 0; i--) {
     const dayIndex = (today - i + 7) % 7;
     const dayName = days[dayIndex];
-    const existingData = data.find(d => d.date === dayName);
+    const existingData = data.find(d => d.date.toLowerCase() === dayName.toLowerCase());
     last7Days.push(existingData || { date: dayName, score: 0 });
   }
 
@@ -31,9 +31,9 @@ const WeeklyChart = () => {
         animate={{ opacity: 1, y: 0 }}
         className="card-elegant rounded-xl p-5"
       >
-        <h3 className="font-semibold mb-4">Weekly Progress</h3>
+        <h3 className="font-semibold mb-4">Progresso Settimanale</h3>
         <div className="h-[120px] flex items-center justify-center text-muted-foreground text-sm">
-          Complete check-ins to see your progress
+          Completa i check-in per vedere il tuo progresso
         </div>
       </motion.div>
     );
@@ -45,7 +45,7 @@ const WeeklyChart = () => {
       animate={{ opacity: 1, y: 0 }}
       className="card-elegant rounded-xl p-5"
     >
-      <h3 className="font-semibold mb-4">Weekly Progress</h3>
+      <h3 className="font-semibold mb-4">Progresso Settimanale</h3>
       <div className="h-[120px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={last7Days}>
