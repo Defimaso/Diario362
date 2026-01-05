@@ -39,33 +39,33 @@ const MetricChart = ({ title, icon: Icon, data, color, unit = "/10" }: MetricCha
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card-elegant rounded-xl p-4"
+      className="card-elegant rounded-xl p-3 sm:p-4"
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           <div 
-            className="p-2 rounded-lg"
+            className="p-1.5 sm:p-2 rounded-lg flex-shrink-0"
             style={{ backgroundColor: `${colors.stroke}20` }}
           >
-            <Icon className="w-4 h-4" style={{ color: colors.stroke }} />
+            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: colors.stroke }} />
           </div>
-          <span className="text-sm font-medium">{title}</span>
+          <span className="text-xs sm:text-sm font-medium truncate">{title}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="text-lg font-bold" style={{ color: colors.stroke }}>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          <span className="text-base sm:text-lg font-bold tabular-nums" style={{ color: colors.stroke }}>
             {latestValue}
           </span>
-          <span className="text-xs text-muted-foreground">{unit}</span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">{unit}</span>
           {trend !== 0 && (
-            <span className={`text-xs ml-1 ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
+            <span className={`text-[10px] sm:text-xs ml-0.5 ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
               {trend > 0 ? '↑' : '↓'}{Math.abs(trend).toFixed(1)}
             </span>
           )}
         </div>
       </div>
-      <div className="h-[80px]">
+      <div className="h-[60px] sm:h-[80px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
+          <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={`${color}Gradient`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={colors.stroke} stopOpacity={0.3} />
@@ -76,7 +76,8 @@ const MetricChart = ({ title, icon: Icon, data, color, unit = "/10" }: MetricCha
               dataKey="date" 
               axisLine={false} 
               tickLine={false}
-              tick={{ fill: 'hsl(180, 10%, 55%)', fontSize: 10 }}
+              tick={{ fill: 'hsl(180, 10%, 55%)', fontSize: 9 }}
+              interval="preserveStartEnd"
             />
             <YAxis 
               domain={[0, 10]} 
