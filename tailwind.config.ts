@@ -65,6 +65,12 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        badge: {
+          gold: "hsl(var(--badge-gold))",
+        },
+      },
+      boxShadow: {
+        'badge-glow': 'var(--badge-gold-glow)',
       },
       borderRadius: {
         lg: "var(--radius)",
