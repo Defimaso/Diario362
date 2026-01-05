@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import TeachableModal from "@/components/TeachableModal";
+import { getCurrentBadge, isClientAtRisk } from "@/lib/badges";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // WhatsApp SVG Icon Component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -108,6 +110,30 @@ const GestioneDiario = () => {
   const handleTaskAcademyClick = (client: ClientData) => {
     setSelectedClient(client);
     setTeachableModalOpen(true);
+  };
+
+  // Helper to calculate days since last checkin
+  const getDaysSinceLastCheckin = (client: ClientData): number => {
+    if (!client.last_checkin?.date) return 999;
+    const lastDate = new Date(client.last_checkin.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    lastDate.setHours(0, 0, 0, 0);
+    return Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+  };
+
+  // Get client badge
+  const getClientBadge = (client: ClientData) => {
+    // Using streak and total checkins (approximated by streak for now)
+    const totalCheckins = client.streak || 0;
+    return getCurrentBadge(client.streak, totalCheckins);
+  };
+
+  // Check if client is at risk
+  const checkClientRisk = (client: ClientData): boolean => {
+    const daysSince = getDaysSinceLastCheckin(client);
+    const badge = getClientBadge(client);
+    return isClientAtRisk(badge, daysSince);
   };
 
   return (
@@ -236,7 +262,13 @@ const GestioneDiario = () => {
               <p className="text-muted-foreground">Nessun cliente trovato</p>
             </div>
           ) : (
-            filteredClients.map((client, index) => (
+            <TooltipProvider>
+            {filteredClients.map((client, index) => {
+              const clientBadge = getClientBadge(client);
+              const isAtRisk = checkClientRisk(client);
+              const daysSince = getDaysSinceLastCheckin(client);
+              
+              return (
               <motion.div
                 key={client.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -244,23 +276,46 @@ const GestioneDiario = () => {
                 transition={{ delay: 0.05 * index }}
                 className={cn(
                   "card-elegant rounded-xl p-4",
-                  client.status === 'red' && "border-l-4 border-l-destructive"
+                  client.status === 'red' && "border-l-4 border-l-destructive",
+                  isAtRisk && client.status !== 'red' && "border-l-4 border-l-warning"
                 )}
               >
+                {/* Risk Warning Banner */}
+                {isAtRisk && (
+                  <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-warning/10 text-warning text-xs">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>Rischio abbandono: {daysSince} giorni senza check-in</span>
+                  </div>
+                )}
+                
                 {/* Header Row */}
                 <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    {/* Status indicator */}
-                    <div className={cn(
-                      "w-3 h-3 rounded-full shrink-0",
-                      client.status === 'green' && "status-green",
-                      client.status === 'yellow' && "status-yellow",
-                      client.status === 'red' && "status-red",
-                    )} />
+                    {/* Badge Emoji */}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div className="text-2xl cursor-help shrink-0">
+                          {clientBadge.emoji}
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent className="bg-card border-border">
+                        <div className="text-sm">
+                          <p className="font-semibold text-badge-gold">{clientBadge.name}</p>
+                          <p className="text-muted-foreground">{clientBadge.description}</p>
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
                     
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-semibold truncate">{client.full_name}</h3>
+                        {/* Status indicator */}
+                        <div className={cn(
+                          "w-2.5 h-2.5 rounded-full shrink-0",
+                          client.status === 'green' && "status-green",
+                          client.status === 'yellow' && "status-yellow",
+                          client.status === 'red' && "status-red",
+                        )} />
                         {client.streak > 0 && (
                           <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0">
                             🔥 {client.streak}
@@ -356,7 +411,9 @@ const GestioneDiario = () => {
                   </Button>
                 </div>
               </motion.div>
-            ))
+              );
+            })}
+            </TooltipProvider>
           )}
         </motion.div>
       </div>

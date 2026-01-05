@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, Settings, LogOut, Users } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -8,15 +8,21 @@ import StatsOverview from "@/components/StatsOverview";
 import QuickActionCard from "@/components/QuickActionCard";
 import WeeklyChart from "@/components/WeeklyChart";
 import DailyCheckinModalNew from "@/components/DailyCheckinModalNew";
+import BadgeProgress from "@/components/BadgeProgress";
+import BadgeGallery from "@/components/BadgeGallery";
+import BadgeUnlockAnimation from "@/components/BadgeUnlockAnimation";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCheckins } from "@/hooks/useCheckins";
+import { useBadges } from "@/hooks/useBadges";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
 const Diario = () => {
   const { user, signOut, loading: authLoading, isAdmin, isCollaborator, isSuperAdmin } = useAuth();
   const { 
     todayCheckin, 
     streak, 
+    checkins,
     getWeeklyCheckins, 
     getDailyCompletionPercentage,
     calculateDailyScore,
@@ -24,7 +30,16 @@ const Diario = () => {
     loading: checkinsLoading 
   } = useCheckins();
   
+  const totalCheckins = checkins.length;
+  const {
+    currentBadge,
+    showUnlockAnimation,
+    newlyUnlockedBadge,
+    closeUnlockAnimation,
+  } = useBadges(streak, totalCheckins);
+  
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
+  const [isBadgeSheetOpen, setIsBadgeSheetOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -127,6 +142,37 @@ const Diario = () => {
           />
         </motion.section>
 
+        {/* Badge Progress - Clickable to open gallery */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="mb-6 sm:mb-8"
+        >
+          <Sheet open={isBadgeSheetOpen} onOpenChange={setIsBadgeSheetOpen}>
+            <SheetTrigger asChild>
+              <div className="cursor-pointer hover:opacity-90 transition-opacity">
+                <BadgeProgress 
+                  streak={streak} 
+                  totalCheckins={totalCheckins} 
+                />
+              </div>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="h-[80vh] overflow-y-auto">
+              <SheetHeader className="mb-4">
+                <SheetTitle className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-badge-gold" />
+                  Elite Evolution
+                </SheetTitle>
+              </SheetHeader>
+              <BadgeGallery 
+                streak={streak} 
+                totalCheckins={totalCheckins} 
+              />
+            </SheetContent>
+          </Sheet>
+        </motion.section>
+
         {/* Stats Overview */}
         {todayCheckin && (
           <motion.section
@@ -191,6 +237,13 @@ const Diario = () => {
           onClose={() => setIsCheckinOpen(false)}
           onComplete={handleCheckinComplete}
           existingCheckin={todayCheckin}
+        />
+        
+        {/* Badge Unlock Animation */}
+        <BadgeUnlockAnimation
+          badge={newlyUnlockedBadge}
+          isOpen={showUnlockAnimation}
+          onClose={closeUnlockAnimation}
         />
       </div>
     </div>
