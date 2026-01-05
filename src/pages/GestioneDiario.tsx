@@ -311,21 +311,38 @@ const GestioneDiario = () => {
                 {/* Quick Actions */}
                 <div className="flex flex-wrap gap-2">
                   {/* WhatsApp Button */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className={cn(
-                      "text-[#25D366] border-[#25D366]/30 hover:bg-[#25D366]/10",
-                      client.status === 'red' && "animate-pulse"
-                    )}
-                    onClick={() => handleWhatsAppClick(client)}
-                  >
-                    <WhatsAppIcon className="w-4 h-4 mr-1.5" />
-                    WhatsApp
-                    {client.status === 'red' && (
-                      <span className="ml-1.5 w-2 h-2 rounded-full bg-destructive animate-ping" />
-                    )}
-                  </Button>
+                  {client.phone_number ? (
+                    <a
+                      href={`https://wa.me/${formatPhoneForWhatsApp(client.phone_number)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className={cn(
+                          "text-[#25D366] border-[#25D366]/30 hover:bg-[#25D366]/10",
+                          client.status === 'red' && "animate-pulse"
+                        )}
+                      >
+                        <WhatsAppIcon className="w-4 h-4 mr-1.5" />
+                        WhatsApp
+                        {client.status === 'red' && (
+                          <span className="ml-1.5 w-2 h-2 rounded-full bg-destructive animate-ping" />
+                        )}
+                      </Button>
+                    </a>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-muted-foreground border-muted cursor-not-allowed"
+                      disabled
+                    >
+                      <WhatsAppIcon className="w-4 h-4 mr-1.5" />
+                      N/D
+                    </Button>
+                  )}
 
                   {/* Task Academy Button */}
                   <Button
