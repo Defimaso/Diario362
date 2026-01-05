@@ -41,24 +41,22 @@ const MetricChart = ({ title, icon: Icon, data, color, unit = "/10" }: MetricCha
       animate={{ opacity: 1, y: 0 }}
       className="card-elegant rounded-xl p-3 sm:p-4"
     >
-      <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <div 
-            className="p-1.5 sm:p-2 rounded-lg flex-shrink-0"
-            style={{ backgroundColor: `${colors.stroke}20` }}
-          >
-            <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: colors.stroke }} />
-          </div>
-          <span className="text-xs sm:text-sm font-medium truncate">{title}</span>
+      <div className="flex items-center gap-2 mb-2 sm:mb-3">
+        <div 
+          className="p-1.5 sm:p-2 rounded-lg flex-shrink-0"
+          style={{ backgroundColor: `${colors.stroke}20` }}
+        >
+          <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" style={{ color: colors.stroke }} />
         </div>
-        <div className="flex items-center gap-0.5 flex-shrink-0">
-          <span className="text-base sm:text-lg font-bold tabular-nums" style={{ color: colors.stroke }}>
+        <span className="text-xs sm:text-sm font-medium">{title}</span>
+        <div className="flex items-baseline gap-0.5 ml-auto flex-shrink-0">
+          <span className="text-sm sm:text-lg font-bold tabular-nums" style={{ color: colors.stroke }}>
             {latestValue}
           </span>
-          <span className="text-[10px] sm:text-xs text-muted-foreground">{unit}</span>
+          <span className="text-[9px] sm:text-xs text-muted-foreground">{unit}</span>
           {trend !== 0 && (
-            <span className={`text-[10px] sm:text-xs ml-0.5 ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
-              {trend > 0 ? '↑' : '↓'}{Math.abs(trend).toFixed(1)}
+            <span className={`text-[9px] sm:text-xs ml-1 whitespace-nowrap ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {trend > 0 ? '↑' : '↓'}{Math.abs(trend).toFixed(0)}
             </span>
           )}
         </div>
