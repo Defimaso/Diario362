@@ -8,6 +8,7 @@ import QuickActionCard from "@/components/QuickActionCard";
 import WeeklyChart from "@/components/WeeklyChart";
 import StatsOverview from "@/components/StatsOverview";
 import DailyCheckinModal from "@/components/DailyCheckinModal";
+import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { getUserProfile, getDailyCompletionPercentage, getTodayCheckin } from "@/lib/storage";
 
 const Dashboard = () => {
@@ -112,6 +113,14 @@ const Dashboard = () => {
           </motion.div>
         </div>
 
+        {/* Push Notifications */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <PushNotificationToggle />
+        </motion.div>
         {/* Weekly Progress */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
