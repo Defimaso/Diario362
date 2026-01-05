@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,6 +17,19 @@ import { useToast } from "@/hooks/use-toast";
 import TeachableModal from "@/components/TeachableModal";
 import { getCurrentBadge, isClientAtRisk } from "@/lib/badges";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { useCoachNotes } from "@/hooks/useCoachNotes";
+import CoachNotesDialog from "@/components/CoachNotesDialog";
 
 // WhatsApp SVG Icon Component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -34,11 +47,23 @@ type CoachFilter = 'all' | 'Martina' | 'Michela' | 'Cristina';
 
 const GestioneDiario = () => {
   const { user, signOut, isAdmin, isCollaborator, isSuperAdmin, loading: authLoading } = useAuth();
-  const { clients, loading: clientsLoading } = useAdminClients();
+  const { clients, loading: clientsLoading, refetch: refetchClients } = useAdminClients();
+  const { notes, addNote, markAsRead, hasUnreadNotes } = useCoachNotes();
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [coachFilter, setCoachFilter] = useState<CoachFilter>('all');
   const [teachableModalOpen, setTeachableModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
+  
+  // Delete user state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [clientToDelete, setClientToDelete] = useState<ClientData | null>(null);
+  const [deleteConfirmStep, setDeleteConfirmStep] = useState(1);
+  const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Coach notes state
+  const [notesDialogOpen, setNotesDialogOpen] = useState(false);
+  const [notesClient, setNotesClient] = useState<ClientData | null>(null);
+  
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -112,6 +137,56 @@ const GestioneDiario = () => {
     setTeachableModalOpen(true);
   };
 
+  // Delete user handlers
+  const openDeleteDialog = (client: ClientData) => {
+    setClientToDelete(client);
+    setDeleteConfirmStep(1);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteUser = async () => {
+    if (!clientToDelete || deleteConfirmStep < 2) {
+      setDeleteConfirmStep(2);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: { userId: clientToDelete.id }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast({
+        title: 'Utente eliminato',
+        description: `${clientToDelete.full_name} è stato eliminato con successo.`,
+      });
+
+      setDeleteDialogOpen(false);
+      setClientToDelete(null);
+      setDeleteConfirmStep(1);
+      refetchClients();
+    } catch (err: any) {
+      console.error('Error deleting user:', err);
+      toast({
+        variant: 'destructive',
+        title: 'Errore',
+        description: err.message || 'Impossibile eliminare l\'utente.',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Coach notes handlers
+  const openNotesDialog = (client: ClientData) => {
+    setNotesClient(client);
+    setNotesDialogOpen(true);
+  };
+
   // Helper to calculate days since last checkin
   const getDaysSinceLastCheckin = (client: ClientData): number => {
     if (!client.last_checkin?.date) return 999;
@@ -124,7 +199,6 @@ const GestioneDiario = () => {
 
   // Get client badge
   const getClientBadge = (client: ClientData) => {
-    // Using streak and total checkins (approximated by streak for now)
     const totalCheckins = client.streak || 0;
     return getCurrentBadge(client.streak, totalCheckins);
   };
@@ -409,6 +483,33 @@ const GestioneDiario = () => {
                     <GraduationCap className="w-4 h-4 mr-1.5" />
                     Task Academy
                   </Button>
+
+                  {/* Coach Notes Button */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="relative border-badge-gold/40 text-badge-gold hover:bg-badge-gold/10"
+                    onClick={() => openNotesDialog(client)}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1.5" />
+                    Note
+                    {hasUnreadNotes(client.id) && (
+                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-badge-gold animate-pulse" />
+                    )}
+                  </Button>
+
+                  {/* Delete User Button - Super Admin Only */}
+                  {isSuperAdmin && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => openDeleteDialog(client)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-1.5" />
+                      Elimina
+                    </Button>
+                  )}
                 </div>
               </motion.div>
               );
@@ -427,6 +528,69 @@ const GestioneDiario = () => {
           clientStatus={selectedClient.status}
         />
       )}
+
+      {/* Coach Notes Dialog */}
+      {notesClient && (
+        <CoachNotesDialog
+          open={notesDialogOpen}
+          onOpenChange={setNotesDialogOpen}
+          clientName={notesClient.full_name}
+          clientId={notesClient.id}
+          notes={notes[notesClient.id] || []}
+          onAddNote={addNote}
+          onMarkAsRead={markAsRead}
+        />
+      )}
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => {
+        setDeleteDialogOpen(open);
+        if (!open) {
+          setDeleteConfirmStep(1);
+          setClientToDelete(null);
+        }
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-destructive">
+              {deleteConfirmStep === 1 
+                ? `Eliminare ${clientToDelete?.full_name}?` 
+                : `⚠️ Conferma definitiva`}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteConfirmStep === 1 ? (
+                <>
+                  Stai per eliminare <strong>{clientToDelete?.full_name}</strong> e tutti i suoi dati.
+                  <br /><br />
+                  Clicca "Continua" per procedere con la conferma finale.
+                </>
+              ) : (
+                <>
+                  <strong className="text-destructive">ATTENZIONE:</strong> Questa azione eliminerà definitivamente:
+                  <ul className="list-disc ml-5 mt-2 space-y-1">
+                    <li>Il profilo utente</li>
+                    <li>Tutti i check-in</li>
+                    <li>Lo storico dei dati</li>
+                    <li>Le note coach</li>
+                  </ul>
+                  <br />
+                  <strong>Questa azione non può essere annullata.</strong>
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteUser}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? 'Eliminazione...' : deleteConfirmStep === 1 ? 'Continua' : 'ELIMINA DEFINITIVAMENTE'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

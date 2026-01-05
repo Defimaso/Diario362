@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -208,6 +208,16 @@ const Auth = () => {
 
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
+              {/* Email sync notice - only for signup */}
+              {!isCollaborator && !isLogin && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20 text-sm">
+                  <AlertCircle className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                  <p className="text-foreground/80">
+                    <strong>IMPORTANTE:</strong> Usa la stessa email che utilizzerai per i check tecnici (Google Form). 
+                    Questo è necessario per sincronizzare i tuoi progressi.
+                  </p>
+                </div>
+              )}
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
