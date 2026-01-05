@@ -6,6 +6,7 @@ import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
 import QuickActionCard from "@/components/QuickActionCard";
 import WeeklyChart from "@/components/WeeklyChart";
+import StatsOverview from "@/components/StatsOverview";
 import DailyCheckinModal from "@/components/DailyCheckinModal";
 import { getUserProfile, getDailyCompletionPercentage, getTodayCheckin } from "@/lib/storage";
 
@@ -131,6 +132,9 @@ const Dashboard = () => {
         >
           <WeeklyChart />
         </motion.div>
+
+        {/* Detailed Stats */}
+        <StatsOverview />
 
         {/* Footer */}
         <motion.div
