@@ -24,7 +24,50 @@ export interface Client {
   status: 'green' | 'yellow' | 'red';
 }
 
+// Demo mode flag - set to true for sales presentations
+const DEMO_MODE = true;
+
+// Generate demo checkins for the past week
+const generateDemoCheckins = (): DailyCheckin[] => {
+  const checkins: DailyCheckin[] = [];
+  const today = new Date();
+  
+  const demoData = [
+    { daysAgo: 6, recovery: 7, nutritionHit: true, energy: 6, mindset: 7, edge: "Sveglia 30 min prima" },
+    { daysAgo: 5, recovery: 8, nutritionHit: true, energy: 7, mindset: 8, edge: "Meditazione mattutina" },
+    { daysAgo: 4, recovery: 6, nutritionHit: false, energy: 7, mindset: 6, edge: "Camminata serale" },
+    { daysAgo: 3, recovery: 9, nutritionHit: true, energy: 8, mindset: 9, edge: "Doccia fredda + journaling" },
+    { daysAgo: 2, recovery: 8, nutritionHit: true, energy: 9, mindset: 8, edge: "Allenamento extra HIIT" },
+    { daysAgo: 1, recovery: 9, nutritionHit: true, energy: 9, mindset: 9, edge: "Preparazione pasti settimana" },
+    { daysAgo: 0, recovery: 9, nutritionHit: true, energy: 8, mindset: 9, edge: "Visualizzazione obiettivi" },
+  ];
+
+  demoData.forEach((data, index) => {
+    const date = new Date(today);
+    date.setDate(date.getDate() - data.daysAgo);
+    checkins.push({
+      id: `demo-${index}`,
+      date: date.toISOString().split('T')[0],
+      recovery: data.recovery,
+      nutritionHit: data.nutritionHit,
+      energy: data.energy,
+      mindset: data.mindset,
+      twoPercentEdge: data.edge,
+      timestamp: date.getTime(),
+    });
+  });
+
+  return checkins;
+};
+
+const getDemoProfile = (): UserProfile => ({
+  name: "Alessandro",
+  streak: 12,
+  lastCheckinDate: new Date().toISOString().split('T')[0],
+});
+
 export const getStoredCheckins = (): DailyCheckin[] => {
+  if (DEMO_MODE) return generateDemoCheckins();
   const stored = localStorage.getItem('362_checkins');
   return stored ? JSON.parse(stored) : [];
 };
@@ -58,6 +101,7 @@ export const getWeeklyCheckins = (): DailyCheckin[] => {
 };
 
 export const getUserProfile = (): UserProfile => {
+  if (DEMO_MODE) return getDemoProfile();
   const stored = localStorage.getItem('362_profile');
   return stored ? JSON.parse(stored) : { name: 'Navigator', streak: 0, lastCheckinDate: null };
 };
@@ -102,48 +146,77 @@ export const getDailyCompletionPercentage = (): number => {
   return (score / 10) * 100;
 };
 
-// Mock clients for admin view
+// Mock clients for admin view - realistic Italian data
 export const getMockClients = (): Client[] => {
+  const today = new Date().toISOString().split('T')[0];
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  const yesterdayStr = yesterday.toISOString().split('T')[0];
+
   return [
     {
       id: '1',
       name: 'Marco Rossi',
-      email: 'marco@example.com',
-      streak: 14,
-      lastCheckin: { id: '1', date: new Date().toISOString().split('T')[0], recovery: 9, nutritionHit: true, energy: 8, mindset: 9, twoPercentEdge: 'Extra 10 min meditation', timestamp: Date.now() },
+      email: 'marco.rossi@gmail.com',
+      streak: 28,
+      lastCheckin: { id: '1', date: today, recovery: 9, nutritionHit: true, energy: 9, mindset: 9, twoPercentEdge: 'Sveglia alle 5:30 per meditazione', timestamp: Date.now() },
       status: 'green'
     },
     {
       id: '2',
       name: 'Elena Bianchi',
-      email: 'elena@example.com',
-      streak: 7,
-      lastCheckin: { id: '2', date: new Date().toISOString().split('T')[0], recovery: 6, nutritionHit: true, energy: 5, mindset: 6, twoPercentEdge: 'Walked 5000 steps', timestamp: Date.now() },
-      status: 'yellow'
+      email: 'elena.bianchi@outlook.it',
+      streak: 15,
+      lastCheckin: { id: '2', date: today, recovery: 8, nutritionHit: true, energy: 8, mindset: 9, twoPercentEdge: 'Journaling serale 15 minuti', timestamp: Date.now() },
+      status: 'green'
     },
     {
       id: '3',
       name: 'Luca Ferrari',
-      email: 'luca@example.com',
-      streak: 2,
-      lastCheckin: { id: '3', date: new Date().toISOString().split('T')[0], recovery: 4, nutritionHit: false, energy: 3, mindset: 4, twoPercentEdge: '', timestamp: Date.now() },
-      status: 'red'
+      email: 'luca.ferrari@yahoo.it',
+      streak: 7,
+      lastCheckin: { id: '3', date: today, recovery: 6, nutritionHit: true, energy: 5, mindset: 6, twoPercentEdge: 'Camminata 30 min', timestamp: Date.now() },
+      status: 'yellow'
     },
     {
       id: '4',
       name: 'Sofia Conti',
-      email: 'sofia@example.com',
-      streak: 21,
-      lastCheckin: { id: '4', date: new Date().toISOString().split('T')[0], recovery: 8, nutritionHit: true, energy: 9, mindset: 8, twoPercentEdge: 'Cold shower', timestamp: Date.now() },
+      email: 'sofia.conti@gmail.com',
+      streak: 42,
+      lastCheckin: { id: '4', date: today, recovery: 10, nutritionHit: true, energy: 9, mindset: 10, twoPercentEdge: 'Cold shower + stretching mattutino', timestamp: Date.now() },
       status: 'green'
     },
     {
       id: '5',
       name: 'Andrea Romano',
-      email: 'andrea@example.com',
+      email: 'andrea.romano@libero.it',
+      streak: 3,
+      lastCheckin: { id: '5', date: today, recovery: 5, nutritionHit: false, energy: 6, mindset: 5, twoPercentEdge: 'Lettura 20 pagine', timestamp: Date.now() },
+      status: 'yellow'
+    },
+    {
+      id: '6',
+      name: 'Giulia Marino',
+      email: 'giulia.marino@gmail.com',
       streak: 0,
       lastCheckin: null,
       status: 'red'
+    },
+    {
+      id: '7',
+      name: 'Francesco Greco',
+      email: 'f.greco@hotmail.it',
+      streak: 1,
+      lastCheckin: { id: '7', date: yesterdayStr, recovery: 3, nutritionHit: false, energy: 4, mindset: 3, twoPercentEdge: '', timestamp: Date.now() - 86400000 },
+      status: 'red'
+    },
+    {
+      id: '8',
+      name: 'Alessia Lombardi',
+      email: 'alessia.lombardi@gmail.com',
+      streak: 21,
+      lastCheckin: { id: '8', date: today, recovery: 8, nutritionHit: true, energy: 7, mindset: 8, twoPercentEdge: 'Meal prep domenicale completo', timestamp: Date.now() },
+      status: 'green'
     },
   ];
 };
