@@ -4,9 +4,10 @@ interface MomentumCircleProps {
   percentage: number;
   size?: number;
   strokeWidth?: number;
+  hasCheckinToday?: boolean;
 }
 
-const MomentumCircle = ({ percentage, size = 200, strokeWidth = 8 }: MomentumCircleProps) => {
+const MomentumCircle = ({ percentage, size = 200, strokeWidth = 8, hasCheckinToday = false }: MomentumCircleProps) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = radius * 2 * Math.PI;
   const offset = circumference - (percentage / 100) * circumference;
@@ -17,7 +18,7 @@ const MomentumCircle = ({ percentage, size = 200, strokeWidth = 8 }: MomentumCir
       <div 
         className="absolute inset-0 rounded-full opacity-20 blur-xl"
         style={{ 
-          background: `radial-gradient(circle, hsl(174, 52%, 45%) 0%, transparent 70%)` 
+          background: `radial-gradient(circle, hsl(45, 100%, 50%) 0%, transparent 70%)` 
         }}
       />
       
@@ -31,7 +32,7 @@ const MomentumCircle = ({ percentage, size = 200, strokeWidth = 8 }: MomentumCir
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="hsl(165, 20%, 88%)"
+          stroke="hsl(0, 0%, 18%)"
           strokeWidth={strokeWidth}
         />
       </svg>

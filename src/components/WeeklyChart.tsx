@@ -1,13 +1,29 @@
 import { motion } from "framer-motion";
 import { AreaChart, Area, XAxis, YAxis, ResponsiveContainer, Tooltip } from "recharts";
-import { getWeeklyCheckins, calculateDailyScore } from "@/lib/storage";
 
-const WeeklyChart = () => {
-  const checkins = getWeeklyCheckins();
-  
-  const data = checkins.map(c => ({
+interface CheckinData {
+  date: string;
+  recovery: number;
+  nutritionHit: boolean;
+  energy: number;
+  mindset: number;
+  twoPercentEdge: string;
+}
+
+interface WeeklyChartProps {
+  data?: CheckinData[];
+}
+
+const WeeklyChart = ({ data = [] }: WeeklyChartProps) => {
+  const calculateScore = (checkin: CheckinData): number => {
+    const nutritionScore = checkin.nutritionHit ? 10 : 5;
+    const average = (checkin.recovery + nutritionScore + checkin.energy + checkin.mindset) / 4;
+    return Math.round(average * 10) / 10;
+  };
+
+  const chartData = data.map(c => ({
     date: new Date(c.date).toLocaleDateString('it-IT', { weekday: 'short' }),
-    score: calculateDailyScore(c),
+    score: calculateScore(c),
     recovery: c.recovery,
     energy: c.energy,
     mindset: c.mindset,
@@ -20,7 +36,7 @@ const WeeklyChart = () => {
   for (let i = 6; i >= 0; i--) {
     const dayIndex = (today - i + 7) % 7;
     const dayName = days[dayIndex];
-    const existingData = data.find(d => d.date.toLowerCase() === dayName.toLowerCase());
+    const existingData = chartData.find(d => d.date.toLowerCase() === dayName.toLowerCase());
     last7Days.push(existingData || { date: dayName, score: 0 });
   }
 
@@ -50,16 +66,16 @@ const WeeklyChart = () => {
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={last7Days} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="tealGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(174, 52%, 45%)" stopOpacity={0.4} />
-                <stop offset="100%" stopColor="hsl(174, 52%, 45%)" stopOpacity={0} />
+              <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="hsl(45, 100%, 50%)" stopOpacity={0.4} />
+                <stop offset="100%" stopColor="hsl(45, 100%, 50%)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <XAxis 
               dataKey="date" 
               axisLine={false} 
               tickLine={false}
-              tick={{ fill: 'hsl(180, 10%, 45%)', fontSize: 11 }}
+              tick={{ fill: 'hsl(0, 0%, 60%)', fontSize: 11 }}
               interval="preserveStartEnd"
             />
             <YAxis 
@@ -68,20 +84,20 @@ const WeeklyChart = () => {
             />
             <Tooltip
               contentStyle={{
-                background: 'hsl(0, 0%, 100%)',
-                border: '1px solid hsl(165, 20%, 88%)',
+                background: 'hsl(0, 0%, 7%)',
+                border: '1px solid hsl(0, 0%, 18%)',
                 borderRadius: '8px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
               }}
-              labelStyle={{ color: 'hsl(180, 25%, 20%)' }}
-              itemStyle={{ color: 'hsl(174, 52%, 45%)' }}
+              labelStyle={{ color: 'hsl(0, 0%, 95%)' }}
+              itemStyle={{ color: 'hsl(45, 100%, 50%)' }}
             />
             <Area
               type="monotone"
               dataKey="score"
-              stroke="hsl(174, 52%, 45%)"
+              stroke="hsl(45, 100%, 50%)"
               strokeWidth={2}
-              fill="url(#tealGradient)"
+              fill="url(#goldGradient)"
             />
           </AreaChart>
         </ResponsiveContainer>
