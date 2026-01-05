@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, FileText, Settings } from "lucide-react";
+import { GraduationCap, ClipboardCheck, Settings } from "lucide-react";
 import { Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -103,24 +103,11 @@ const Dashboard = () => {
             transition={{ delay: 0.5 }}
           >
             <QuickActionCard
-              title="Academy"
+              title="Area Privata"
               description="Accedi alla tua libreria di formazione"
               icon={GraduationCap}
               variant="gold"
-              onClick={() => window.open('https://teachable.com', '_blank')}
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-          >
-            <QuickActionCard
-              title="Il Mio Percorso"
-              description="Visualizza i tuoi piani di dieta e allenamento"
-              icon={FileText}
-              onClick={() => {}}
+              onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
             />
           </motion.div>
         </div>
