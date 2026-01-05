@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Auth from "./pages/Auth";
 import Diario from "./pages/Diario";
 import GestioneDiario from "./pages/GestioneDiario";
+import InstallApp from "./pages/InstallApp";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/diario" element={<Diario />} />
             <Route path="/gestionediario" element={<GestioneDiario />} />
+            <Route path="/install" element={<InstallApp />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
