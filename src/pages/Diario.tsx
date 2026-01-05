@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -40,7 +40,18 @@ const Diario = () => {
   
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
   const [isBadgeSheetOpen, setIsBadgeSheetOpen] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
   const navigate = useNavigate();
+
+  // Check if app is already installed (standalone mode)
+  useEffect(() => {
+    const checkStandalone = () => {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true;
+      setIsStandalone(standalone);
+    };
+    checkStandalone();
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -229,6 +240,23 @@ const Diario = () => {
               onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
             />
           </motion.div>
+
+          {/* Install App - only show if not in standalone mode */}
+          {!isStandalone && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6 }}
+            >
+              <QuickActionCard
+                title="Installa App"
+                description="Scarica l'app sul tuo telefono"
+                icon={Smartphone}
+                variant="default"
+                onClick={() => navigate('/install')}
+              />
+            </motion.div>
+          )}
         </div>
 
         {/* Daily Checkin Modal */}

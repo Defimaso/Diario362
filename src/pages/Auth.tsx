@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -293,6 +293,15 @@ const Auth = () => {
         <p className="text-center text-sm text-muted-foreground mt-6">
           "Non accontentarti di 360°. Trova il tuo 2% extra."
         </p>
+
+        {/* Install App Link */}
+        <Link 
+          to="/install" 
+          className="flex items-center justify-center gap-2 mt-4 text-sm text-primary hover:text-primary/80 transition-colors"
+        >
+          <Smartphone className="w-4 h-4" />
+          <span>Installa l'app sul tuo telefono</span>
+        </Link>
       </motion.div>
     </div>
   );
