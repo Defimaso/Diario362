@@ -2,3 +2,9 @@ project_id = "ezjtheshclmruzlgwyfa"
 
 [functions.delete-user]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.send-daily-reminder]
+verify_jwt = false
