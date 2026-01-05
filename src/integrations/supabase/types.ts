@@ -14,16 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      coach_assignments: {
+        Row: {
+          client_id: string
+          coach_name: Database["public"]["Enums"]["coach_name"]
+          created_at: string
+          id: string
+        }
+        Insert: {
+          client_id: string
+          coach_name: Database["public"]["Enums"]["coach_name"]
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          client_id?: string
+          coach_name?: Database["public"]["Enums"]["coach_name"]
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      daily_checkins: {
+        Row: {
+          created_at: string
+          date: string
+          energy: number | null
+          id: string
+          mindset: number | null
+          nutrition_adherence: boolean | null
+          recovery: number | null
+          two_percent_edge: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          energy?: number | null
+          id?: string
+          mindset?: number | null
+          nutrition_adherence?: boolean | null
+          recovery?: number | null
+          two_percent_edge?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          energy?: number | null
+          id?: string
+          mindset?: number | null
+          nutrition_adherence?: boolean | null
+          recovery?: number | null
+          two_percent_edge?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      can_collaborator_see_client: {
+        Args: { _client_id: string; _collaborator_id: string }
+        Returns: boolean
+      }
+      get_collaborator_coach_name: {
+        Args: { _user_id: string }
+        Returns: string
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "collaborator" | "client"
+      coach_name: "Martina" | "Michela" | "Cristina" | "Michela_Martina"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +267,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "collaborator", "client"],
+      coach_name: ["Martina", "Michela", "Cristina", "Michela_Martina"],
+    },
   },
 } as const
