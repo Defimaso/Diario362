@@ -35,6 +35,48 @@ export type Database = {
         }
         Relationships: []
       }
+      coach_notes: {
+        Row: {
+          author_id: string
+          client_id: string
+          content: string
+          created_at: string
+          id: string
+          read_by: string[] | null
+        }
+        Insert: {
+          author_id: string
+          client_id: string
+          content: string
+          created_at?: string
+          id?: string
+          read_by?: string[] | null
+        }
+        Update: {
+          author_id?: string
+          client_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          read_by?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coach_notes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coach_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_checkins: {
         Row: {
           created_at: string
