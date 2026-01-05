@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, MessageSquare, History, AlertCircle } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +14,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import TeachableModal from "@/components/TeachableModal";
+
+// WhatsApp SVG Icon Component
+const WhatsAppIcon = ({ className }: { className?: string }) => (
+  <svg 
+    viewBox="0 0 24 24" 
+    fill="currentColor" 
+    className={className}
+  >
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+);
 
 type FilterStatus = 'all' | 'green' | 'yellow' | 'red';
 type CoachFilter = 'all' | 'Martina' | 'Michela' | 'Cristina';
@@ -23,6 +35,8 @@ const GestioneDiario = () => {
   const { clients, loading: clientsLoading } = useAdminClients();
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [coachFilter, setCoachFilter] = useState<CoachFilter>('all');
+  const [teachableModalOpen, setTeachableModalOpen] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -72,20 +86,28 @@ const GestioneDiario = () => {
     navigate('/auth');
   };
 
-  const handleSendMessage = (client: ClientData, type: 'support' | 'calibration' | 'rescue') => {
-    const messages = {
-      support: `Ciao ${client.full_name}! 🌟 Continua così, stai facendo un ottimo lavoro. Il tuo impegno sta dando risultati!`,
-      calibration: `Ciao ${client.full_name}! 💪 Ho notato qualche variazione nei tuoi dati. Vuoi che organizziamo una call per ricalibrare insieme?`,
-      rescue: `Ciao ${client.full_name}! 🆘 Mi sembra che tu stia attraversando un momento difficile. Sono qui per te - rispondimi appena puoi.`,
-    };
+  const formatPhoneForWhatsApp = (phone: string | null): string => {
+    if (!phone) return '';
+    // Remove all non-digit characters except the leading +
+    return phone.replace(/[^\d]/g, '');
+  };
 
-    const message = encodeURIComponent(messages[type]);
-    window.open(`https://wa.me/?text=${message}`, '_blank');
-    
-    toast({
-      title: 'Messaggio preparato',
-      description: `Messaggio ${type} pronto per ${client.full_name}`,
-    });
+  const handleWhatsAppClick = (client: ClientData) => {
+    const formattedPhone = formatPhoneForWhatsApp(client.phone_number);
+    if (formattedPhone) {
+      window.open(`https://wa.me/${formattedPhone}`, '_blank');
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Numero non disponibile',
+        description: `${client.full_name} non ha un numero di telefono registrato.`,
+      });
+    }
+  };
+
+  const handleTaskAcademyClick = (client: ClientData) => {
+    setSelectedClient(client);
+    setTeachableModalOpen(true);
   };
 
   return (
@@ -219,11 +241,15 @@ const GestioneDiario = () => {
                 key={client.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 * index }}
-                className="card-elegant rounded-xl p-4"
+                transition={{ delay: 0.05 * index }}
+                className={cn(
+                  "card-elegant rounded-xl p-4",
+                  client.status === 'red' && "border-l-4 border-l-destructive"
+                )}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
+                {/* Header Row */}
+                <div className="flex items-start justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     {/* Status indicator */}
                     <div className={cn(
                       "w-3 h-3 rounded-full shrink-0",
@@ -232,84 +258,101 @@ const GestioneDiario = () => {
                       client.status === 'red' && "status-red",
                     )} />
                     
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{client.full_name}</h3>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-semibold truncate">{client.full_name}</h3>
                         {client.streak > 0 && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0">
                             🔥 {client.streak}
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-muted-foreground">{client.email}</p>
                       {isSuperAdmin && client.coach_names.length > 0 && (
-                        <p className="text-xs text-primary mt-1">
+                        <p className="text-xs text-primary">
                           Coach: {client.coach_names.join(', ').replace('Michela_Martina', 'Michela / Martina')}
                         </p>
                       )}
                     </div>
                   </div>
 
-                  {/* Today's scores */}
+                  {/* Today's scores - compact */}
                   {client.last_checkin && (
-                    <div className="hidden sm:flex gap-2 text-xs">
-                      <span className="px-2 py-1 rounded bg-muted">R: {client.last_checkin.recovery || '-'}</span>
-                      <span className="px-2 py-1 rounded bg-muted">N: {client.last_checkin.nutrition_adherence ? '✓' : '✗'}</span>
-                      <span className="px-2 py-1 rounded bg-muted">E: {client.last_checkin.energy || '-'}</span>
-                      <span className="px-2 py-1 rounded bg-muted">M: {client.last_checkin.mindset || '-'}</span>
+                    <div className="hidden sm:flex gap-1.5 text-xs shrink-0">
+                      <span className="px-1.5 py-0.5 rounded bg-muted">R:{client.last_checkin.recovery || '-'}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-muted">N:{client.last_checkin.nutrition_adherence ? '✓' : '✗'}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-muted">E:{client.last_checkin.energy || '-'}</span>
+                      <span className="px-1.5 py-0.5 rounded bg-muted">M:{client.last_checkin.mindset || '-'}</span>
                     </div>
                   )}
                 </div>
 
-                {/* 2% Edge message */}
+                {/* Contact Info */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
+                  <span className="flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    {client.email}
+                  </span>
+                  {client.phone_number && (
+                    <span className="flex items-center gap-1">
+                      <Phone className="w-3 h-3" />
+                      {client.phone_number}
+                    </span>
+                  )}
+                </div>
+
+                {/* 2% Edge message - compact */}
                 {client.last_checkin?.two_percent_edge && (
-                  <div className="mt-3 p-2 rounded-lg bg-muted/50 text-sm">
-                    <span className="text-primary font-medium">2% Extra: </span>
-                    {client.last_checkin.two_percent_edge}
+                  <div className="mb-3 p-2 rounded-lg bg-muted/50 text-sm">
+                    <span className="text-primary font-medium">2%: </span>
+                    <span className="text-muted-foreground">{client.last_checkin.two_percent_edge}</span>
                   </div>
                 )}
 
                 {/* Quick Actions */}
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {client.status === 'green' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-success border-success/30 hover:bg-success/10"
-                      onClick={() => handleSendMessage(client, 'support')}
-                    >
-                      <MessageSquare className="w-3 h-3 mr-1" />
-                      Continua Così
-                    </Button>
-                  )}
-                  {client.status === 'yellow' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-warning border-warning/30 hover:bg-warning/10"
-                      onClick={() => handleSendMessage(client, 'calibration')}
-                    >
-                      <AlertCircle className="w-3 h-3 mr-1" />
-                      Ricalibra
-                    </Button>
-                  )}
-                  {client.status === 'red' && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => handleSendMessage(client, 'rescue')}
-                    >
-                      <AlertTriangle className="w-3 h-3 mr-1" />
-                      Intervieni
-                    </Button>
-                  )}
+                <div className="flex flex-wrap gap-2">
+                  {/* WhatsApp Button */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={cn(
+                      "text-[#25D366] border-[#25D366]/30 hover:bg-[#25D366]/10",
+                      client.status === 'red' && "animate-pulse"
+                    )}
+                    onClick={() => handleWhatsAppClick(client)}
+                  >
+                    <WhatsAppIcon className="w-4 h-4 mr-1.5" />
+                    WhatsApp
+                    {client.status === 'red' && (
+                      <span className="ml-1.5 w-2 h-2 rounded-full bg-destructive animate-ping" />
+                    )}
+                  </Button>
+
+                  {/* Task Academy Button */}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="border-primary/40 text-primary hover:bg-primary/10"
+                    onClick={() => handleTaskAcademyClick(client)}
+                  >
+                    <GraduationCap className="w-4 h-4 mr-1.5" />
+                    Task Academy
+                  </Button>
                 </div>
               </motion.div>
             ))
           )}
         </motion.div>
       </div>
+
+      {/* Teachable Modal */}
+      {selectedClient && (
+        <TeachableModal
+          open={teachableModalOpen}
+          onOpenChange={setTeachableModalOpen}
+          clientName={selectedClient.full_name}
+          clientStatus={selectedClient.status}
+        />
+      )}
     </div>
   );
 };

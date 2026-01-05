@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import PhoneInput from '@/components/PhoneInput';
 import {
   Select,
   SelectContent,
@@ -24,6 +25,7 @@ const loginSchema = z.object({
 
 const signupSchema = loginSchema.extend({
   fullName: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
+  phoneNumber: z.string().min(8, 'Inserisci un numero di telefono valido'),
   coachName: z.string().min(1, 'Seleziona il tuo coach'),
 });
 
@@ -35,6 +37,7 @@ const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+39');
   const [coachName, setCoachName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -55,7 +58,7 @@ const Auth = () => {
       if (isCollaborator || isLogin) {
         loginSchema.parse({ email, password });
       } else {
-        signupSchema.parse({ email, password, fullName, coachName });
+        signupSchema.parse({ email, password, fullName, phoneNumber, coachName });
       }
       setErrors({});
       return true;
@@ -93,7 +96,7 @@ const Auth = () => {
           });
         }
       } else {
-        const { error } = await signUp(email, password, fullName, coachName);
+        const { error } = await signUp(email, password, fullName, phoneNumber, coachName);
         if (error) {
           toast({
             variant: 'destructive',
@@ -189,6 +192,17 @@ const Auth = () => {
                 {errors.fullName && (
                   <p className="text-xs text-destructive">{errors.fullName}</p>
                 )}
+              </div>
+            )}
+
+            {!isCollaborator && !isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="phone">Numero di Telefono</Label>
+                <PhoneInput
+                  value={phoneNumber}
+                  onChange={setPhoneNumber}
+                  error={errors.phoneNumber}
+                />
               </div>
             )}
 
