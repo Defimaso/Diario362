@@ -19,7 +19,6 @@ import { getCurrentBadge, isClientAtRisk } from "@/lib/badges";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -144,17 +143,28 @@ const GestioneDiario = () => {
     setDeleteDialogOpen(true);
   };
 
-  const handleDeleteUser = async () => {
-    if (!clientToDelete || deleteConfirmStep < 2) {
+  const handleDeleteUser = async (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    
+    console.log('handleDeleteUser called, step:', deleteConfirmStep, 'client:', clientToDelete?.id);
+    
+    if (!clientToDelete) return;
+    
+    if (deleteConfirmStep < 2) {
+      console.log('Moving to step 2');
       setDeleteConfirmStep(2);
       return;
     }
 
+    console.log('Proceeding with deletion for:', clientToDelete.id);
     setIsDeleting(true);
+    
     try {
       const { data, error } = await supabase.functions.invoke('delete-user', {
         body: { userId: clientToDelete.id }
       });
+
+      console.log('Delete response:', data, error);
 
       if (error) {
         throw error;
@@ -581,13 +591,13 @@ const GestioneDiario = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={isDeleting}>Annulla</AlertDialogCancel>
-            <AlertDialogAction
+            <Button
               onClick={handleDeleteUser}
               disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               {isDeleting ? 'Eliminazione...' : deleteConfirmStep === 1 ? 'Continua' : 'ELIMINA DEFINITIVAMENTE'}
-            </AlertDialogAction>
+            </Button>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
