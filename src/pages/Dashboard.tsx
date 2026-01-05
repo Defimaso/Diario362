@@ -122,7 +122,17 @@ const Dashboard = () => {
         </motion.div>
 
         {/* Detailed Stats */}
-        <StatsOverview />
+        {hasCheckedInToday && (() => {
+          const todayCheckin = getTodayCheckin();
+          return todayCheckin ? (
+            <StatsOverview 
+              recovery={todayCheckin.recovery}
+              nutritionHit={todayCheckin.nutritionHit}
+              energy={todayCheckin.energy}
+              mindset={todayCheckin.mindset}
+            />
+          ) : null;
+        })()}
 
         {/* Footer */}
         <motion.div

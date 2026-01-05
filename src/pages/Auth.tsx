@@ -1,0 +1,259 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { Mail, Lock, User, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { z } from 'zod';
+
+const loginSchema = z.object({
+  email: z.string().email('Email non valida'),
+  password: z.string().min(6, 'La password deve avere almeno 6 caratteri'),
+});
+
+const signupSchema = loginSchema.extend({
+  fullName: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
+  coachName: z.string().min(1, 'Seleziona il tuo coach'),
+});
+
+const coaches = ['Martina', 'Michela', 'Cristina', 'Michela / Martina'];
+
+const Auth = () => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [coachName, setCoachName] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const { signIn, signUp, user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      navigate('/diario');
+    }
+  }, [user, navigate]);
+
+  const validateForm = () => {
+    try {
+      if (isLogin) {
+        loginSchema.parse({ email, password });
+      } else {
+        signupSchema.parse({ email, password, fullName, coachName });
+      }
+      setErrors({});
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const newErrors: Record<string, string> = {};
+        error.errors.forEach((err) => {
+          if (err.path[0]) {
+            newErrors[err.path[0].toString()] = err.message;
+          }
+        });
+        setErrors(newErrors);
+      }
+      return false;
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) return;
+
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        const { error } = await signIn(email, password);
+        if (error) {
+          toast({
+            variant: 'destructive',
+            title: 'Errore di accesso',
+            description: error.message === 'Invalid login credentials' 
+              ? 'Email o password non corretti' 
+              : error.message,
+          });
+        }
+      } else {
+        const { error } = await signUp(email, password, fullName, coachName);
+        if (error) {
+          toast({
+            variant: 'destructive',
+            title: 'Errore di registrazione',
+            description: error.message.includes('already registered')
+              ? 'Questa email è già registrata'
+              : error.message,
+          });
+        } else {
+          toast({
+            title: 'Registrazione completata!',
+            description: 'Benvenuto nel Diario 362gradi',
+          });
+        }
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+      {/* Background gradient */}
+      <div className="fixed inset-0 bg-gradient-to-br from-background via-background to-primary/5 pointer-events-none" />
+      
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md relative z-10"
+      >
+        {/* Logo */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold">
+            <span className="text-primary">362</span>
+            <span className="text-foreground">gradi</span>
+          </h1>
+          <p className="text-muted-foreground mt-2">Il Diario del tuo 2% Extra</p>
+        </div>
+
+        {/* Card */}
+        <div className="card-elegant p-6 rounded-2xl">
+          {/* Toggle */}
+          <div className="flex rounded-lg bg-muted p-1 mb-6">
+            <button
+              onClick={() => setIsLogin(true)}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                isLogin ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+              }`}
+            >
+              Accedi
+            </button>
+            <button
+              onClick={() => setIsLogin(false)}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                !isLogin ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+              }`}
+            >
+              Registrati
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Nome Completo</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Il tuo nome"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                {errors.fullName && (
+                  <p className="text-xs text-destructive">{errors.fullName}</p>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="la.tua@email.it"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              {errors.email && (
+                <p className="text-xs text-destructive">{errors.email}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-xs text-destructive">{errors.password}</p>
+              )}
+            </div>
+
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="coach">Il tuo Coach</Label>
+                <Select value={coachName} onValueChange={setCoachName}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona il tuo coach" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border z-50">
+                    {coaches.map((coach) => (
+                      <SelectItem key={coach} value={coach}>
+                        {coach}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.coachName && (
+                  <p className="text-xs text-destructive">{errors.coachName}</p>
+                )}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isLoading ? 'Caricamento...' : isLogin ? 'Accedi' : 'Registrati'}
+            </Button>
+          </form>
+        </div>
+
+        <p className="text-center text-sm text-muted-foreground mt-6">
+          "Non accontentarti di 360°. Trova il tuo 2% extra."
+        </p>
+      </motion.div>
+    </div>
+  );
+};
+
+export default Auth;

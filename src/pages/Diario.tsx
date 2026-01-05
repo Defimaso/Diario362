@@ -1,0 +1,200 @@
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { GraduationCap, ClipboardCheck, Settings, LogOut, Users } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import MomentumCircle from "@/components/MomentumCircle";
+import StreakBadge from "@/components/StreakBadge";
+import StatsOverview from "@/components/StatsOverview";
+import QuickActionCard from "@/components/QuickActionCard";
+import WeeklyChart from "@/components/WeeklyChart";
+import DailyCheckinModalNew from "@/components/DailyCheckinModalNew";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCheckins } from "@/hooks/useCheckins";
+import { Button } from "@/components/ui/button";
+
+const Diario = () => {
+  const { user, signOut, loading: authLoading, isAdmin, isCollaborator, isSuperAdmin } = useAuth();
+  const { 
+    todayCheckin, 
+    streak, 
+    getWeeklyCheckins, 
+    getDailyCompletionPercentage,
+    calculateDailyScore,
+    refetch,
+    loading: checkinsLoading 
+  } = useCheckins();
+  
+  const [isCheckinOpen, setIsCheckinOpen] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/auth');
+    }
+  }, [user, authLoading, navigate]);
+
+  if (authLoading || checkinsLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="animate-pulse text-primary text-xl">Caricamento...</div>
+      </div>
+    );
+  }
+
+  if (!user) return null;
+
+  const completionPercentage = getDailyCompletionPercentage();
+  const weeklyData = getWeeklyCheckins();
+
+  const handleCheckinComplete = () => {
+    setIsCheckinOpen(false);
+    refetch();
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/auth');
+  };
+
+  // Transform weekly data for charts
+  const chartData = weeklyData.map(checkin => ({
+    date: checkin.date,
+    recovery: checkin.recovery || 0,
+    nutritionHit: checkin.nutrition_adherence || false,
+    energy: checkin.energy || 0,
+    mindset: checkin.mindset || 0,
+    twoPercentEdge: checkin.two_percent_edge || '',
+  }));
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Background Effects */}
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8 pb-24">
+        {/* Header */}
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-6 sm:mb-8"
+        >
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">
+                <span className="text-primary">362</span>
+                <span className="text-foreground">gradi</span>
+              </h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">Il Diario del tuo 2%</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <StreakBadge streak={streak} />
+            {(isAdmin || isCollaborator || isSuperAdmin) && (
+              <Link to="/gestionediario">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-primary hover:text-primary/80"
+                >
+                  <Users className="w-5 h-5" />
+                </Button>
+              </Link>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSignOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
+        </motion.header>
+
+        {/* Momentum Circle */}
+        <motion.section
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.1 }}
+          className="flex justify-center mb-6 sm:mb-8"
+        >
+          <MomentumCircle 
+            percentage={completionPercentage} 
+            hasCheckinToday={!!todayCheckin}
+          />
+        </motion.section>
+
+        {/* Stats Overview */}
+        {todayCheckin && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-6 sm:mb-8"
+          >
+            <StatsOverview 
+              recovery={todayCheckin.recovery || 0}
+              nutritionHit={todayCheckin.nutrition_adherence || false}
+              energy={todayCheckin.energy || 0}
+              mindset={todayCheckin.mindset || 0}
+            />
+          </motion.section>
+        )}
+
+        {/* Weekly Chart */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-6 sm:mb-8"
+        >
+          <WeeklyChart data={chartData} />
+        </motion.section>
+
+        {/* Quick Actions */}
+        <div className="space-y-3 sm:space-y-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+          >
+            <QuickActionCard
+              title={todayCheckin ? "Aggiorna Check-in" : "Check-in Giornaliero"}
+              description={todayCheckin ? "Modifica il tuo check-in di oggi" : "Registra il tuo progresso di oggi"}
+              icon={ClipboardCheck}
+              variant="primary"
+              onClick={() => setIsCheckinOpen(true)}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <QuickActionCard
+              title="Area Privata"
+              description="Accedi alla tua libreria di formazione"
+              icon={GraduationCap}
+              variant="gold"
+              onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
+            />
+          </motion.div>
+        </div>
+
+        {/* Daily Checkin Modal */}
+        <DailyCheckinModalNew
+          isOpen={isCheckinOpen}
+          onClose={() => setIsCheckinOpen(false)}
+          onComplete={handleCheckinComplete}
+          existingCheckin={todayCheckin}
+        />
+      </div>
+    </div>
+  );
+};
+
+export default Diario;
