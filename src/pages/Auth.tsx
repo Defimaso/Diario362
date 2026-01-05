@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -30,6 +31,7 @@ const coaches = ['Martina', 'Michela', 'Cristina', 'Michela / Martina'];
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isCollaborator, setIsCollaborator] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -50,7 +52,7 @@ const Auth = () => {
 
   const validateForm = () => {
     try {
-      if (isLogin) {
+      if (isCollaborator || isLogin) {
         loginSchema.parse({ email, password });
       } else {
         signupSchema.parse({ email, password, fullName, coachName });
@@ -79,7 +81,7 @@ const Auth = () => {
     setIsLoading(true);
 
     try {
-      if (isLogin) {
+      if (isCollaborator || isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
           toast({
@@ -133,28 +135,44 @@ const Auth = () => {
 
         {/* Card */}
         <div className="card-elegant p-6 rounded-2xl">
-          {/* Toggle */}
-          <div className="flex rounded-lg bg-muted p-1 mb-6">
-            <button
-              onClick={() => setIsLogin(true)}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
-                isLogin ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
-              }`}
-            >
-              Accedi
-            </button>
-            <button
-              onClick={() => setIsLogin(false)}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
-                !isLogin ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
-              }`}
-            >
-              Registrati
-            </button>
+          {/* User Type Switch */}
+          <div className="flex items-center justify-center gap-3 mb-6 pb-4 border-b border-border">
+            <span className={`text-sm font-medium transition-colors ${!isCollaborator ? 'text-foreground' : 'text-muted-foreground'}`}>
+              Utente
+            </span>
+            <Switch
+              checked={isCollaborator}
+              onCheckedChange={setIsCollaborator}
+            />
+            <span className={`text-sm font-medium transition-colors ${isCollaborator ? 'text-primary' : 'text-muted-foreground'}`}>
+              Collaboratore
+            </span>
           </div>
 
+          {/* Login/Register Toggle - only for Utente */}
+          {!isCollaborator && (
+            <div className="flex rounded-lg bg-muted p-1 mb-6">
+              <button
+                onClick={() => setIsLogin(true)}
+                className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                  isLogin ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+                }`}
+              >
+                Accedi
+              </button>
+              <button
+                onClick={() => setIsLogin(false)}
+                className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                  !isLogin ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground'
+                }`}
+              >
+                Registrati
+              </button>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
+            {!isCollaborator && !isLogin && (
               <div className="space-y-2">
                 <Label htmlFor="fullName">Nome Completo</Label>
                 <div className="relative">
@@ -217,7 +235,7 @@ const Auth = () => {
               )}
             </div>
 
-            {!isLogin && (
+            {!isCollaborator && !isLogin && (
               <div className="space-y-2">
                 <Label htmlFor="coach">Il tuo Coach</Label>
                 <Select value={coachName} onValueChange={setCoachName}>
@@ -243,7 +261,7 @@ const Auth = () => {
               disabled={isLoading}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {isLoading ? 'Caricamento...' : isLogin ? 'Accedi' : 'Registrati'}
+              {isLoading ? 'Caricamento...' : (isCollaborator || isLogin) ? 'Accedi' : 'Registrati'}
             </Button>
           </form>
         </div>
