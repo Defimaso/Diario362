@@ -70,46 +70,62 @@ const StatsOverview = () => {
       </div>
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-4 gap-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
-          className="card-elegant rounded-xl p-3 text-center"
+          className="card-elegant rounded-xl p-3 flex items-center gap-3 sm:flex-col sm:text-center"
         >
-          <Battery className="w-4 h-4 mx-auto mb-1 text-primary" />
-          <p className="text-lg font-bold text-primary">{avgRecovery}</p>
-          <p className="text-[10px] text-muted-foreground">Recupero</p>
+          <div className="flex-shrink-0 p-2 rounded-lg bg-primary/10 sm:mx-auto">
+            <Battery className="w-4 h-4 text-primary" />
+          </div>
+          <div className="flex flex-col sm:items-center">
+            <p className="text-lg font-bold text-primary leading-tight">{avgRecovery}</p>
+            <p className="text-xs text-muted-foreground">Recupero</p>
+          </div>
         </motion.div>
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.2 }}
-          className="card-elegant rounded-xl p-3 text-center"
+          className="card-elegant rounded-xl p-3 flex items-center gap-3 sm:flex-col sm:text-center"
         >
-          <Zap className="w-4 h-4 mx-auto mb-1 text-amber-500" />
-          <p className="text-lg font-bold text-amber-500">{avgEnergy}</p>
-          <p className="text-[10px] text-muted-foreground">Energia</p>
+          <div className="flex-shrink-0 p-2 rounded-lg bg-amber-500/10 sm:mx-auto">
+            <Zap className="w-4 h-4 text-amber-500" />
+          </div>
+          <div className="flex flex-col sm:items-center">
+            <p className="text-lg font-bold text-amber-500 leading-tight">{avgEnergy}</p>
+            <p className="text-xs text-muted-foreground">Energia</p>
+          </div>
         </motion.div>
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          className="card-elegant rounded-xl p-3 text-center"
+          className="card-elegant rounded-xl p-3 flex items-center gap-3 sm:flex-col sm:text-center"
         >
-          <Brain className="w-4 h-4 mx-auto mb-1 text-purple-500" />
-          <p className="text-lg font-bold text-purple-500">{avgMindset}</p>
-          <p className="text-[10px] text-muted-foreground">Mindset</p>
+          <div className="flex-shrink-0 p-2 rounded-lg bg-purple-500/10 sm:mx-auto">
+            <Brain className="w-4 h-4 text-purple-500" />
+          </div>
+          <div className="flex flex-col sm:items-center">
+            <p className="text-lg font-bold text-purple-500 leading-tight">{avgMindset}</p>
+            <p className="text-xs text-muted-foreground">Mindset</p>
+          </div>
         </motion.div>
         <motion.div 
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
-          className="card-elegant rounded-xl p-3 text-center"
+          className="card-elegant rounded-xl p-3 flex items-center gap-3 sm:flex-col sm:text-center"
         >
-          <Apple className="w-4 h-4 mx-auto mb-1 text-accent" />
-          <p className="text-lg font-bold text-accent">{nutritionSuccess}/7</p>
-          <p className="text-[10px] text-muted-foreground">Nutrizione</p>
+          <div className="flex-shrink-0 p-2 rounded-lg bg-accent/10 sm:mx-auto">
+            <Apple className="w-4 h-4 text-accent" />
+          </div>
+          <div className="flex flex-col sm:items-center">
+            <p className="text-lg font-bold text-accent leading-tight">{nutritionSuccess}/7</p>
+            <p className="text-xs text-muted-foreground">Nutrizione</p>
+          </div>
         </motion.div>
       </div>
 

@@ -34,16 +34,17 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="px-5 pt-8 pb-4">
-        <div className="flex items-center justify-between">
+      <header className="px-4 sm:px-5 pt-6 sm:pt-8 pb-4">
+        <div className="flex items-center justify-between gap-2">
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
+            className="min-w-0 flex-1"
           >
-            <p className="text-sm text-muted-foreground">Bentornato,</p>
-            <h1 className="text-2xl font-bold">{profile.name}</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground">Bentornato,</p>
+            <h1 className="text-xl sm:text-2xl font-bold truncate">{profile.name}</h1>
           </motion.div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <StreakBadge streak={profile.streak} />
             <Link to="/admin">
               <motion.button
@@ -59,7 +60,7 @@ const Dashboard = () => {
       </header>
 
       {/* Main Content */}
-      <main className="px-5 pb-8 space-y-6">
+      <main className="px-4 sm:px-5 pb-8 space-y-4 sm:space-y-6">
         {/* Tagline */}
         <motion.p
           initial={{ opacity: 0 }}
@@ -75,7 +76,7 @@ const Dashboard = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.3 }}
-          className="flex justify-center py-6"
+          className="flex justify-center py-4 sm:py-6"
         >
           <MomentumCircle percentage={completionPercentage} />
         </motion.div>

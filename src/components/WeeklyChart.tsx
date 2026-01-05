@@ -43,12 +43,12 @@ const WeeklyChart = () => {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="card-elegant rounded-xl p-5"
+      className="card-elegant rounded-xl p-4 sm:p-5"
     >
-      <h3 className="font-semibold mb-4">Progresso Settimanale</h3>
-      <div className="h-[120px]">
+      <h3 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Progresso Settimanale</h3>
+      <div className="h-[100px] sm:h-[120px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={last7Days}>
+          <AreaChart data={last7Days} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="tealGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(174, 52%, 45%)" stopOpacity={0.4} />
@@ -59,7 +59,8 @@ const WeeklyChart = () => {
               dataKey="date" 
               axisLine={false} 
               tickLine={false}
-              tick={{ fill: 'hsl(180, 10%, 45%)', fontSize: 12 }}
+              tick={{ fill: 'hsl(180, 10%, 45%)', fontSize: 11 }}
+              interval="preserveStartEnd"
             />
             <YAxis 
               domain={[0, 10]} 
