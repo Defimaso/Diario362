@@ -13,9 +13,20 @@ export interface ProgressCheck {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  source?: 'local' | 'external'; // To distinguish data source
 }
 
 export type TimeFilter = '3months' | '6months' | 'all';
+
+interface MonthlyCheckWeight {
+  id: string;
+  user_id: string | null;
+  check_date: string;
+  current_weight: number | null;
+  photo_front_url: string | null;
+  photo_side_url: string | null;
+  photo_back_url: string | null;
+}
 
 export const useProgressChecks = (clientId?: string) => {
   const { user } = useAuth();
@@ -33,18 +44,57 @@ export const useProgressChecks = (clientId?: string) => {
 
     setLoading(true);
     
-    // Optimized query - fetch all at once, ordered by date DESC
-    const { data, error } = await supabase
-      .from('progress_checks')
-      .select('*')
-      .eq('user_id', targetUserId)
-      .order('date', { ascending: false });
+    // Fetch from both tables in parallel
+    const [localResult, externalResult] = await Promise.all([
+      supabase
+        .from('progress_checks')
+        .select('*')
+        .eq('user_id', targetUserId)
+        .order('date', { ascending: false }),
+      supabase
+        .from('monthly_checks')
+        .select('id, user_id, check_date, current_weight, photo_front_url, photo_side_url, photo_back_url')
+        .eq('user_id', targetUserId)
+        .order('check_date', { ascending: false })
+    ]);
 
-    if (error) {
-      console.error('Error fetching progress checks:', error);
-    } else {
-      setProgressChecks(data || []);
+    if (localResult.error) {
+      console.error('Error fetching progress checks:', localResult.error);
     }
+    if (externalResult.error) {
+      console.error('Error fetching monthly checks:', externalResult.error);
+    }
+
+    // Convert monthly_checks to ProgressCheck format
+    const externalChecks: ProgressCheck[] = ((externalResult.data as MonthlyCheckWeight[]) || []).map(mc => ({
+      id: mc.id,
+      user_id: mc.user_id || targetUserId,
+      date: mc.check_date,
+      weight: mc.current_weight,
+      photo_front_url: mc.photo_front_url,
+      photo_side_url: mc.photo_side_url,
+      photo_back_url: mc.photo_back_url,
+      notes: null,
+      created_at: mc.check_date,
+      updated_at: mc.check_date,
+      source: 'external' as const,
+    }));
+
+    // Merge and deduplicate by date (local takes priority)
+    const localChecks: ProgressCheck[] = (localResult.data || []).map(lc => ({
+      ...lc,
+      source: 'local' as const,
+    }));
+
+    const localDates = new Set(localChecks.map(c => c.date));
+    const uniqueExternal = externalChecks.filter(c => !localDates.has(c.date));
+    
+    // Combine and sort by date descending
+    const combined = [...localChecks, ...uniqueExternal].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
+    setProgressChecks(combined);
     setLoading(false);
   }, [targetUserId]);
 
@@ -125,8 +175,8 @@ export const useProgressChecks = (clientId?: string) => {
         data.photoBack ? uploadPhoto(data.photoBack, 'back') : Promise.resolve(null),
       ]);
 
-      // Check if a check exists for this date
-      const existing = progressChecks.find(c => c.date === data.date);
+      // Check if a check exists for this date (only in local table)
+      const existing = progressChecks.find(c => c.date === data.date && c.source === 'local');
 
       const checkData = {
         weight: data.weight || null,
@@ -162,8 +212,13 @@ export const useProgressChecks = (clientId?: string) => {
     }
   };
 
-  // Get signed URL for private photos
+  // Get signed URL for private photos (only for local storage photos)
   const getSignedPhotoUrl = async (path: string): Promise<string | null> => {
+    // If it's an external URL (Google Drive, etc.), return as-is
+    if (path.startsWith('http') && !path.includes('supabase')) {
+      return path;
+    }
+
     // Extract just the file path from the full URL if needed
     const pathOnly = path.includes('progress-photos/') 
       ? path.split('progress-photos/')[1] 
