@@ -11,12 +11,12 @@ import DailyCheckinModalNew from "@/components/DailyCheckinModalNew";
 import BadgeProgress from "@/components/BadgeProgress";
 import BadgeGallery from "@/components/BadgeGallery";
 import BadgeUnlockAnimation from "@/components/BadgeUnlockAnimation";
+import ProgressAnalysis from "@/components/progress/ProgressAnalysis";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCheckins } from "@/hooks/useCheckins";
 import { useBadges } from "@/hooks/useBadges";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-
 const Diario = () => {
   const { user, signOut, loading: authLoading, isAdmin, isCollaborator, isSuperAdmin } = useAuth();
   const { 
@@ -209,6 +209,16 @@ const Diario = () => {
           className="mb-6 sm:mb-8"
         >
           <WeeklyChart data={chartData} />
+        </motion.section>
+
+        {/* Progress Analysis - Weight & Photos */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35 }}
+          className="mb-6 sm:mb-8"
+        >
+          <ProgressAnalysis />
         </motion.section>
 
         {/* Quick Actions */}
