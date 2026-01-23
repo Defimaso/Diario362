@@ -118,139 +118,40 @@ export type Database = {
       }
       monthly_checks: {
         Row: {
-          activity_level: string | null
-          after_off_meals_feeling: string | null
-          assistance_rating: number | null
           check_date: string | null
-          check_number: string | null
-          coach_name: string | null
-          coach_rating: number | null
           created_at: string | null
           current_weight: number | null
           email: string
-          first_name: string | null
           id: string
-          improvement_feedback: string | null
-          intestinal_function_now: string | null
-          intestinal_function_start: string | null
-          last_check_weight: number | null
-          last_name: string | null
-          lifestyle_difficulty: string | null
-          mindset_commitment: number | null
-          next_month_goal: string | null
-          next_phase_improvement: string | null
-          nutrition_commitment: number | null
-          nutrition_program_rating: number | null
-          nutrition_type: string | null
-          off_meals_feeling: string | null
-          off_meals_location: string | null
-          off_program_meals: string | null
           photo_back_url: string | null
-          photo_consent: string | null
           photo_front_url: string | null
           photo_side_url: string | null
-          program_type: string | null
-          start_date: string | null
-          starting_weight: number | null
-          testimonial: string | null
-          training_commitment: number | null
-          training_consistency: string | null
-          training_program_rating: number | null
-          training_type: string | null
           updated_at: string | null
           user_id: string | null
-          wants_to_change_nutrition: boolean | null
-          wants_to_change_training: boolean | null
         }
         Insert: {
-          activity_level?: string | null
-          after_off_meals_feeling?: string | null
-          assistance_rating?: number | null
           check_date?: string | null
-          check_number?: string | null
-          coach_name?: string | null
-          coach_rating?: number | null
           created_at?: string | null
           current_weight?: number | null
           email: string
-          first_name?: string | null
           id?: string
-          improvement_feedback?: string | null
-          intestinal_function_now?: string | null
-          intestinal_function_start?: string | null
-          last_check_weight?: number | null
-          last_name?: string | null
-          lifestyle_difficulty?: string | null
-          mindset_commitment?: number | null
-          next_month_goal?: string | null
-          next_phase_improvement?: string | null
-          nutrition_commitment?: number | null
-          nutrition_program_rating?: number | null
-          nutrition_type?: string | null
-          off_meals_feeling?: string | null
-          off_meals_location?: string | null
-          off_program_meals?: string | null
           photo_back_url?: string | null
-          photo_consent?: string | null
           photo_front_url?: string | null
           photo_side_url?: string | null
-          program_type?: string | null
-          start_date?: string | null
-          starting_weight?: number | null
-          testimonial?: string | null
-          training_commitment?: number | null
-          training_consistency?: string | null
-          training_program_rating?: number | null
-          training_type?: string | null
           updated_at?: string | null
           user_id?: string | null
-          wants_to_change_nutrition?: boolean | null
-          wants_to_change_training?: boolean | null
         }
         Update: {
-          activity_level?: string | null
-          after_off_meals_feeling?: string | null
-          assistance_rating?: number | null
           check_date?: string | null
-          check_number?: string | null
-          coach_name?: string | null
-          coach_rating?: number | null
           created_at?: string | null
           current_weight?: number | null
           email?: string
-          first_name?: string | null
           id?: string
-          improvement_feedback?: string | null
-          intestinal_function_now?: string | null
-          intestinal_function_start?: string | null
-          last_check_weight?: number | null
-          last_name?: string | null
-          lifestyle_difficulty?: string | null
-          mindset_commitment?: number | null
-          next_month_goal?: string | null
-          next_phase_improvement?: string | null
-          nutrition_commitment?: number | null
-          nutrition_program_rating?: number | null
-          nutrition_type?: string | null
-          off_meals_feeling?: string | null
-          off_meals_location?: string | null
-          off_program_meals?: string | null
           photo_back_url?: string | null
-          photo_consent?: string | null
           photo_front_url?: string | null
           photo_side_url?: string | null
-          program_type?: string | null
-          start_date?: string | null
-          starting_weight?: number | null
-          testimonial?: string | null
-          training_commitment?: number | null
-          training_consistency?: string | null
-          training_program_rating?: number | null
-          training_type?: string | null
           updated_at?: string | null
           user_id?: string | null
-          wants_to_change_nutrition?: boolean | null
-          wants_to_change_training?: boolean | null
         }
         Relationships: [
           {
