@@ -143,6 +143,45 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_checks: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          notes: string | null
+          photo_back_url: string | null
+          photo_front_url: string | null
+          photo_side_url: string | null
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          photo_back_url?: string | null
+          photo_front_url?: string | null
+          photo_side_url?: string | null
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          notes?: string | null
+          photo_back_url?: string | null
+          photo_front_url?: string | null
+          photo_side_url?: string | null
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
       push_subscriptions: {
         Row: {
           auth: string
