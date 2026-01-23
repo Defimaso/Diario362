@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { TrendingUp, Plus } from 'lucide-react';
 import { useProgressChecks } from '@/hooks/useProgressChecks';
+import { useMonthlyChecks } from '@/hooks/useMonthlyChecks';
 import WeightChart from './WeightChart';
 import HistoryTable from './HistoryTable';
 import PhotoComparison from './PhotoComparison';
@@ -26,9 +27,11 @@ const ProgressAnalysis = ({ clientId, showAddButton = true }: ProgressAnalysisPr
     getSignedPhotoUrl,
   } = useProgressChecks(clientId);
 
+  const { monthlyChecks, loading: monthlyLoading } = useMonthlyChecks(clientId);
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
-  if (loading) {
+  if (loading || monthlyLoading) {
     return (
       <div className="space-y-4">
         <div className="flex items-center justify-between">
@@ -83,8 +86,11 @@ const ProgressAnalysis = ({ clientId, showAddButton = true }: ProgressAnalysisPr
         comparisonDefaults={comparisonDefaults}
       />
 
-      {/* History Table */}
-      <HistoryTable data={progressChecks} />
+      {/* History Table - now with monthly checks data */}
+      <HistoryTable 
+        data={progressChecks} 
+        monthlyChecks={monthlyChecks}
+      />
 
       {/* Add Modal */}
       <AddProgressCheckModal
