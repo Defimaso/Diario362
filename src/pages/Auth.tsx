@@ -29,7 +29,16 @@ const signupSchema = loginSchema.extend({
   coachName: z.string().min(1, 'Seleziona il tuo coach'),
 });
 
-const coaches = ['Martina', 'Michela', 'Cristina', 'Michela / Martina'];
+const coaches = [
+  'Ilaria',
+  'Ilaria / Marco',
+  'Ilaria / Marco / Michela',
+  'Ilaria / Michela',
+  'Ilaria / Martina',
+  'Martina / Michela',
+  'Marco',
+  'Cristina'
+];
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);

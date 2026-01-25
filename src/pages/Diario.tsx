@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -140,6 +140,22 @@ const Diario = () => {
           </div>
         </motion.header>
 
+        {/* PRIORITY: Check-in Giornaliero - TOP OF PAGE */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="mb-6 sm:mb-8"
+        >
+          <QuickActionCard
+            title={todayCheckin ? "Aggiorna Check-in" : "Check-in Giornaliero"}
+            description={todayCheckin ? "Modifica il tuo check-in di oggi" : "Registra il tuo progresso di oggi"}
+            icon={ClipboardCheck}
+            variant="primary"
+            onClick={() => setIsCheckinOpen(true)}
+          />
+        </motion.div>
+
         {/* Momentum Circle */}
         <motion.section
           initial={{ opacity: 0, scale: 0.9 }}
@@ -229,20 +245,6 @@ const Diario = () => {
             transition={{ delay: 0.4 }}
           >
             <QuickActionCard
-              title={todayCheckin ? "Aggiorna Check-in" : "Check-in Giornaliero"}
-              description={todayCheckin ? "Modifica il tuo check-in di oggi" : "Registra il tuo progresso di oggi"}
-              icon={ClipboardCheck}
-              variant="primary"
-              onClick={() => setIsCheckinOpen(true)}
-            />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <QuickActionCard
               title="I Tuoi Check"
               description="Registra peso e foto mensili"
               icon={Camera}
@@ -254,14 +256,28 @@ const Diario = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.55 }}
+            transition={{ delay: 0.45 }}
           >
             <QuickActionCard
-              title="Area Privata"
+              title="Area Privata Teachable"
               description="Accedi alla tua libreria di formazione"
               icon={GraduationCap}
               variant="gold"
               onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            <QuickActionCard
+              title="Nutrium"
+              description="Accedi al tuo piano alimentare"
+              icon={Apple}
+              variant="default"
+              onClick={() => window.open('https://app.nutrium.com/', '_blank')}
             />
           </motion.div>
 
@@ -270,7 +286,7 @@ const Diario = () => {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
+              transition={{ delay: 0.55 }}
             >
               <QuickActionCard
                 title="Installa App"

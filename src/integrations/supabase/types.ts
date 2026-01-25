@@ -343,7 +343,18 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "collaborator" | "client"
-      coach_name: "Martina" | "Michela" | "Cristina" | "Michela_Martina"
+      coach_name:
+        | "Martina"
+        | "Michela"
+        | "Cristina"
+        | "Michela_Martina"
+        | "Ilaria"
+        | "Ilaria_Marco"
+        | "Ilaria_Marco_Michela"
+        | "Ilaria_Michela"
+        | "Ilaria_Martina"
+        | "Martina_Michela"
+        | "Marco"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -472,7 +483,19 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "collaborator", "client"],
-      coach_name: ["Martina", "Michela", "Cristina", "Michela_Martina"],
+      coach_name: [
+        "Martina",
+        "Michela",
+        "Cristina",
+        "Michela_Martina",
+        "Ilaria",
+        "Ilaria_Marco",
+        "Ilaria_Marco_Michela",
+        "Ilaria_Michela",
+        "Ilaria_Martina",
+        "Martina_Michela",
+        "Marco",
+      ],
     },
   },
 } as const
