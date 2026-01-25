@@ -100,19 +100,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // If sign up successful and coach selected, create assignment
     if (data.user && coachName) {
-      const coachValue = coachName === 'Michela / Martina' ? 'Michela_Martina' : coachName;
+      // Map display names to enum values
+      const coachMap: Record<string, string> = {
+        'Ilaria': 'Ilaria',
+        'Ilaria / Marco': 'Ilaria_Marco',
+        'Ilaria / Marco / Michela': 'Ilaria_Marco_Michela',
+        'Ilaria / Michela': 'Ilaria_Michela',
+        'Ilaria / Martina': 'Ilaria_Martina',
+        'Martina / Michela': 'Martina_Michela',
+        'Marco': 'Marco',
+        'Cristina': 'Cristina',
+        // Legacy values
+        'Martina': 'Martina',
+        'Michela': 'Michela',
+        'Michela / Martina': 'Michela_Martina',
+      };
       
-      // For "Michela / Martina", we need to insert two records
-      if (coachValue === 'Michela_Martina') {
-        await supabase.from('coach_assignments').insert([
-          { client_id: data.user.id, coach_name: 'Michela_Martina' as const }
-        ]);
-      } else {
-        await supabase.from('coach_assignments').insert({
-          client_id: data.user.id,
-          coach_name: coachValue as 'Martina' | 'Michela' | 'Cristina'
-        });
-      }
+      const coachValue = coachMap[coachName] || coachName;
+      
+      await supabase.from('coach_assignments').insert({
+        client_id: data.user.id,
+        coach_name: coachValue as any
+      });
     }
 
     return { error: null };
