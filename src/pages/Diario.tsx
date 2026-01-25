@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -12,6 +12,8 @@ import BadgeProgress from "@/components/BadgeProgress";
 import BadgeGallery from "@/components/BadgeGallery";
 import BadgeUnlockAnimation from "@/components/BadgeUnlockAnimation";
 import ProgressWidget from "@/components/checks/ProgressWidget";
+import Footer from "@/components/legal/Footer";
+import CookieBanner from "@/components/legal/CookieBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCheckins } from "@/hooks/useCheckins";
 import { useBadges } from "@/hooks/useBadges";
@@ -129,6 +131,15 @@ const Diario = () => {
                 </Button>
               </Link>
             )}
+            <Link to="/settings">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-foreground"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+            </Link>
             <Button
               variant="ghost"
               size="icon"
@@ -314,6 +325,12 @@ const Diario = () => {
           onClose={closeUnlockAnimation}
         />
       </div>
+      
+      {/* Footer */}
+      <Footer />
+      
+      {/* Cookie Banner */}
+      <CookieBanner />
     </div>
   );
 };

@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import DailyCheckinStatus from './DailyCheckinStatus';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 interface UserCheck {
   id: string;
@@ -28,10 +29,20 @@ interface ClientExpandedViewProps {
 const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpandedViewProps) => {
   const [checks, setChecks] = useState<UserCheck[]>([]);
   const [loading, setLoading] = useState(true);
+  const { logAction } = useAuditLog();
 
   useEffect(() => {
     const fetchChecks = async () => {
       setLoading(true);
+      
+      // Log audit action for GDPR accountability
+      await logAction({
+        action: 'view_client_data',
+        targetUserId: clientId,
+        targetTable: 'user_checks',
+        details: { clientName },
+      });
+
       const { data, error } = await supabase
         .from('user_checks')
         .select('*')
@@ -45,7 +56,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
     };
 
     fetchChecks();
-  }, [clientId]);
+  }, [clientId, clientName, logAction]);
 
   if (loading) {
     return (
