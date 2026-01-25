@@ -140,7 +140,7 @@ const Diario = () => {
           </div>
         </motion.header>
 
-        {/* PRIORITY: Check-in Giornaliero - TOP OF PAGE */}
+        {/* PRIORITY: Check-in Giornaliero - TOP OF PAGE (RED) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -151,7 +151,7 @@ const Diario = () => {
             title={todayCheckin ? "Aggiorna Check-in" : "Check-in Giornaliero"}
             description={todayCheckin ? "Modifica il tuo check-in di oggi" : "Registra il tuo progresso di oggi"}
             icon={ClipboardCheck}
-            variant="primary"
+            variant="red"
             onClick={() => setIsCheckinOpen(true)}
           />
         </motion.div>
@@ -248,7 +248,7 @@ const Diario = () => {
               title="I Tuoi Check"
               description="Registra peso e foto mensili"
               icon={Camera}
-              variant="default"
+              variant="blue"
               onClick={() => navigate('/checks')}
             />
           </motion.div>
@@ -262,7 +262,7 @@ const Diario = () => {
               title="Area Privata Teachable"
               description="Accedi alla tua libreria di formazione"
               icon={GraduationCap}
-              variant="gold"
+              variant="orange"
               onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
             />
           </motion.div>
@@ -276,7 +276,7 @@ const Diario = () => {
               title="Nutrium"
               description="Accedi al tuo piano alimentare"
               icon={Apple}
-              variant="default"
+              variant="purple"
               onClick={() => window.open('https://app.nutrium.com/', '_blank')}
             />
           </motion.div>

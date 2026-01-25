@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,9 +26,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { useCoachNotes } from "@/hooks/useCoachNotes";
 import CoachNotesDialog from "@/components/CoachNotesDialog";
+import ClientExpandedView from "@/components/ClientExpandedView";
 
 // WhatsApp SVG Icon Component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -333,12 +340,11 @@ const GestioneDiario = () => {
           )}
         </motion.div>
 
-        {/* Client List */}
+        {/* Client List with Accordion */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="space-y-3"
         >
           {filteredClients.length === 0 ? (
             <div className="card-elegant rounded-xl p-8 text-center">
@@ -346,185 +352,199 @@ const GestioneDiario = () => {
               <p className="text-muted-foreground">Nessun cliente trovato</p>
             </div>
           ) : (
-            <TooltipProvider>
-            {filteredClients.map((client, index) => {
-              const clientBadge = getClientBadge(client);
-              const isAtRisk = checkClientRisk(client);
-              const daysSince = getDaysSinceLastCheckin(client);
-              
-              return (
-              <motion.div
-                key={client.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.05 * index }}
-                className={cn(
-                  "card-elegant rounded-xl p-4",
-                  client.status === 'red' && "border-l-4 border-l-destructive",
-                  isAtRisk && client.status !== 'red' && "border-l-4 border-l-warning"
-                )}
-              >
-                {/* Risk Warning Banner */}
-                {isAtRisk && (
-                  <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-warning/10 text-warning text-xs">
-                    <AlertCircle className="w-4 h-4 shrink-0" />
-                    <span>Rischio abbandono: {daysSince} giorni senza check-in</span>
-                  </div>
-                )}
-                
-                {/* Header Row */}
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* Badge Emoji */}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div className="text-2xl cursor-help shrink-0">
-                          {clientBadge.emoji}
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent className="bg-card border-border">
-                        <div className="text-sm">
-                          <p className="font-semibold text-badge-gold">{clientBadge.name}</p>
-                          <p className="text-muted-foreground">{clientBadge.description}</p>
-                        </div>
-                      </TooltipContent>
-                    </Tooltip>
-                    
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold truncate">{client.full_name}</h3>
-                        {/* Status indicator */}
-                        <div className={cn(
-                          "w-2.5 h-2.5 rounded-full shrink-0",
-                          client.status === 'green' && "status-green",
-                          client.status === 'yellow' && "status-yellow",
-                          client.status === 'red' && "status-red",
-                        )} />
-                        {client.streak > 0 && (
-                          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0">
-                            🔥 {client.streak}
-                          </span>
-                        )}
-                      </div>
-                      {isSuperAdmin && client.coach_names.length > 0 && (
-                        <p className="text-xs text-primary">
-                          Coach: {client.coach_names.join(', ').replace('Michela_Martina', 'Michela / Martina')}
-                        </p>
+            <Accordion type="single" collapsible className="space-y-3">
+              <TooltipProvider>
+                {filteredClients.map((client, index) => {
+                  const clientBadge = getClientBadge(client);
+                  const isAtRisk = checkClientRisk(client);
+                  const daysSince = getDaysSinceLastCheckin(client);
+                  
+                  return (
+                    <AccordionItem 
+                      key={client.id} 
+                      value={client.id}
+                      className={cn(
+                        "card-elegant rounded-xl overflow-hidden border-0",
+                        client.status === 'red' && "border-l-4 border-l-destructive",
+                        isAtRisk && client.status !== 'red' && "border-l-4 border-l-warning"
                       )}
-                    </div>
-                  </div>
-
-                  {/* Today's scores - compact */}
-                  {client.last_checkin && (
-                    <div className="hidden sm:flex gap-1.5 text-xs shrink-0">
-                      <span className="px-1.5 py-0.5 rounded bg-muted">R:{client.last_checkin.recovery || '-'}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-muted">N:{client.last_checkin.nutrition_adherence ? '✓' : '✗'}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-muted">E:{client.last_checkin.energy || '-'}</span>
-                      <span className="px-1.5 py-0.5 rounded bg-muted">M:{client.last_checkin.mindset || '-'}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Contact Info */}
-                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mb-3">
-                  <span className="flex items-center gap-1">
-                    <Mail className="w-3 h-3" />
-                    {client.email}
-                  </span>
-                  {client.phone_number && (
-                    <span className="flex items-center gap-1">
-                      <Phone className="w-3 h-3" />
-                      {client.phone_number}
-                    </span>
-                  )}
-                </div>
-
-                {/* 2% Edge message - compact */}
-                {client.last_checkin?.two_percent_edge && (
-                  <div className="mb-3 p-2 rounded-lg bg-muted/50 text-sm">
-                    <span className="text-primary font-medium">2%: </span>
-                    <span className="text-muted-foreground">{client.last_checkin.two_percent_edge}</span>
-                  </div>
-                )}
-
-                {/* Quick Actions */}
-                <div className="flex flex-wrap gap-2">
-                  {/* WhatsApp Button */}
-                  {client.phone_number ? (
-                    <a
-                      href={`https://wa.me/${formatPhoneForWhatsApp(client.phone_number)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                     >
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className={cn(
-                          "text-[#25D366] border-[#25D366]/30 hover:bg-[#25D366]/10",
-                          client.status === 'red' && "animate-pulse"
-                        )}
-                      >
-                        <WhatsAppIcon className="w-4 h-4 mr-1.5" />
-                        WhatsApp
-                        {client.status === 'red' && (
-                          <span className="ml-1.5 w-2 h-2 rounded-full bg-destructive animate-ping" />
-                        )}
-                      </Button>
-                    </a>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-muted-foreground border-muted cursor-not-allowed"
-                      disabled
-                    >
-                      <WhatsAppIcon className="w-4 h-4 mr-1.5" />
-                      N/D
-                    </Button>
-                  )}
+                      <AccordionTrigger className="px-4 py-4 hover:no-underline [&[data-state=open]>div>.chevron]:rotate-180">
+                        <div className="flex-1 text-left">
+                          {/* Risk Warning Banner */}
+                          {isAtRisk && (
+                            <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-warning/10 text-warning text-xs">
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                              <span>Rischio abbandono: {daysSince} giorni senza check-in</span>
+                            </div>
+                          )}
+                          
+                          {/* Header Row */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              {/* Badge Emoji */}
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <div className="text-2xl cursor-help shrink-0">
+                                    {clientBadge.emoji}
+                                  </div>
+                                </TooltipTrigger>
+                                <TooltipContent className="bg-card border-border">
+                                  <div className="text-sm">
+                                    <p className="font-semibold text-badge-gold">{clientBadge.name}</p>
+                                    <p className="text-muted-foreground">{clientBadge.description}</p>
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                              
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="font-semibold truncate">{client.full_name}</h3>
+                                  {/* Status indicator */}
+                                  <div className={cn(
+                                    "w-2.5 h-2.5 rounded-full shrink-0",
+                                    client.status === 'green' && "status-green",
+                                    client.status === 'yellow' && "status-yellow",
+                                    client.status === 'red' && "status-red",
+                                  )} />
+                                  {client.streak > 0 && (
+                                    <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full shrink-0">
+                                      🔥 {client.streak}
+                                    </span>
+                                  )}
+                                </div>
+                                {isSuperAdmin && client.coach_names.length > 0 && (
+                                  <p className="text-xs text-primary">
+                                    Coach: {client.coach_names.join(', ').replace(/_/g, ' / ')}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
 
-                  {/* Task Academy Button */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-primary/40 text-primary hover:bg-primary/10"
-                    onClick={() => handleTaskAcademyClick(client)}
-                  >
-                    <GraduationCap className="w-4 h-4 mr-1.5" />
-                    Task Academy
-                  </Button>
+                            {/* Today's scores - compact */}
+                            {client.last_checkin && (
+                              <div className="hidden sm:flex gap-1.5 text-xs shrink-0">
+                                <span className="px-1.5 py-0.5 rounded bg-muted">R:{client.last_checkin.recovery || '-'}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-muted">N:{client.last_checkin.nutrition_adherence ? '✓' : '✗'}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-muted">E:{client.last_checkin.energy || '-'}</span>
+                                <span className="px-1.5 py-0.5 rounded bg-muted">M:{client.last_checkin.mindset || '-'}</span>
+                              </div>
+                            )}
+                          </div>
 
-                  {/* Coach Notes Button */}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="relative border-badge-gold/40 text-badge-gold hover:bg-badge-gold/10"
-                    onClick={() => openNotesDialog(client)}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-1.5" />
-                    Note
-                    {hasUnreadNotes(client.id) && (
-                      <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-badge-gold animate-pulse" />
-                    )}
-                  </Button>
+                          {/* Contact Info */}
+                          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground mt-3">
+                            <span className="flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {client.email}
+                            </span>
+                            {client.phone_number && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {client.phone_number}
+                              </span>
+                            )}
+                          </div>
 
-                  {/* Delete User Button - Super Admin Only */}
-                  {isSuperAdmin && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => openDeleteDialog(client)}
-                    >
-                      <Trash2 className="w-4 h-4 mr-1.5" />
-                      Elimina
-                    </Button>
-                  )}
-                </div>
-              </motion.div>
-              );
-            })}
-            </TooltipProvider>
+                          {/* 2% Edge message - compact */}
+                          {client.last_checkin?.two_percent_edge && (
+                            <div className="mt-3 p-2 rounded-lg bg-muted/50 text-sm">
+                              <span className="text-primary font-medium">2%: </span>
+                              <span className="text-muted-foreground">{client.last_checkin.two_percent_edge}</span>
+                            </div>
+                          )}
+                        </div>
+                        <ChevronDown className="chevron w-5 h-5 text-muted-foreground transition-transform duration-200 ml-2 shrink-0" />
+                      </AccordionTrigger>
+                      
+                      <AccordionContent className="px-4 pb-4">
+                        {/* Quick Actions */}
+                        <div className="flex flex-wrap gap-2 mb-4 pt-2 border-t border-border">
+                          {/* WhatsApp Button */}
+                          {client.phone_number ? (
+                            <a
+                              href={`https://wa.me/${formatPhoneForWhatsApp(client.phone_number)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className={cn(
+                                  "text-[#25D366] border-[#25D366]/30 hover:bg-[#25D366]/10",
+                                  client.status === 'red' && "animate-pulse"
+                                )}
+                              >
+                                <WhatsAppIcon className="w-4 h-4 mr-1.5" />
+                                WhatsApp
+                                {client.status === 'red' && (
+                                  <span className="ml-1.5 w-2 h-2 rounded-full bg-destructive animate-ping" />
+                                )}
+                              </Button>
+                            </a>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-muted-foreground border-muted cursor-not-allowed"
+                              disabled
+                            >
+                              <WhatsAppIcon className="w-4 h-4 mr-1.5" />
+                              N/D
+                            </Button>
+                          )}
+
+                          {/* Task Academy Button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-primary/40 text-primary hover:bg-primary/10"
+                            onClick={() => handleTaskAcademyClick(client)}
+                          >
+                            <GraduationCap className="w-4 h-4 mr-1.5" />
+                            Task Academy
+                          </Button>
+
+                          {/* Coach Notes Button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="relative border-badge-gold/40 text-badge-gold hover:bg-badge-gold/10"
+                            onClick={() => openNotesDialog(client)}
+                          >
+                            <MessageSquare className="w-4 h-4 mr-1.5" />
+                            Note
+                            {hasUnreadNotes(client.id) && (
+                              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-badge-gold animate-pulse" />
+                            )}
+                          </Button>
+
+                          {/* Delete User Button - Super Admin Only */}
+                          {isSuperAdmin && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-destructive border-destructive/30 hover:bg-destructive/10"
+                              onClick={() => openDeleteDialog(client)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-1.5" />
+                              Elimina
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Expanded Client View - Progress, Photos, Check History */}
+                        <ClientExpandedView 
+                          clientId={client.id}
+                          clientName={client.full_name}
+                          coachNames={client.coach_names}
+                        />
+                      </AccordionContent>
+                    </AccordionItem>
+                  );
+                })}
+              </TooltipProvider>
+            </Accordion>
           )}
         </motion.div>
       </div>
