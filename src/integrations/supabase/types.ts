@@ -259,6 +259,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_checks: {
+        Row: {
+          check_date: string
+          check_number: number
+          created_at: string
+          id: string
+          notes: string | null
+          photo_back_url: string | null
+          photo_front_url: string | null
+          photo_side_url: string | null
+          updated_at: string
+          user_id: string
+          weight: number | null
+        }
+        Insert: {
+          check_date?: string
+          check_number: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photo_back_url?: string | null
+          photo_front_url?: string | null
+          photo_side_url?: string | null
+          updated_at?: string
+          user_id: string
+          weight?: number | null
+        }
+        Update: {
+          check_date?: string
+          check_number?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photo_back_url?: string | null
+          photo_front_url?: string | null
+          photo_side_url?: string | null
+          updated_at?: string
+          user_id?: string
+          weight?: number | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
