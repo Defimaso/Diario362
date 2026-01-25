@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -11,7 +11,7 @@ import DailyCheckinModalNew from "@/components/DailyCheckinModalNew";
 import BadgeProgress from "@/components/BadgeProgress";
 import BadgeGallery from "@/components/BadgeGallery";
 import BadgeUnlockAnimation from "@/components/BadgeUnlockAnimation";
-import ProgressAnalysis from "@/components/progress/ProgressAnalysis";
+import ProgressWidget from "@/components/checks/ProgressWidget";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCheckins } from "@/hooks/useCheckins";
 import { useBadges } from "@/hooks/useBadges";
@@ -211,14 +211,14 @@ const Diario = () => {
           <WeeklyChart data={chartData} />
         </motion.section>
 
-        {/* Progress Analysis - Weight & Photos */}
+        {/* Progress Widget - Weight & Photos from User Checks */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
           className="mb-6 sm:mb-8"
         >
-          <ProgressAnalysis />
+          <ProgressWidget />
         </motion.section>
 
         {/* Quick Actions */}
@@ -241,6 +241,20 @@ const Diario = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
+          >
+            <QuickActionCard
+              title="I Tuoi Check"
+              description="Registra peso e foto mensili"
+              icon={Camera}
+              variant="default"
+              onClick={() => navigate('/checks')}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
           >
             <QuickActionCard
               title="Area Privata"
