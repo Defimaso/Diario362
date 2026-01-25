@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useConsents } from '@/hooks/useConsents';
 import PhoneInput from '@/components/PhoneInput';
+import ConsentCheckboxes from '@/components/legal/ConsentCheckboxes';
 import {
   Select,
   SelectContent,
@@ -27,6 +29,9 @@ const signupSchema = loginSchema.extend({
   fullName: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
   phoneNumber: z.string().min(8, 'Inserisci un numero di telefono valido'),
   coachName: z.string().min(1, 'Seleziona il tuo coach'),
+  termsAccepted: z.literal(true, { errorMap: () => ({ message: 'Devi accettare i Termini e Condizioni' }) }),
+  privacyAccepted: z.literal(true, { errorMap: () => ({ message: 'Devi accettare l\'Informativa sulla Privacy' }) }),
+  biometricConsent: z.literal(true, { errorMap: () => ({ message: 'Il consenso al trattamento dati biometrici è obbligatorio' }) }),
 });
 
 const coaches = [
@@ -51,8 +56,14 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [consents, setConsents] = useState({
+    terms: false,
+    privacy: false,
+    biometric: false,
+  });
 
   const { signIn, signUp, user } = useAuth();
+  const { saveConsents } = useConsents();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -67,7 +78,16 @@ const Auth = () => {
       if (isCollaborator || isLogin) {
         loginSchema.parse({ email, password });
       } else {
-        signupSchema.parse({ email, password, fullName, phoneNumber, coachName });
+        signupSchema.parse({ 
+          email, 
+          password, 
+          fullName, 
+          phoneNumber, 
+          coachName,
+          termsAccepted: consents.terms,
+          privacyAccepted: consents.privacy,
+          biometricConsent: consents.biometric,
+        });
       }
       setErrors({});
       return true;
@@ -115,6 +135,8 @@ const Auth = () => {
               : error.message,
           });
         } else {
+          // Note: Consents will be saved after the user confirms their email and logs in
+          // For auto-confirm setups, we need to handle this differently
           toast({
             title: 'Registrazione completata!',
             description: 'Benvenuto nel Diario 362gradi',
@@ -269,24 +291,40 @@ const Auth = () => {
             </div>
 
             {!isCollaborator && !isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="coach">Il tuo Coach</Label>
-                <Select value={coachName} onValueChange={setCoachName}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Seleziona il tuo coach" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-card border-border z-50">
-                    {coaches.map((coach) => (
-                      <SelectItem key={coach} value={coach}>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="coach">Il tuo Coach</Label>
+                  <Select value={coachName} onValueChange={setCoachName}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Seleziona il tuo coach" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border z-50">
+                      {coaches.map((coach) => (
+                        <SelectItem key={coach} value={coach}>
                         {coach}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {errors.coachName && (
-                  <p className="text-xs text-destructive">{errors.coachName}</p>
-                )}
-              </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.coachName && (
+                    <p className="text-xs text-destructive">{errors.coachName}</p>
+                  )}
+                </div>
+
+                {/* GDPR Consent Checkboxes */}
+                <div className="space-y-2 pt-2 border-t border-border">
+                  <Label className="text-sm font-medium">Consensi Obbligatori</Label>
+                  <ConsentCheckboxes
+                    consents={consents}
+                    onChange={setConsents}
+                    errors={{
+                      terms: errors.termsAccepted,
+                      privacy: errors.privacyAccepted,
+                      biometric: errors.biometricConsent,
+                    }}
+                  />
+                </div>
+              </>
             )}
 
             <Button

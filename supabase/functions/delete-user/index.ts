@@ -29,7 +29,7 @@ serve(async (req) => {
       );
     }
 
-    // Create a client with the user's token to verify they are super admin
+    // Create a client with the user's token to verify identity
     const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: authHeader } }
     });
@@ -46,18 +46,6 @@ serve(async (req) => {
 
     console.log('Delete user request from:', caller.email);
 
-    // Verify caller is super admin (info@362gradi.it)
-    const { data: isSuperAdmin } = await supabaseAdmin
-      .rpc('is_super_admin', { _user_id: caller.id });
-
-    if (!isSuperAdmin) {
-      console.error('Caller is not super admin:', caller.email);
-      return new Response(
-        JSON.stringify({ error: 'Solo il super admin può eliminare utenti' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     // Get the user to delete from request body
     const { userId } = await req.json();
     if (!userId) {
@@ -68,13 +56,27 @@ serve(async (req) => {
       );
     }
 
-    console.log('Attempting to delete user:', userId);
+    // Check if caller is deleting their own account OR is super admin
+    const isSelfDelete = caller.id === userId;
+    
+    const { data: isSuperAdmin } = await supabaseAdmin
+      .rpc('is_super_admin', { _user_id: caller.id });
+
+    if (!isSelfDelete && !isSuperAdmin) {
+      console.error('Unauthorized delete attempt by:', caller.email);
+      return new Response(
+        JSON.stringify({ error: 'Non autorizzato a eliminare questo account' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Attempting to delete user:', userId, isSelfDelete ? '(self-delete)' : '(admin-delete)');
 
     // Prevent deleting super admin
     const { data: targetIsSuperAdmin } = await supabaseAdmin
       .rpc('is_super_admin', { _user_id: userId });
 
-    if (targetIsSuperAdmin) {
+    if (targetIsSuperAdmin && !isSelfDelete) {
       console.error('Cannot delete super admin');
       return new Response(
         JSON.stringify({ error: 'Non puoi eliminare il super admin' }),
@@ -82,8 +84,84 @@ serve(async (req) => {
       );
     }
 
-    // Delete related data first (due to foreign key constraints)
-    // 1. Delete coach_notes where client_id or author_id matches
+    // Delete all user data (GDPR Right to Erasure)
+    
+    // 1. Delete photos from storage
+    try {
+      const { data: files } = await supabaseAdmin.storage
+        .from('progress-photos')
+        .list(userId);
+      
+      if (files && files.length > 0) {
+        const filePaths = files.map(f => `${userId}/${f.name}`);
+        await supabaseAdmin.storage.from('progress-photos').remove(filePaths);
+        console.log('Deleted storage files:', filePaths.length);
+      }
+    } catch (storageError) {
+      console.error('Error deleting storage files:', storageError);
+    }
+
+    // 2. Delete user_consents (GDPR)
+    const { error: consentsError } = await supabaseAdmin
+      .from('user_consents')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (consentsError) {
+      console.error('Error deleting user_consents:', consentsError);
+    }
+
+    // 3. Delete audit_logs related to user
+    const { error: auditError } = await supabaseAdmin
+      .from('audit_logs')
+      .delete()
+      .or(`actor_id.eq.${userId},target_user_id.eq.${userId}`);
+    
+    if (auditError) {
+      console.error('Error deleting audit_logs:', auditError);
+    }
+
+    // 4. Delete progress_checks
+    const { error: progressError } = await supabaseAdmin
+      .from('progress_checks')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (progressError) {
+      console.error('Error deleting progress_checks:', progressError);
+    }
+
+    // 5. Delete user_checks
+    const { error: userChecksError } = await supabaseAdmin
+      .from('user_checks')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (userChecksError) {
+      console.error('Error deleting user_checks:', userChecksError);
+    }
+
+    // 6. Delete monthly_checks
+    const { error: monthlyError } = await supabaseAdmin
+      .from('monthly_checks')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (monthlyError) {
+      console.error('Error deleting monthly_checks:', monthlyError);
+    }
+
+    // 7. Delete push_subscriptions
+    const { error: pushError } = await supabaseAdmin
+      .from('push_subscriptions')
+      .delete()
+      .eq('user_id', userId);
+    
+    if (pushError) {
+      console.error('Error deleting push_subscriptions:', pushError);
+    }
+
+    // 8. Delete coach_notes where client_id or author_id matches
     const { error: notesError } = await supabaseAdmin
       .from('coach_notes')
       .delete()
@@ -93,7 +171,7 @@ serve(async (req) => {
       console.error('Error deleting coach_notes:', notesError);
     }
 
-    // 2. Delete daily_checkins
+    // 9. Delete daily_checkins
     const { error: checkinsError } = await supabaseAdmin
       .from('daily_checkins')
       .delete()
@@ -103,7 +181,7 @@ serve(async (req) => {
       console.error('Error deleting daily_checkins:', checkinsError);
     }
 
-    // 3. Delete coach_assignments
+    // 10. Delete coach_assignments
     const { error: assignmentsError } = await supabaseAdmin
       .from('coach_assignments')
       .delete()
@@ -113,7 +191,7 @@ serve(async (req) => {
       console.error('Error deleting coach_assignments:', assignmentsError);
     }
 
-    // 4. Delete user_roles
+    // 11. Delete user_roles
     const { error: rolesError } = await supabaseAdmin
       .from('user_roles')
       .delete()
@@ -123,7 +201,7 @@ serve(async (req) => {
       console.error('Error deleting user_roles:', rolesError);
     }
 
-    // 5. Delete profile
+    // 12. Delete profile
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .delete()
@@ -133,7 +211,7 @@ serve(async (req) => {
       console.error('Error deleting profile:', profileError);
     }
 
-    // 6. Delete from auth.users using admin API
+    // 13. Delete from auth.users using admin API
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
     
     if (authError) {
@@ -144,10 +222,10 @@ serve(async (req) => {
       );
     }
 
-    console.log('Successfully deleted user:', userId);
+    console.log('Successfully deleted user and all data:', userId);
 
     return new Response(
-      JSON.stringify({ success: true, message: 'Utente eliminato con successo' }),
+      JSON.stringify({ success: true, message: 'Account e tutti i dati eliminati con successo' }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

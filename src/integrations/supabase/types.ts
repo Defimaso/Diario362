@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_logs: {
+        Row: {
+          action: string
+          actor_email: string | null
+          actor_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: string | null
+          target_table: string | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_email?: string | null
+          actor_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_table?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_email?: string | null
+          actor_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: string | null
+          target_table?: string | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       coach_assignments: {
         Row: {
           client_id: string
@@ -298,6 +337,51 @@ export type Database = {
           updated_at?: string
           user_id?: string
           weight?: number | null
+        }
+        Relationships: []
+      }
+      user_consents: {
+        Row: {
+          biometric_consent: boolean
+          biometric_consent_at: string | null
+          created_at: string
+          id: string
+          ip_address: string | null
+          privacy_accepted: boolean
+          privacy_accepted_at: string | null
+          terms_accepted: boolean
+          terms_accepted_at: string | null
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          biometric_consent?: boolean
+          biometric_consent_at?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          privacy_accepted?: boolean
+          privacy_accepted_at?: string | null
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          biometric_consent?: boolean
+          biometric_consent_at?: string | null
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          privacy_accepted?: boolean
+          privacy_accepted_at?: string | null
+          terms_accepted?: boolean
+          terms_accepted_at?: string | null
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
         }
         Relationships: []
       }
