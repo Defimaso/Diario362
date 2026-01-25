@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Camera, TrendingDown, TrendingUp, Scale, Calendar, FileText } from 'lucide-react';
+import { useState, useEffect, forwardRef } from 'react';
+import { Camera, TrendingDown, TrendingUp, Scale, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import DailyCheckinStatus from './DailyCheckinStatus';
 
 interface UserCheck {
   id: string;
@@ -81,6 +81,9 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
 
   return (
     <div className="space-y-6 p-4 bg-muted/30 rounded-lg mt-2">
+      {/* Daily Check-in Status - NEW SECTION */}
+      <DailyCheckinStatus clientId={clientId} />
+
       {/* Client Info */}
       <div className="flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-2">
@@ -278,36 +281,40 @@ interface PhotoRowProps {
   lastNum: number;
 }
 
-const PhotoRow = ({ label, first, last, firstNum, lastNum }: PhotoRowProps) => (
-  <div className="space-y-1">
-    <p className="text-xs text-muted-foreground font-medium">{label}</p>
-    <div className="grid grid-cols-2 gap-2">
-      <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-muted">
-        {first ? (
-          <img src={first} alt={`${label} - Check #${firstNum}`} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Camera className="w-6 h-6 text-muted-foreground" />
-          </div>
-        )}
-        <span className="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-2 py-0.5 rounded">
-          #{firstNum}
-        </span>
-      </div>
-      <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-muted">
-        {last ? (
-          <img src={last} alt={`${label} - Check #${lastNum}`} className="w-full h-full object-cover" />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <Camera className="w-6 h-6 text-muted-foreground" />
-          </div>
-        )}
-        <span className="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-2 py-0.5 rounded">
-          #{lastNum}
-        </span>
+const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
+  ({ label, first, last, firstNum, lastNum }, ref) => (
+    <div className="space-y-1" ref={ref}>
+      <p className="text-xs text-muted-foreground font-medium">{label}</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-muted">
+          {first ? (
+            <img src={first} alt={`${label} - Check #${firstNum}`} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Camera className="w-6 h-6 text-muted-foreground" />
+            </div>
+          )}
+          <span className="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-2 py-0.5 rounded">
+            #{firstNum}
+          </span>
+        </div>
+        <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-muted">
+          {last ? (
+            <img src={last} alt={`${label} - Check #${lastNum}`} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Camera className="w-6 h-6 text-muted-foreground" />
+            </div>
+          )}
+          <span className="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-2 py-0.5 rounded">
+            #{lastNum}
+          </span>
+        </div>
       </div>
     </div>
-  </div>
+  )
 );
+
+PhotoRow.displayName = 'PhotoRow';
 
 export default ClientExpandedView;

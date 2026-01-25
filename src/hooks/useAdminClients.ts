@@ -20,7 +20,7 @@ export interface ClientData {
   status: 'green' | 'yellow' | 'red';
 }
 
-type CoachName = 'Martina' | 'Michela' | 'Cristina' | 'Michela_Martina';
+type CoachName = 'Ilaria' | 'Marco' | 'Martina' | 'Michela' | 'Cristina';
 
 export const useAdminClients = () => {
   const { user, isAdmin, isCollaborator, isSuperAdmin } = useAuth();
@@ -29,6 +29,8 @@ export const useAdminClients = () => {
 
   const getCollaboratorCoachName = (email: string): CoachName | null => {
     switch (email) {
+      case 'ilaria@362gradi.it': return 'Ilaria';
+      case 'marco@362gradi.it': return 'Marco';
       case 'martina@362gradi.it': return 'Martina';
       case 'michela@362gradi.it': return 'Michela';
       case 'cristina@362gradi.it': return 'Cristina';
@@ -166,12 +168,44 @@ export const useAdminClients = () => {
       
       if (isCollaborator && !isSuperAdmin && !isAdmin && collaboratorCoachName) {
         filteredClients = clientsData.filter(client => {
+          // Check for Ilaria's assignments
+          if (collaboratorCoachName === 'Ilaria') {
+            return client.coach_names.some(name => 
+              name === 'Ilaria' || 
+              name === 'Ilaria_Marco' || 
+              name === 'Ilaria_Marco_Michela' || 
+              name === 'Ilaria_Michela' || 
+              name === 'Ilaria_Martina'
+            );
+          }
+          // Check for Marco's assignments
+          if (collaboratorCoachName === 'Marco') {
+            return client.coach_names.some(name => 
+              name === 'Marco' || 
+              name === 'Ilaria_Marco' || 
+              name === 'Ilaria_Marco_Michela'
+            );
+          }
+          // Check for Martina's assignments
           if (collaboratorCoachName === 'Martina') {
-            return client.coach_names.includes('Martina') || client.coach_names.includes('Michela_Martina');
+            return client.coach_names.some(name => 
+              name === 'Martina' || 
+              name === 'Michela_Martina' ||
+              name === 'Ilaria_Martina' ||
+              name === 'Martina_Michela'
+            );
           }
+          // Check for Michela's assignments
           if (collaboratorCoachName === 'Michela') {
-            return client.coach_names.includes('Michela') || client.coach_names.includes('Michela_Martina');
+            return client.coach_names.some(name => 
+              name === 'Michela' || 
+              name === 'Michela_Martina' ||
+              name === 'Ilaria_Marco_Michela' ||
+              name === 'Ilaria_Michela' ||
+              name === 'Martina_Michela'
+            );
           }
+          // Cristina only has single assignment
           return client.coach_names.includes(collaboratorCoachName);
         });
       }
