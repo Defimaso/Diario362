@@ -20,7 +20,7 @@ const steps = [
   { id: 'nutrition', title: 'Nutrizione', subtitle: 'Hai rispettato i tuoi macro?', icon: Utensils },
   { id: 'energy', title: 'Energia', subtitle: 'Valuta il tuo livello di energia', icon: Zap },
   { id: 'mindset', title: 'Mindset', subtitle: 'Quanto sei focalizzato?', icon: Brain },
-  { id: 'edge', title: 'Il 2% Extra', subtitle: "Qual è stata la tua azione extra oggi?", icon: Sparkles },
+  { id: 'edge', title: 'Diario Giornaliero', subtitle: "Racconta la tua giornata", icon: Sparkles },
 ];
 
 const DailyCheckinModalNew = ({ isOpen, onClose, onComplete, existingCheckin }: DailyCheckinModalNewProps) => {
@@ -254,7 +254,7 @@ const DailyCheckinModalNew = ({ isOpen, onClose, onComplete, existingCheckin }: 
                   </div>
                 )}
 
-                {/* 2% Edge */}
+                {/* Diario Giornaliero */}
                 {currentStep === 4 && (
                   <div className="space-y-4">
                     {showLowMindsetAlert && (
@@ -277,13 +277,13 @@ const DailyCheckinModalNew = ({ isOpen, onClose, onComplete, existingCheckin }: 
                       </motion.div>
                     )}
                     <Textarea
-                      placeholder="Doccia fredda, 10 min extra di meditazione, ho scelto le scale..."
+                      placeholder="Racconta come è andata la tua giornata, le tue sensazioni o le tue fatiche..."
                       value={twoPercentEdge}
                       onChange={e => setTwoPercentEdge(e.target.value)}
-                      className="min-h-[100px] bg-muted border-muted focus:border-primary"
+                      className="min-h-[120px] bg-muted border-muted focus:border-primary resize-none"
                     />
                     <p className="text-xs text-muted-foreground text-center italic">
-                      "Non accontentarti di 360°. Trova il tuo 2% extra."
+                      "Il tuo diario personale per tracciare il percorso verso il 2% extra."
                     </p>
                   </div>
                 )}

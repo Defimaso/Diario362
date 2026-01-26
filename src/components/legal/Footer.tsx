@@ -36,7 +36,8 @@ const Footer = () => {
 
         {/* Company Info */}
         <div className="text-center space-y-2 text-xs text-muted-foreground">
-          <p>© 2026 MerryProject Global - Dubai, UAE</p>
+          <p>© 2026 MerryProject Global - Dubai</p>
+          <p className="text-primary/80">Ecosystem: 362gradi.ae | defimasi.ae</p>
           
           <div className="flex items-center justify-center gap-1">
             <Shield className="w-3 h-3" />
