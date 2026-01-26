@@ -91,7 +91,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
   };
 
   return (
-    <div className="space-y-6 p-4 bg-muted/30 rounded-lg mt-2">
+    <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 bg-muted/30 rounded-lg mt-2">
       {/* Daily Check-in Status - NEW SECTION */}
       <DailyCheckinStatus clientId={clientId} />
 
@@ -111,12 +111,12 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
 
       {/* Weight Chart */}
       {chartData.length > 0 && (
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+        <div className="bg-card rounded-xl p-3 sm:p-4 border border-border">
+          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
             <Scale className="w-4 h-4" />
             Andamento Peso
           </h4>
-          <div className="h-40">
+          <div className="h-32 sm:h-40">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <XAxis 
@@ -175,10 +175,10 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
 
       {/* Photo Comparison */}
       {firstCheck && lastCheck && (
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+        <div className="bg-card rounded-xl p-3 sm:p-4 border border-border">
+          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
             <Camera className="w-4 h-4" />
-            Confronto Foto: Check #{firstCheck.check_number} vs #{lastCheck.check_number}
+            <span className="truncate">Confronto: #{firstCheck.check_number} vs #{lastCheck.check_number}</span>
           </h4>
           
           <div className="space-y-4">
@@ -219,8 +219,8 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
       )}
 
       {/* Check History Table */}
-      <div className="bg-card rounded-xl p-4 border border-border">
-        <h4 className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+      <div className="bg-card rounded-xl p-3 sm:p-4 border border-border overflow-hidden">
+        <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
           <FileText className="w-4 h-4" />
           Storico Check ({checks.length})
         </h4>
@@ -295,17 +295,17 @@ interface PhotoRowProps {
 const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
   ({ label, first, last, firstNum, lastNum }, ref) => (
     <div className="space-y-1" ref={ref}>
-      <p className="text-xs text-muted-foreground font-medium">{label}</p>
-      <div className="grid grid-cols-2 gap-2">
+      <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">{label}</p>
+      <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
         <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-muted">
           {first ? (
             <img src={first} alt={`${label} - Check #${firstNum}`} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Camera className="w-6 h-6 text-muted-foreground" />
+              <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
             </div>
           )}
-          <span className="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-2 py-0.5 rounded">
+          <span className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 text-[10px] sm:text-xs bg-black/60 text-white px-1.5 sm:px-2 py-0.5 rounded">
             #{firstNum}
           </span>
         </div>
@@ -314,10 +314,10 @@ const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
             <img src={last} alt={`${label} - Check #${lastNum}`} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Camera className="w-6 h-6 text-muted-foreground" />
+              <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
             </div>
           )}
-          <span className="absolute bottom-1 left-1 text-xs bg-black/60 text-white px-2 py-0.5 rounded">
+          <span className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 text-[10px] sm:text-xs bg-black/60 text-white px-1.5 sm:px-2 py-0.5 rounded">
             #{lastNum}
           </span>
         </div>
