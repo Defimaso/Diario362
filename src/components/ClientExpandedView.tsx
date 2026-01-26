@@ -270,11 +270,14 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
       </div>
 
       {/* Empty state if no checks */}
-      {checks.length === 0 && (
+      {!loading && checks.length === 0 && (
         <div className="text-center py-8">
-          <Camera className="w-12 h-12 mx-auto text-muted-foreground/50 mb-3" />
-          <p className="text-muted-foreground">
-            {clientName} non ha ancora registrato check
+          <Camera className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-muted-foreground/30 mb-3" />
+          <p className="text-sm sm:text-base text-muted-foreground font-medium mb-1">
+            Nessun check registrato
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            {clientName} non ha ancora completato check mensili
           </p>
         </div>
       )}
