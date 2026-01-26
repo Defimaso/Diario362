@@ -25,6 +25,7 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
   useEffect(() => {
     const fetchRecentCheckins = async () => {
       setLoading(true);
+      console.log('DailyCheckinStatus - Fetching for client:', clientId);
       
       // Get last 7 days date range
       const today = new Date();
@@ -40,6 +41,7 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
 
       if (!error && data) {
         setCheckins(data);
+        console.log('DailyCheckinStatus - Loaded checkins:', data.length);
       }
       setLoading(false);
     };
@@ -86,6 +88,13 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
 
   return (
     <div className="bg-card rounded-xl p-3 sm:p-4 border border-section-red/30">
+      {/* Indicatore stato dati */}
+      {checkins.length === 0 && (
+        <div className="mb-2 px-2 py-1 bg-warning/10 border border-warning/30 rounded text-xs text-warning-foreground">
+          ⚠️ Nessun check-in negli ultimi 7 giorni
+        </div>
+      )}
+      
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h4 className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
           <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-section-red" />

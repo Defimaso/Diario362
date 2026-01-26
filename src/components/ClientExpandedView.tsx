@@ -50,6 +50,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
 
       if (!error && data) {
         setChecks(data);
+        console.log('ClientExpandedView - Checks loaded:', data.length, 'for client:', clientName);
       }
       setLoading(false);
     };
@@ -109,7 +110,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
       </div>
 
       {/* Weight Chart */}
-      {chartData.length > 0 && (
+      {chartData.length > 0 ? (
         <div className="bg-card rounded-xl p-3 sm:p-4 border border-border">
           <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
             <Scale className="w-4 h-4" />
@@ -170,10 +171,20 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
             </div>
           )}
         </div>
+      ) : (
+        <div className="bg-card rounded-xl p-4 sm:p-6 border border-border/50 text-center">
+          <Scale className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-muted-foreground/20 mb-3" />
+          <p className="text-sm font-semibold text-muted-foreground mb-1">
+            📊 Grafico non disponibile
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            Il cliente non ha ancora registrato peso nei check mensili
+          </p>
+        </div>
       )}
 
       {/* Photo Comparison */}
-      {firstCheck && lastCheck && (
+      {firstCheck && lastCheck ? (
         <div className="bg-card rounded-xl p-3 sm:p-4 border border-border">
           <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
             <Camera className="w-4 h-4" />
@@ -215,7 +226,17 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
             )}
           </div>
         </div>
-      )}
+      ) : checks.length === 1 ? (
+        <div className="bg-card rounded-xl p-4 sm:p-6 border border-border/50 text-center">
+          <Camera className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-muted-foreground/20 mb-3" />
+          <p className="text-sm font-semibold text-muted-foreground mb-1">
+            📸 Confronto foto non disponibile
+          </p>
+          <p className="text-xs text-muted-foreground/70">
+            Serve almeno 2 check per il confronto. Attualmente: {checks.length} check.
+          </p>
+        </div>
+      ) : null}
 
       {/* Check History Table */}
       <div className="bg-card rounded-xl p-3 sm:p-4 border border-border overflow-hidden">

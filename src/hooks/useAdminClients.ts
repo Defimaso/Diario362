@@ -91,12 +91,15 @@ export const useAdminClients = () => {
     }
 
     try {
+      console.log('useAdminClients - Starting fetch...');
+      
       // Fetch all profiles with client role
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*');
 
       if (profilesError) throw profilesError;
+      console.log('useAdminClients - Profiles loaded:', profilesData?.length);
 
       // Fetch all user roles
       const { data: rolesData, error: rolesError } = await supabase
@@ -104,6 +107,7 @@ export const useAdminClients = () => {
         .select('*');
 
       if (rolesError) throw rolesError;
+      console.log('useAdminClients - Roles loaded:', rolesData?.length);
 
       // Filter only clients
       const clientUserIds = rolesData
@@ -111,6 +115,7 @@ export const useAdminClients = () => {
         .map(r => r.user_id) || [];
 
       const clientProfiles = profilesData?.filter(p => clientUserIds.includes(p.id)) || [];
+      console.log('useAdminClients - Client profiles:', clientProfiles.length);
 
       // Fetch coach assignments
       const { data: assignmentsData, error: assignmentsError } = await supabase
@@ -126,6 +131,7 @@ export const useAdminClients = () => {
         .order('date', { ascending: false });
 
       if (checkinsError) throw checkinsError;
+      console.log('useAdminClients - Checkins loaded:', checkinsData?.length);
 
       // Build client data
       const collaboratorCoachName = user.email ? getCollaboratorCoachName(user.email) : null;
@@ -211,6 +217,7 @@ export const useAdminClients = () => {
       }
 
       setClients(filteredClients);
+      console.log('useAdminClients - Final filtered clients:', filteredClients.length);
     } catch (error) {
       console.error('Error fetching clients:', error);
     } finally {
