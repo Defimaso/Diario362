@@ -98,7 +98,7 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
       </div>
 
       {/* 7-day visual indicator */}
-      <div className="grid grid-cols-7 gap-1.5 mb-4">
+      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 mb-4">
         {last7Days.map((dateStr) => {
           const hasCheckin = checkinByDate.has(dateStr);
           const date = new Date(dateStr);
@@ -108,23 +108,23 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
             <div
               key={dateStr}
               className={cn(
-                "flex flex-col items-center p-1.5 rounded-lg transition-colors",
+                "flex flex-col items-center p-1 sm:p-1.5 rounded-lg transition-colors min-w-0",
                 hasCheckin 
                   ? "bg-success/10 border border-success/30" 
                   : "bg-destructive/10 border border-destructive/30",
                 isToday && "ring-2 ring-primary ring-offset-1 ring-offset-background"
               )}
             >
-              <span className="text-[10px] font-medium text-muted-foreground uppercase">
+              <span className="text-[8px] sm:text-[10px] font-medium text-muted-foreground uppercase truncate">
                 {format(date, 'EEE', { locale: it })}
               </span>
-              <span className="text-xs font-semibold mb-1">
+              <span className="text-[10px] sm:text-xs font-semibold mb-0.5 sm:mb-1">
                 {format(date, 'd')}
               </span>
               {hasCheckin ? (
-                <Check className="w-4 h-4 text-success" />
+                <Check className="w-3 h-3 sm:w-4 sm:h-4 text-success" />
               ) : (
-                <X className="w-4 h-4 text-destructive" />
+                <X className="w-3 h-3 sm:w-4 sm:h-4 text-destructive" />
               )}
             </div>
           );
