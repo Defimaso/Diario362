@@ -2,10 +2,11 @@ import { useState, useEffect, forwardRef } from 'react';
 import { Camera, TrendingDown, TrendingUp, Scale, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import DailyCheckinStatus from './DailyCheckinStatus';
+import DailyCheckinDetails from './DailyCheckinDetails';
 import { useAuditLog } from '@/hooks/useAuditLog';
 
 interface UserCheck {
@@ -19,6 +20,16 @@ interface UserCheck {
   check_date: string;
 }
 
+interface DailyCheckin {
+  id: string;
+  date: string;
+  recovery: number | null;
+  nutrition_adherence: boolean | null;
+  energy: number | null;
+  mindset: number | null;
+  two_percent_edge: string | null;
+}
+
 interface ClientExpandedViewProps {
   clientId: string;
   clientName: string;
@@ -27,6 +38,7 @@ interface ClientExpandedViewProps {
 
 const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpandedViewProps) => {
   const [checks, setChecks] = useState<UserCheck[]>([]);
+  const [dailyCheckins, setDailyCheckins] = useState<DailyCheckin[]>([]);
   const [loading, setLoading] = useState(true);
   const { logAction } = useAuditLog();
 
@@ -35,18 +47,34 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
       setLoading(true);
       
       try {
-        // Fetch data first - don't block on audit log
-        const { data, error } = await supabase
+        // Fetch user checks
+        const { data: checksData, error: checksError } = await supabase
           .from('user_checks')
           .select('*')
           .eq('user_id', clientId)
           .order('check_number', { ascending: true });
 
-        if (!error && data) {
-          setChecks(data);
-          console.log('ClientExpandedView - Checks loaded:', data.length, 'for client:', clientName);
-        } else if (error) {
-          console.error('ClientExpandedView - Error loading checks:', error);
+        if (!checksError && checksData) {
+          setChecks(checksData);
+          console.log('ClientExpandedView - Checks loaded:', checksData.length, 'for client:', clientName);
+        } else if (checksError) {
+          console.error('ClientExpandedView - Error loading checks:', checksError);
+        }
+        
+        // Fetch daily checkins (last 30 days for detailed view)
+        const thirtyDaysAgo = subDays(new Date(), 30);
+        const { data: dailyData, error: dailyError } = await supabase
+          .from('daily_checkins')
+          .select('id, date, recovery, nutrition_adherence, energy, mindset, two_percent_edge')
+          .eq('user_id', clientId)
+          .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
+          .order('date', { ascending: false });
+
+        if (!dailyError && dailyData) {
+          setDailyCheckins(dailyData);
+          console.log('ClientExpandedView - Daily checkins loaded:', dailyData.length);
+        } else if (dailyError) {
+          console.error('ClientExpandedView - Error loading daily checkins:', dailyError);
         }
         
         // Log audit action asynchronously (don't await, don't block UI)
@@ -101,8 +129,13 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
 
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 bg-muted/30 rounded-lg mt-2">
-      {/* Daily Check-in Status - NEW SECTION */}
+      {/* Daily Check-in Status - 7 day overview */}
       <DailyCheckinStatus clientId={clientId} />
+
+      {/* Daily Check-in Details - Expandable history with metrics breakdown */}
+      <div className="bg-card rounded-xl p-3 sm:p-4 border border-section-red/30">
+        <DailyCheckinDetails checkins={dailyCheckins} />
+      </div>
 
       {/* Client Info */}
       <div className="flex flex-wrap gap-4 text-sm">
