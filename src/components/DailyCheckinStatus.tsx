@@ -3,7 +3,6 @@ import { format, subDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Check, X, Scale, Calendar } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 interface DailyCheckin {
@@ -50,11 +49,11 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
 
   if (loading) {
     return (
-      <div className="bg-card rounded-xl p-4 border border-section-red/30">
-        <Skeleton className="h-6 w-48 mb-3" />
-        <div className="flex gap-2">
+      <div className="bg-card rounded-xl p-3 sm:p-4 border border-section-red/30">
+        <div className="h-5 w-40 bg-muted rounded animate-pulse mb-3" />
+        <div className="flex gap-1.5 sm:gap-2">
           {[...Array(7)].map((_, i) => (
-            <Skeleton key={i} className="w-10 h-14 rounded-lg" />
+            <div key={i} className="flex-1 h-12 sm:h-14 bg-muted rounded-lg animate-pulse" />
           ))}
         </div>
       </div>
@@ -86,13 +85,14 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
   const completedDays = last7Days.filter(date => checkinByDate.has(date)).length;
 
   return (
-    <div className="bg-card rounded-xl p-4 border border-section-red/30">
-      <div className="flex items-center justify-between mb-4">
-        <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-section-red" />
-          Stato Check-in Giornaliero
+    <div className="bg-card rounded-xl p-3 sm:p-4 border border-section-red/30">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <h4 className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
+          <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-section-red" />
+          <span className="hidden xs:inline">Stato Check-in Giornaliero</span>
+          <span className="xs:hidden">Check-in</span>
         </h4>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-[10px] sm:text-xs text-muted-foreground">
           <span className="font-medium text-section-red">{completedDays}/7</span> giorni
         </div>
       </div>
@@ -134,21 +134,21 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
       {/* Last check-in score */}
       {lastCheckin && (
         <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
-          <Scale className="w-4 h-4 text-muted-foreground" />
-          <div className="flex-1">
-            <span className="text-xs text-muted-foreground">Ultimo check-in: </span>
-            <span className="text-sm font-medium">
-              {format(new Date(lastCheckin.date), 'd MMM yyyy', { locale: it })}
+          <Scale className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-muted-foreground shrink-0" />
+          <div className="flex-1 min-w-0">
+            <span className="text-[10px] sm:text-xs text-muted-foreground">Ultimo: </span>
+            <span className="text-xs sm:text-sm font-medium">
+              {format(new Date(lastCheckin.date), 'd MMM', { locale: it })}
             </span>
           </div>
           {lastScore !== null && (
             <div className={cn(
-              "text-sm font-bold px-2 py-0.5 rounded",
+              "text-xs sm:text-sm font-bold px-1.5 sm:px-2 py-0.5 rounded shrink-0",
               lastScore >= 7 ? "bg-success/10 text-success" :
               lastScore >= 4 ? "bg-warning/10 text-warning" :
               "bg-destructive/10 text-destructive"
             )}>
-              Score: {lastScore}/10
+              {lastScore}/10
             </div>
           )}
         </div>
