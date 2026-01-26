@@ -27,23 +27,30 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
       setLoading(true);
       console.log('DailyCheckinStatus - Fetching for client:', clientId);
       
-      // Get last 7 days date range
-      const today = new Date();
-      const sevenDaysAgo = subDays(today, 6);
-      
-      const { data, error } = await supabase
-        .from('daily_checkins')
-        .select('id, date, recovery, nutrition_adherence, energy, mindset')
-        .eq('user_id', clientId)
-        .gte('date', sevenDaysAgo.toISOString().split('T')[0])
-        .lte('date', today.toISOString().split('T')[0])
-        .order('date', { ascending: false });
+      try {
+        // Get last 7 days date range
+        const today = new Date();
+        const sevenDaysAgo = subDays(today, 6);
+        
+        const { data, error } = await supabase
+          .from('daily_checkins')
+          .select('id, date, recovery, nutrition_adherence, energy, mindset')
+          .eq('user_id', clientId)
+          .gte('date', sevenDaysAgo.toISOString().split('T')[0])
+          .lte('date', today.toISOString().split('T')[0])
+          .order('date', { ascending: false });
 
-      if (!error && data) {
-        setCheckins(data);
-        console.log('DailyCheckinStatus - Loaded checkins:', data.length);
+        if (!error && data) {
+          setCheckins(data);
+          console.log('DailyCheckinStatus - Loaded checkins:', data.length);
+        } else if (error) {
+          console.error('DailyCheckinStatus - Error:', error);
+        }
+      } catch (err) {
+        console.error('DailyCheckinStatus - Fetch error:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchRecentCheckins();

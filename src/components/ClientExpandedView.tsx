@@ -34,29 +34,38 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
     const fetchChecks = async () => {
       setLoading(true);
       
-      // Log audit action for GDPR accountability
-      await logAction({
-        action: 'view_client_data',
-        targetUserId: clientId,
-        targetTable: 'user_checks',
-        details: { clientName },
-      });
+      try {
+        // Fetch data first - don't block on audit log
+        const { data, error } = await supabase
+          .from('user_checks')
+          .select('*')
+          .eq('user_id', clientId)
+          .order('check_number', { ascending: true });
 
-      const { data, error } = await supabase
-        .from('user_checks')
-        .select('*')
-        .eq('user_id', clientId)
-        .order('check_number', { ascending: true });
-
-      if (!error && data) {
-        setChecks(data);
-        console.log('ClientExpandedView - Checks loaded:', data.length, 'for client:', clientName);
+        if (!error && data) {
+          setChecks(data);
+          console.log('ClientExpandedView - Checks loaded:', data.length, 'for client:', clientName);
+        } else if (error) {
+          console.error('ClientExpandedView - Error loading checks:', error);
+        }
+        
+        // Log audit action asynchronously (don't await, don't block UI)
+        logAction({
+          action: 'view_client_data',
+          targetUserId: clientId,
+          targetTable: 'user_checks',
+          details: { clientName },
+        }).catch(err => console.warn('Audit log failed:', err));
+        
+      } catch (err) {
+        console.error('ClientExpandedView - Fetch error:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     fetchChecks();
-  }, [clientId, clientName, logAction]);
+  }, [clientId, clientName]); // Removed logAction from deps to prevent infinite loop
 
   if (loading) {
     return (
