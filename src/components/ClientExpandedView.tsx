@@ -1,7 +1,6 @@
 import { useState, useEffect, forwardRef } from 'react';
 import { Camera, TrendingDown, TrendingUp, Scale, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { Skeleton } from '@/components/ui/skeleton';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -60,9 +59,9 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
 
   if (loading) {
     return (
-      <div className="space-y-4 p-4">
-        <Skeleton className="h-40 w-full" />
-        <Skeleton className="h-32 w-full" />
+      <div className="space-y-3 sm:space-y-4 p-3 sm:p-4">
+        <div className="h-24 bg-muted rounded-xl animate-pulse" />
+        <div className="h-32 bg-muted rounded-xl animate-pulse" />
       </div>
     );
   }
