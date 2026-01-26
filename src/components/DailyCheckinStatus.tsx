@@ -155,9 +155,14 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
       )}
 
       {!lastCheckin && (
-        <p className="text-xs text-muted-foreground text-center py-2">
-          Nessun check-in giornaliero negli ultimi 7 giorni
-        </p>
+        <div className="text-center py-3 px-2 bg-muted/30 rounded-lg">
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium">
+            Nessun check-in registrato negli ultimi 7 giorni
+          </p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground/60 mt-1">
+            Il cliente non ha ancora compilato il check giornaliero
+          </p>
+        </div>
       )}
     </div>
   );
