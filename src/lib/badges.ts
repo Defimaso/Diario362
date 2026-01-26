@@ -12,7 +12,7 @@ export interface Badge {
 }
 
 export const ELITE_BADGES: Badge[] = [
-  // Phase 1: Retention Immediata (Week 1) - Days 1, 2, 4, 6, 7
+  // Phase 1: Inizio Percorso (Week 1) - Days 1, 2, 4, 6, 7
   {
     id: 1,
     name: 'Colibrì',
@@ -224,7 +224,7 @@ export const ELITE_BADGES: Badge[] = [
 export const getPhaseInfo = (phase: Badge['phase']) => {
   switch (phase) {
     case 'immediate':
-      return { name: 'Retention Immediata', description: 'Settimana 1', color: 'hsl(38, 92%, 50%)' };
+      return { name: 'Inizio Percorso', description: 'Settimana 1', color: 'hsl(38, 92%, 50%)' };
     case 'consolidation':
       return { name: 'Consolidamento', description: 'Mesi 1-3', color: 'hsl(173, 55%, 45%)' };
     case 'transformation':
