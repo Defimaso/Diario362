@@ -31,9 +31,12 @@ export const useAdminClients = () => {
     switch (email) {
       case 'ilaria@362gradi.it': return 'Ilaria';
       case 'marco@362gradi.it': return 'Marco';
-      case 'martina@362gradi.it': return 'Martina';
-      case 'michela@362gradi.it': return 'Michela';
-      case 'cristina@362gradi.it': return 'Cristina';
+      case 'martina@362gradi.it':
+      case 'martina.fienga@hotmail.it': return 'Martina';
+      case 'michela@362gradi.it':
+      case 'michela.amadei@hotmail.it': return 'Michela';
+      case 'cristina@362gradi.it':
+      case 'spicri@gmail.com': return 'Cristina';
       default: return null;
     }
   };

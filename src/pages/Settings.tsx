@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Shield, Bell, Trash2 } from 'lucide-react';
+import { ArrowLeft, User, Shield, Bell, Trash2, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import DeleteAccountDialog from '@/components/account/DeleteAccountDialog';
+import ChangePasswordDialog from '@/components/account/ChangePasswordDialog';
 import Footer from '@/components/legal/Footer';
 
 const Settings = () => {
@@ -65,6 +66,11 @@ const Settings = () => {
                   <span className="font-mono text-xs text-muted-foreground">
                     {user?.id?.slice(0, 8)}...
                   </span>
+                </div>
+                
+                {/* Change Password Section */}
+                <div className="pt-2">
+                  <ChangePasswordDialog />
                 </div>
               </div>
             </div>
