@@ -1,158 +1,262 @@
 
-# Piano di Correzione Funnel /inizia
 
-## Problemi Identificati
+# Piano di Implementazione: Sistema Whitelist Collaboratori
 
-### 1. Bug Critico: FunnelInterstitial.tsx
-Il `setTimeout` viene chiamato nel corpo del componente invece che dentro `useEffect`. Questo causa:
-- Memory leaks (timeout non cancellati)
-- Comportamento imprevedibile 
-- Gli interstitial potrebbero non avanzare correttamente
+## Riepilogo Richieste
 
-### 2. Warning Console: FunnelButton.tsx
-Il componente non usa `React.forwardRef`, causando warning React quando usato con animazioni Framer Motion.
-
-### 3. Step Mancanti (32 attuali vs 45+ richiesti)
-Alcune domande richieste nelle specifiche originali non sono state implementate.
+| Requisito | Stato Attuale | Azione |
+|-----------|---------------|--------|
+| Whitelist estesa (nuove email) | Solo @362gradi.it | Aggiornare |
+| Password predefinita 362@diario | Non implementata | Creare |
+| Cambio password dopo primo accesso | Non esiste | Aggiungere |
+| Filtro Coach per Admin | Solo SuperAdmin | Estendere |
+| Logica "contains" per coach condivisi | Parzialmente | Verificare/Correggere |
 
 ---
 
-## Correzioni Pianificate
+## Nuova Whitelist Completa
 
-### Fix 1: FunnelInterstitial.tsx
-Correggere l'uso del setTimeout con useEffect e cleanup:
+### ADMIN (accesso completo + filtro coach)
+- `info@362gradi.it` (Super Admin esistente)
+- `valentina362g@gmail.com` (NUOVO)
+- `ilaria@362gradi.it` (esistente)
+- `marco@362gradi.it` (esistente)
+
+### COACH (visualizzazione limitata ai propri clienti)
+- `michela@362gradi.it` -> Michela (esistente)
+- `michela.amadei@hotmail.it` -> Michela (NUOVO - stesso coach)
+- `martina@362gradi.it` -> Martina (esistente)
+- `martina.fienga@hotmail.it` -> Martina (NUOVO - stesso coach)
+- `cristina@362gradi.it` -> Cristina (esistente)
+- `spicri@gmail.com` -> Cristina (NUOVO - stesso coach)
+
+---
+
+## Modifiche Tecniche
+
+### 1. Database: Aggiornare funzione `handle_new_user`
+
+Modificare il trigger per riconoscere le nuove email nella whitelist:
+
+```sql
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, phone_number)
+  VALUES (
+    NEW.id, 
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data ->> 'full_name', NEW.raw_user_meta_data ->> 'name', ''),
+    NEW.raw_user_meta_data ->> 'phone_number'
+  );
+  
+  -- Assign default client role
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, 'client');
+  
+  -- Super Admin
+  IF NEW.email = 'info@362gradi.it' THEN
+    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin');
+  
+  -- Admin group (full access)
+  ELSIF NEW.email IN (
+    'valentina362g@gmail.com',
+    'ilaria@362gradi.it',
+    'marco@362gradi.it'
+  ) THEN
+    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin');
+  
+  -- Collaborator/Coach group
+  ELSIF NEW.email IN (
+    'martina@362gradi.it',
+    'martina.fienga@hotmail.it',
+    'michela@362gradi.it',
+    'michela.amadei@hotmail.it',
+    'cristina@362gradi.it',
+    'spicri@gmail.com'
+  ) THEN
+    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'collaborator');
+  END IF;
+  
+  RETURN NEW;
+END;
+$$;
+```
+
+### 2. Database: Aggiornare `can_collaborator_see_client`
+
+Aggiungere le nuove email per la visibilita dei client condivisi:
+
+```sql
+CREATE OR REPLACE FUNCTION public.can_collaborator_see_client(_collaborator_id uuid, _client_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.coach_assignments ca
+    JOIN public.profiles p ON p.id = _collaborator_id
+    WHERE ca.client_id = _client_id
+      AND (
+        -- Ilaria assignments
+        (p.email = 'ilaria@362gradi.it' AND (
+          ca.coach_name = 'Ilaria' OR 
+          ca.coach_name = 'Ilaria_Marco' OR 
+          ca.coach_name = 'Ilaria_Marco_Michela' OR 
+          ca.coach_name = 'Ilaria_Michela' OR 
+          ca.coach_name = 'Ilaria_Martina'
+        ))
+        -- Marco assignments
+        OR (p.email = 'marco@362gradi.it' AND (
+          ca.coach_name = 'Marco' OR 
+          ca.coach_name = 'Ilaria_Marco' OR 
+          ca.coach_name = 'Ilaria_Marco_Michela'
+        ))
+        -- Michela assignments (include nuova email)
+        OR (p.email IN ('michela@362gradi.it', 'michela.amadei@hotmail.it') AND (
+          ca.coach_name = 'Michela' OR 
+          ca.coach_name = 'Michela_Martina' OR
+          ca.coach_name = 'Ilaria_Marco_Michela' OR
+          ca.coach_name = 'Ilaria_Michela' OR
+          ca.coach_name = 'Martina_Michela'
+        ))
+        -- Martina assignments (include nuova email)
+        OR (p.email IN ('martina@362gradi.it', 'martina.fienga@hotmail.it') AND (
+          ca.coach_name = 'Martina' OR 
+          ca.coach_name = 'Michela_Martina' OR
+          ca.coach_name = 'Ilaria_Martina' OR
+          ca.coach_name = 'Martina_Michela'
+        ))
+        -- Cristina assignments (include nuova email)
+        OR (p.email IN ('cristina@362gradi.it', 'spicri@gmail.com') AND ca.coach_name = 'Cristina')
+      )
+  )
+$$;
+```
+
+### 3. Database: Aggiornare `get_collaborator_coach_name`
+
+```sql
+CREATE OR REPLACE FUNCTION public.get_collaborator_coach_name(_user_id uuid)
+RETURNS text
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT 
+    CASE 
+      WHEN p.email = 'ilaria@362gradi.it' THEN 'Ilaria'
+      WHEN p.email = 'marco@362gradi.it' THEN 'Marco'
+      WHEN p.email IN ('martina@362gradi.it', 'martina.fienga@hotmail.it') THEN 'Martina'
+      WHEN p.email IN ('michela@362gradi.it', 'michela.amadei@hotmail.it') THEN 'Michela'
+      WHEN p.email IN ('cristina@362gradi.it', 'spicri@gmail.com') THEN 'Cristina'
+      ELSE NULL
+    END
+  FROM public.profiles p
+  WHERE p.id = _user_id
+$$;
+```
+
+### 4. Database: Creare `is_admin` function
+
+Nuova funzione per verificare se un utente e admin (non solo super admin):
+
+```sql
+CREATE OR REPLACE FUNCTION public.is_admin(_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE SECURITY DEFINER
+SET search_path TO 'public'
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.profiles p
+    WHERE p.id = _user_id
+      AND p.email IN (
+        'info@362gradi.it',
+        'valentina362g@gmail.com',
+        'ilaria@362gradi.it',
+        'marco@362gradi.it'
+      )
+  )
+$$;
+```
+
+### 5. Frontend: Aggiornare `useAdminClients.ts`
+
+Aggiornare la funzione `getCollaboratorCoachName` per includere le nuove email:
 
 ```typescript
-import { useEffect } from "react";
-// ...
-
-const FunnelInterstitial = ({ type, onComplete }: FunnelInterstitialProps) => {
-  const content = interstitialContent[type];
-  const Icon = content.icon;
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      onComplete();
-    }, content.duration);
-    
-    return () => clearTimeout(timer);
-  }, [content.duration, onComplete]);
-
-  // ... rest of component
+const getCollaboratorCoachName = (email: string): CoachName | null => {
+  switch (email) {
+    case 'ilaria@362gradi.it': return 'Ilaria';
+    case 'marco@362gradi.it': return 'Marco';
+    case 'martina@362gradi.it':
+    case 'martina.fienga@hotmail.it': return 'Martina';
+    case 'michela@362gradi.it':
+    case 'michela.amadei@hotmail.it': return 'Michela';
+    case 'cristina@362gradi.it':
+    case 'spicri@gmail.com': return 'Cristina';
+    default: return null;
+  }
 };
 ```
 
-### Fix 2: FunnelButton.tsx
-Aggiungere React.forwardRef per supportare ref:
+### 6. Frontend: Aggiornare `AuthContext.tsx`
+
+Aggiungere verifica per nuovi admin:
 
 ```typescript
-import * as React from "react";
-
-const FunnelButton = React.forwardRef<
-  HTMLButtonElement, 
-  FunnelButtonProps
->(({ children, onClick, selected, className, variant = "option" }, ref) => {
-  // ...
-  return (
-    <motion.button
-      ref={ref}
-      // ... props
-    />
-  );
-});
-
-FunnelButton.displayName = "FunnelButton";
+const isAdmin = roles.includes('admin');
+const isSuperAdmin = user?.email === 'info@362gradi.it';
+const isFullAdmin = isAdmin || [
+  'valentina362g@gmail.com',
+  'ilaria@362gradi.it', 
+  'marco@362gradi.it'
+].includes(user?.email || '');
 ```
 
-### Fix 3: Aggiungere Step Mancanti
-Aggiungere le domande mancanti per raggiungere 45+ step:
+### 7. Frontend: Aggiornare `GestioneDiario.tsx`
 
-**Nuove domande da aggiungere:**
+Mostrare filtro Coach per tutti gli Admin, non solo SuperAdmin:
 
-| # | ID | Domanda | Tipo |
-|---|-----|---------|------|
-| 1 | `body_type` | Quale descrizione si avvicina di piu al tuo fisico? | SingleChoice |
-| 2 | `energy_level` | Come valuti il tuo livello di energia durante il giorno? | SingleChoice |
-| 3 | `digestion` | Come va la tua digestione? | SingleChoice |
-| 4 | `snacking_habit` | Fai spuntini tra i pasti? | SingleChoice |
-| 5 | `late_eating` | Mangi spesso dopo le 21? | Boolean |
-| 6 | `alcohol_frequency` | Quante volte bevi alcolici a settimana? | SingleChoice |
-| 7 | `previous_diets` | Hai seguito diete in passato? | MultiChoice |
-| 8 | `biggest_fear` | Qual e la tua piu grande paura nel percorso? | SingleChoice |
-| 9 | `motivation_source` | Chi ti motiva di piu? | SingleChoice |
-| 10 | `daily_activity` | Come descriveresti la tua attivita quotidiana? | SingleChoice |
-| 11 | `cardio_preference` | Preferisci allenamenti cardio o forza? | SingleChoice |
-| 12 | `flexibility` | Quanto sei flessibile con gli orari? | SingleChoice |
-| 13 | `name` | Come ti chiami? | TextInput |
+```typescript
+// Cambiare da:
+{isSuperAdmin && (
+  <Select ...>
 
----
-
-## Sequenza Step Finale (45 step)
-
-```text
-BLOCCO 1: BIO & GOAL (8 domande + 1 interstitial)
-1. gender
-2. age  
-3. height
-4. current_weight
-5. target_weight
-6. body_type (NUOVO)
-7. min_historic_size
-8. special_event
-9. [INTERSTITIAL BIO]
-
-BLOCCO 2: METABOLISMO & SALUTE (8 domande + 1 interstitial)
-10. metabolism
-11. health_conditions
-12. medications
-13. digestion (NUOVO)
-14. energy_level (NUOVO)
-15. sleep_hours
-16. wake_quality
-17. water_liters
-18. [INTERSTITIAL METABOLISM]
-
-BLOCCO 3: NUTRIZIONE (9 domande + 1 interstitial)
-19. meals_per_day
-20. snacking_habit (NUOVO)
-21. late_eating (NUOVO)
-22. weakness
-23. eating_out_frequency
-24. alcohol_frequency (NUOVO)
-25. skip_breakfast
-26. allergies
-27. diet_type
-28. [INTERSTITIAL NUTRITION]
-
-BLOCCO 4: PSICOLOGIA (9 domande + 1 interstitial)
-29. why_now
-30. previous_diets (NUOVO)
-31. past_obstacle
-32. stress_eating
-33. post_cheat_feeling
-34. biggest_fear (NUOVO)
-35. home_support
-36. motivation_source (NUOVO)
-37. weekend_challenge
-38. [INTERSTITIAL PSYCHOLOGY]
-
-BLOCCO 5: ALLENAMENTO (9 domande + 1 interstitial)
-39. daily_activity (NUOVO)
-40. preferred_location
-41. weekly_sessions
-42. session_duration
-43. cardio_preference (NUOVO)
-44. home_equipment
-45. injuries
-46. experience_level
-47. commit_daily_diary
-48. [INTERSTITIAL TRAINING]
-
-FINALE (3 step)
-49. name (NUOVO)
-50. email
-51. [RESULT]
+// A:
+{(isSuperAdmin || isAdmin) && (
+  <Select ...>
 ```
+
+### 8. Frontend: Nuova pagina Profilo con cambio password
+
+Creare nuovo componente `ChangePasswordDialog.tsx`:
+
+```typescript
+// Componente per cambiare password usando supabase.auth.updateUser
+const ChangePasswordDialog = () => {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleChangePassword = async () => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    // Gestione errori e feedback
+  };
+};
+```
+
+Aggiungere questo componente alla pagina `Settings.tsx` nella sezione Account.
 
 ---
 
@@ -160,34 +264,28 @@ FINALE (3 step)
 
 | File | Modifica |
 |------|----------|
-| `src/components/funnel/FunnelInterstitial.tsx` | Correggere setTimeout con useEffect |
-| `src/components/funnel/FunnelButton.tsx` | Aggiungere forwardRef |
-| `src/pages/Inizia.tsx` | Aggiungere 13 nuove domande e aggiornare steps array |
-| `supabase migration` | Aggiungere nuove colonne al database per i nuovi campi |
+| `supabase/migrations/` | Nuova migrazione per aggiornare funzioni DB |
+| `src/hooks/useAdminClients.ts` | Aggiornare `getCollaboratorCoachName` |
+| `src/contexts/AuthContext.tsx` | Aggiungere logica `isFullAdmin` |
+| `src/pages/GestioneDiario.tsx` | Estendere filtro Coach a tutti gli Admin |
+| `src/pages/Settings.tsx` | Aggiungere sezione cambio password |
+| `src/components/account/ChangePasswordDialog.tsx` | Nuovo componente |
 
 ---
 
-## Dettagli Tecnici
+## Flusso di Primo Accesso Collaboratore
 
-### Nuove Colonne Database
-```sql
-ALTER TABLE onboarding_leads ADD COLUMN body_type text;
-ALTER TABLE onboarding_leads ADD COLUMN energy_level text;
-ALTER TABLE onboarding_leads ADD COLUMN digestion text;
-ALTER TABLE onboarding_leads ADD COLUMN snacking_habit text;
-ALTER TABLE onboarding_leads ADD COLUMN late_eating boolean;
-ALTER TABLE onboarding_leads ADD COLUMN alcohol_frequency text;
-ALTER TABLE onboarding_leads ADD COLUMN previous_diets text[];
-ALTER TABLE onboarding_leads ADD COLUMN biggest_fear text;
-ALTER TABLE onboarding_leads ADD COLUMN motivation_source text;
-ALTER TABLE onboarding_leads ADD COLUMN daily_activity text;
-ALTER TABLE onboarding_leads ADD COLUMN cardio_preference text;
-ALTER TABLE onboarding_leads ADD COLUMN flexibility text;
-ALTER TABLE onboarding_leads ADD COLUMN name text;
-```
+1. Collaboratore accede con email whitelisted + password `362@diario`
+2. Sistema crea automaticamente profilo + ruolo corretto
+3. Dopo login, collaboratore viene invitato a cambiare password
+4. Nuova password viene salvata con `supabase.auth.updateUser`
 
-### Risultato Atteso
-- 51 step totali (48 domande + 5 interstitial + 1 result - 3 interstitial condivisi)
-- Funnel fluido senza bug
-- Nessun warning in console
-- Tutti i dati salvati correttamente in Supabase
+---
+
+## Note di Sicurezza
+
+- Le password predefinite sono gestite lato Supabase Auth
+- I collaboratori devono essere pre-registrati o il sistema li crea al primo login
+- RLS policies garantiscono che i coach vedano solo i propri clienti
+- Gli Admin possono vedere tutti i clienti con filtro opzionale
+
