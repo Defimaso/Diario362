@@ -205,15 +205,23 @@ export type Database = {
       onboarding_leads: {
         Row: {
           age: number | null
+          alcohol_frequency: string | null
           allergies: string | null
+          biggest_fear: string | null
+          body_type: string | null
+          cardio_preference: string | null
           commit_daily_diary: boolean | null
           completed_at: string | null
           created_at: string
           current_weight: number | null
+          daily_activity: string | null
           diet_type: string | null
+          digestion: string | null
           eating_out_frequency: string | null
           email: string | null
+          energy_level: string | null
           experience_level: string | null
+          flexibility: string | null
           gender: string | null
           health_conditions: string[] | null
           height: number | null
@@ -221,18 +229,23 @@ export type Database = {
           home_support: boolean | null
           id: string
           injuries: string | null
+          late_eating: boolean | null
           meals_per_day: number | null
           medications: string | null
           metabolism: string | null
           min_historic_size: string | null
+          motivation_source: string | null
+          name: string | null
           past_obstacle: string | null
           post_cheat_feeling: string | null
           predicted_weeks: number | null
           preferred_location: string | null
+          previous_diets: string[] | null
           profile_badge: string | null
           session_duration: string | null
           skip_breakfast: boolean | null
           sleep_hours: number | null
+          snacking_habit: string | null
           special_event: string | null
           stress_eating: boolean | null
           target_weight: number | null
@@ -246,15 +259,23 @@ export type Database = {
         }
         Insert: {
           age?: number | null
+          alcohol_frequency?: string | null
           allergies?: string | null
+          biggest_fear?: string | null
+          body_type?: string | null
+          cardio_preference?: string | null
           commit_daily_diary?: boolean | null
           completed_at?: string | null
           created_at?: string
           current_weight?: number | null
+          daily_activity?: string | null
           diet_type?: string | null
+          digestion?: string | null
           eating_out_frequency?: string | null
           email?: string | null
+          energy_level?: string | null
           experience_level?: string | null
+          flexibility?: string | null
           gender?: string | null
           health_conditions?: string[] | null
           height?: number | null
@@ -262,18 +283,23 @@ export type Database = {
           home_support?: boolean | null
           id?: string
           injuries?: string | null
+          late_eating?: boolean | null
           meals_per_day?: number | null
           medications?: string | null
           metabolism?: string | null
           min_historic_size?: string | null
+          motivation_source?: string | null
+          name?: string | null
           past_obstacle?: string | null
           post_cheat_feeling?: string | null
           predicted_weeks?: number | null
           preferred_location?: string | null
+          previous_diets?: string[] | null
           profile_badge?: string | null
           session_duration?: string | null
           skip_breakfast?: boolean | null
           sleep_hours?: number | null
+          snacking_habit?: string | null
           special_event?: string | null
           stress_eating?: boolean | null
           target_weight?: number | null
@@ -287,15 +313,23 @@ export type Database = {
         }
         Update: {
           age?: number | null
+          alcohol_frequency?: string | null
           allergies?: string | null
+          biggest_fear?: string | null
+          body_type?: string | null
+          cardio_preference?: string | null
           commit_daily_diary?: boolean | null
           completed_at?: string | null
           created_at?: string
           current_weight?: number | null
+          daily_activity?: string | null
           diet_type?: string | null
+          digestion?: string | null
           eating_out_frequency?: string | null
           email?: string | null
+          energy_level?: string | null
           experience_level?: string | null
+          flexibility?: string | null
           gender?: string | null
           health_conditions?: string[] | null
           height?: number | null
@@ -303,18 +337,23 @@ export type Database = {
           home_support?: boolean | null
           id?: string
           injuries?: string | null
+          late_eating?: boolean | null
           meals_per_day?: number | null
           medications?: string | null
           metabolism?: string | null
           min_historic_size?: string | null
+          motivation_source?: string | null
+          name?: string | null
           past_obstacle?: string | null
           post_cheat_feeling?: string | null
           predicted_weeks?: number | null
           preferred_location?: string | null
+          previous_diets?: string[] | null
           profile_badge?: string | null
           session_duration?: string | null
           skip_breakfast?: boolean | null
           sleep_hours?: number | null
+          snacking_habit?: string | null
           special_event?: string | null
           stress_eating?: boolean | null
           target_weight?: number | null

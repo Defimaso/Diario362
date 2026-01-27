@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Loader2, Sparkles, Brain, Dumbbell, Target, Heart } from "lucide-react";
 
@@ -43,10 +44,14 @@ const FunnelInterstitial = ({ type, onComplete }: FunnelInterstitialProps) => {
   const content = interstitialContent[type];
   const Icon = content.icon;
 
-  // Auto-advance after duration
-  setTimeout(() => {
-    onComplete();
-  }, content.duration);
+  // Auto-advance after duration with proper cleanup
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onComplete();
+    }, content.duration);
+    
+    return () => clearTimeout(timer);
+  }, [content.duration, onComplete]);
 
   return (
     <motion.div
