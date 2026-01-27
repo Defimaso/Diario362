@@ -19,6 +19,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { z } from 'zod';
+import { supabase } from '@/integrations/supabase/client';
+
+// Whitelist collaboratori per auto-provisioning
+const STAFF_WHITELIST: Record<string, { role: 'admin' | 'coach'; name: string }> = {
+  // ADMIN
+  'info@362gradi.it': { role: 'admin', name: '362 Gradi Admin' },
+  'valentina362g@gmail.com': { role: 'admin', name: 'Valentina' },
+  // COACH
+  'michela.amadei@hotmail.it': { role: 'coach', name: 'Michela' },
+  'martina.fienga@hotmail.it': { role: 'coach', name: 'Martina' },
+  'spicri@gmail.com': { role: 'coach', name: 'Cristina' },
+};
+
+const DEFAULT_STAFF_PASSWORD = '362@diario';
 
 const loginSchema = z.object({
   email: z.string().email('Email non valida'),
@@ -61,15 +75,76 @@ const Auth = () => {
     privacy: false,
     biometric: false,
   });
+  const [isProvisioning, setIsProvisioning] = useState(false);
 
   const { signIn, signUp, user } = useAuth();
   const { saveConsents } = useConsents();
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Funzione per auto-provisioning staff
+  const handleStaffLogin = async (email: string, password: string): Promise<{ error: Error | null }> => {
+    const normalizedEmail = email.toLowerCase();
+    const staffInfo = STAFF_WHITELIST[normalizedEmail];
+    
+    // Se non è in whitelist o la password non è quella predefinita, procedi con login normale
+    if (!staffInfo || password !== DEFAULT_STAFF_PASSWORD) {
+      return signIn(email, password);
+    }
+    
+    setIsProvisioning(true);
+    
+    // Prova prima il login normale
+    const signInResult = await signIn(email, password);
+    
+    // Se il login fallisce per credenziali invalide, prova a creare l'utente
+    if (signInResult.error?.message === 'Invalid login credentials') {
+      // Tenta la registrazione automatica
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: normalizedEmail,
+        password: DEFAULT_STAFF_PASSWORD,
+        options: {
+          data: {
+            full_name: staffInfo.name,
+            staff_role: staffInfo.role,
+          }
+        }
+      });
+      
+      // Se la registrazione ha successo, il trigger handle_new_user assegnerà il ruolo corretto
+      if (!signUpError) {
+        // Dopo signUp con auto-confirm, riprova il login
+        const retryResult = await signIn(email, password);
+        setIsProvisioning(false);
+        return retryResult;
+      }
+      
+      // Se fallisce per "already registered", riprova login
+      if (signUpError.message?.includes('already registered')) {
+        const retryResult = await signIn(email, password);
+        setIsProvisioning(false);
+        return retryResult;
+      }
+      
+      setIsProvisioning(false);
+      return { error: signUpError };
+    }
+    
+    setIsProvisioning(false);
+    return signInResult;
+  };
+
+  // Reindirizzamento post-login intelligente
   useEffect(() => {
     if (user) {
-      navigate('/diario');
+      const userEmail = user.email?.toLowerCase() || '';
+      const isStaff = userEmail in STAFF_WHITELIST;
+      
+      if (isStaff) {
+        navigate('/gestione-diario');
+      } else {
+        navigate('/diario');
+      }
     }
   }, [user, navigate]);
 
@@ -114,13 +189,19 @@ const Auth = () => {
 
     try {
       if (isCollaborator || isLogin) {
-        const { error } = await signIn(email, password);
+        // Usa la nuova funzione per gestire auto-provisioning staff
+        const { error } = await handleStaffLogin(email.toLowerCase(), password);
+        
         if (error) {
+          const isStaffEmail = email.toLowerCase() in STAFF_WHITELIST;
+          
           toast({
             variant: 'destructive',
             title: 'Errore di accesso',
             description: error.message === 'Invalid login credentials' 
-              ? 'Email o password non corretti' 
+              ? isStaffEmail 
+                ? 'Errore durante la configurazione dell\'account. Riprova.'
+                : 'Email o password non corretti' 
               : error.message,
           });
         }
@@ -135,8 +216,6 @@ const Auth = () => {
               : error.message,
           });
         } else {
-          // Note: Consents will be saved after the user confirms their email and logs in
-          // For auto-confirm setups, we need to handle this differently
           toast({
             title: 'Registrazione completata!',
             description: 'Benvenuto nel Diario 362gradi',
@@ -145,6 +224,7 @@ const Auth = () => {
       }
     } finally {
       setIsLoading(false);
+      setIsProvisioning(false);
     }
   };
 
@@ -332,7 +412,9 @@ const Auth = () => {
               disabled={isLoading}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
             >
-              {isLoading ? 'Caricamento...' : (isCollaborator || isLogin) ? 'Accedi' : 'Registrati'}
+              {isLoading 
+                ? (isProvisioning ? 'Configurazione account...' : 'Caricamento...') 
+                : (isCollaborator || isLogin) ? 'Accedi' : 'Registrati'}
             </Button>
           </form>
         </div>
