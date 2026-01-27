@@ -10,6 +10,7 @@ import GestioneDiario from "./pages/GestioneDiario";
 import Checks from "./pages/Checks";
 import InstallApp from "./pages/InstallApp";
 import Settings from "./pages/Settings";
+import Inizia from "./pages/Inizia";
 import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/checks" element={<Checks />} />
             <Route path="/install" element={<InstallApp />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/inizia" element={<Inizia />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
