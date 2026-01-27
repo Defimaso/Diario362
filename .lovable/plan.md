@@ -1,291 +1,222 @@
 
+# Piano di Implementazione: Auto-Provisioning Collaboratori
 
-# Piano di Implementazione: Sistema Whitelist Collaboratori
+## Problema Identificato
 
-## Riepilogo Richieste
+Quando i collaboratori in whitelist provano ad accedere con la password predefinita `362@diario`, ricevono l'errore "Email o password non corretti" perché l'account non esiste ancora in Supabase Auth.
 
-| Requisito | Stato Attuale | Azione |
-|-----------|---------------|--------|
-| Whitelist estesa (nuove email) | Solo @362gradi.it | Aggiornare |
-| Password predefinita 362@diario | Non implementata | Creare |
-| Cambio password dopo primo accesso | Non esiste | Aggiungere |
-| Filtro Coach per Admin | Solo SuperAdmin | Estendere |
-| Logica "contains" per coach condivisi | Parzialmente | Verificare/Correggere |
+## Soluzione Tecnica
+
+### Whitelist da Gestire
+
+| Tipo | Email | Nome Metadata |
+|------|-------|---------------|
+| ADMIN | `info@362gradi.it` | 362 Gradi Admin |
+| ADMIN | `valentina362g@gmail.com` | Valentina |
+| COACH | `michela.amadei@hotmail.it` | Michela |
+| COACH | `martina.fienga@hotmail.it` | Martina |
+| COACH | `spicri@gmail.com` | Cristina |
+
+### Flusso Auto-Provisioning
+
+```text
+1. Utente inserisce email + password "362@diario"
+2. Sistema verifica se email e in whitelist
+3. SE email in whitelist E password == "362@diario":
+   a. Tenta signUp con metadata (full_name, role)
+   b. SE signUp ha successo -> utente creato e loggato
+   c. SE signUp fallisce (utente esiste) -> tenta signIn
+4. SE email NON in whitelist:
+   a. Procedi con normale signIn
+5. Reindirizzamento post-login:
+   - Admin -> /gestione-diario
+   - Coach -> /gestione-diario (filtro automatico)
+```
 
 ---
 
-## Nuova Whitelist Completa
+## Modifiche al File: `src/pages/Auth.tsx`
 
-### ADMIN (accesso completo + filtro coach)
-- `info@362gradi.it` (Super Admin esistente)
-- `valentina362g@gmail.com` (NUOVO)
-- `ilaria@362gradi.it` (esistente)
-- `marco@362gradi.it` (esistente)
+### 1. Aggiungere Costanti Whitelist
 
-### COACH (visualizzazione limitata ai propri clienti)
-- `michela@362gradi.it` -> Michela (esistente)
-- `michela.amadei@hotmail.it` -> Michela (NUOVO - stesso coach)
-- `martina@362gradi.it` -> Martina (esistente)
-- `martina.fienga@hotmail.it` -> Martina (NUOVO - stesso coach)
-- `cristina@362gradi.it` -> Cristina (esistente)
-- `spicri@gmail.com` -> Cristina (NUOVO - stesso coach)
-
----
-
-## Modifiche Tecniche
-
-### 1. Database: Aggiornare funzione `handle_new_user`
-
-Modificare il trigger per riconoscere le nuove email nella whitelist:
-
-```sql
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, email, full_name, phone_number)
-  VALUES (
-    NEW.id, 
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data ->> 'full_name', NEW.raw_user_meta_data ->> 'name', ''),
-    NEW.raw_user_meta_data ->> 'phone_number'
-  );
-  
-  -- Assign default client role
-  INSERT INTO public.user_roles (user_id, role)
-  VALUES (NEW.id, 'client');
-  
-  -- Super Admin
-  IF NEW.email = 'info@362gradi.it' THEN
-    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin');
-  
-  -- Admin group (full access)
-  ELSIF NEW.email IN (
-    'valentina362g@gmail.com',
-    'ilaria@362gradi.it',
-    'marco@362gradi.it'
-  ) THEN
-    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'admin');
-  
-  -- Collaborator/Coach group
-  ELSIF NEW.email IN (
-    'martina@362gradi.it',
-    'martina.fienga@hotmail.it',
-    'michela@362gradi.it',
-    'michela.amadei@hotmail.it',
-    'cristina@362gradi.it',
-    'spicri@gmail.com'
-  ) THEN
-    INSERT INTO public.user_roles (user_id, role) VALUES (NEW.id, 'collaborator');
-  END IF;
-  
-  RETURN NEW;
-END;
-$$;
-```
-
-### 2. Database: Aggiornare `can_collaborator_see_client`
-
-Aggiungere le nuove email per la visibilita dei client condivisi:
-
-```sql
-CREATE OR REPLACE FUNCTION public.can_collaborator_see_client(_collaborator_id uuid, _client_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.coach_assignments ca
-    JOIN public.profiles p ON p.id = _collaborator_id
-    WHERE ca.client_id = _client_id
-      AND (
-        -- Ilaria assignments
-        (p.email = 'ilaria@362gradi.it' AND (
-          ca.coach_name = 'Ilaria' OR 
-          ca.coach_name = 'Ilaria_Marco' OR 
-          ca.coach_name = 'Ilaria_Marco_Michela' OR 
-          ca.coach_name = 'Ilaria_Michela' OR 
-          ca.coach_name = 'Ilaria_Martina'
-        ))
-        -- Marco assignments
-        OR (p.email = 'marco@362gradi.it' AND (
-          ca.coach_name = 'Marco' OR 
-          ca.coach_name = 'Ilaria_Marco' OR 
-          ca.coach_name = 'Ilaria_Marco_Michela'
-        ))
-        -- Michela assignments (include nuova email)
-        OR (p.email IN ('michela@362gradi.it', 'michela.amadei@hotmail.it') AND (
-          ca.coach_name = 'Michela' OR 
-          ca.coach_name = 'Michela_Martina' OR
-          ca.coach_name = 'Ilaria_Marco_Michela' OR
-          ca.coach_name = 'Ilaria_Michela' OR
-          ca.coach_name = 'Martina_Michela'
-        ))
-        -- Martina assignments (include nuova email)
-        OR (p.email IN ('martina@362gradi.it', 'martina.fienga@hotmail.it') AND (
-          ca.coach_name = 'Martina' OR 
-          ca.coach_name = 'Michela_Martina' OR
-          ca.coach_name = 'Ilaria_Martina' OR
-          ca.coach_name = 'Martina_Michela'
-        ))
-        -- Cristina assignments (include nuova email)
-        OR (p.email IN ('cristina@362gradi.it', 'spicri@gmail.com') AND ca.coach_name = 'Cristina')
-      )
-  )
-$$;
-```
-
-### 3. Database: Aggiornare `get_collaborator_coach_name`
-
-```sql
-CREATE OR REPLACE FUNCTION public.get_collaborator_coach_name(_user_id uuid)
-RETURNS text
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT 
-    CASE 
-      WHEN p.email = 'ilaria@362gradi.it' THEN 'Ilaria'
-      WHEN p.email = 'marco@362gradi.it' THEN 'Marco'
-      WHEN p.email IN ('martina@362gradi.it', 'martina.fienga@hotmail.it') THEN 'Martina'
-      WHEN p.email IN ('michela@362gradi.it', 'michela.amadei@hotmail.it') THEN 'Michela'
-      WHEN p.email IN ('cristina@362gradi.it', 'spicri@gmail.com') THEN 'Cristina'
-      ELSE NULL
-    END
-  FROM public.profiles p
-  WHERE p.id = _user_id
-$$;
-```
-
-### 4. Database: Creare `is_admin` function
-
-Nuova funzione per verificare se un utente e admin (non solo super admin):
-
-```sql
-CREATE OR REPLACE FUNCTION public.is_admin(_user_id uuid)
-RETURNS boolean
-LANGUAGE sql
-STABLE SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-  SELECT EXISTS (
-    SELECT 1
-    FROM public.profiles p
-    WHERE p.id = _user_id
-      AND p.email IN (
-        'info@362gradi.it',
-        'valentina362g@gmail.com',
-        'ilaria@362gradi.it',
-        'marco@362gradi.it'
-      )
-  )
-$$;
-```
-
-### 5. Frontend: Aggiornare `useAdminClients.ts`
-
-Aggiornare la funzione `getCollaboratorCoachName` per includere le nuove email:
+Definire la mappa delle email con i relativi ruoli e nomi:
 
 ```typescript
-const getCollaboratorCoachName = (email: string): CoachName | null => {
-  switch (email) {
-    case 'ilaria@362gradi.it': return 'Ilaria';
-    case 'marco@362gradi.it': return 'Marco';
-    case 'martina@362gradi.it':
-    case 'martina.fienga@hotmail.it': return 'Martina';
-    case 'michela@362gradi.it':
-    case 'michela.amadei@hotmail.it': return 'Michela';
-    case 'cristina@362gradi.it':
-    case 'spicri@gmail.com': return 'Cristina';
-    default: return null;
+const STAFF_WHITELIST = {
+  // ADMIN
+  'info@362gradi.it': { role: 'admin', name: '362 Gradi Admin' },
+  'valentina362g@gmail.com': { role: 'admin', name: 'Valentina' },
+  // COACH
+  'michela.amadei@hotmail.it': { role: 'coach', name: 'Michela' },
+  'martina.fienga@hotmail.it': { role: 'coach', name: 'Martina' },
+  'spicri@gmail.com': { role: 'coach', name: 'Cristina' },
+};
+
+const DEFAULT_STAFF_PASSWORD = '362@diario';
+```
+
+### 2. Nuova Funzione di Auto-Provisioning
+
+Creare una funzione dedicata per gestire il login staff:
+
+```typescript
+const handleStaffLogin = async (email: string, password: string) => {
+  const staffInfo = STAFF_WHITELIST[email.toLowerCase()];
+  
+  // Se non e in whitelist o la password non e quella predefinita,
+  // procedi con login normale
+  if (!staffInfo || password !== DEFAULT_STAFF_PASSWORD) {
+    return signIn(email, password);
+  }
+  
+  // Prova prima il login normale
+  const signInResult = await signIn(email, password);
+  
+  // Se il login fallisce per credenziali invalide, prova a creare l'utente
+  if (signInResult.error?.message === 'Invalid login credentials') {
+    // Tenta la registrazione automatica
+    const { error: signUpError } = await supabase.auth.signUp({
+      email,
+      password: DEFAULT_STAFF_PASSWORD,
+      options: {
+        data: {
+          full_name: staffInfo.name,
+          staff_role: staffInfo.role,
+        }
+      }
+    });
+    
+    // Se la registrazione ha successo, il trigger handle_new_user
+    // assegnera automaticamente il ruolo corretto
+    if (!signUpError) {
+      // Dopo signUp con auto-confirm, riprova il login
+      return signIn(email, password);
+    }
+    
+    // Se fallisce per "already registered", riprova login
+    if (signUpError.message?.includes('already registered')) {
+      return signIn(email, password);
+    }
+    
+    return { error: signUpError };
+  }
+  
+  return signInResult;
+};
+```
+
+### 3. Modificare handleSubmit
+
+Aggiornare la logica di submit per usare la nuova funzione:
+
+```typescript
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  
+  if (!validateForm()) return;
+
+  setIsLoading(true);
+
+  try {
+    if (isCollaborator || isLogin) {
+      // Usa la nuova funzione per gestire auto-provisioning staff
+      const { error } = await handleStaffLogin(email.toLowerCase(), password);
+      
+      if (error) {
+        // Non mostrare errore generico per staff in whitelist
+        const isStaffEmail = email.toLowerCase() in STAFF_WHITELIST;
+        
+        toast({
+          variant: 'destructive',
+          title: 'Errore di accesso',
+          description: error.message === 'Invalid login credentials' 
+            ? isStaffEmail 
+              ? 'Errore durante la configurazione dell\'account. Riprova.'
+              : 'Email o password non corretti' 
+            : error.message,
+        });
+      }
+    } else {
+      // ... logica registrazione cliente esistente
+    }
+  } finally {
+    setIsLoading(false);
   }
 };
 ```
 
-### 6. Frontend: Aggiornare `AuthContext.tsx`
+### 4. Migliorare Feedback Visivo Durante Provisioning
 
-Aggiungere verifica per nuovi admin:
-
-```typescript
-const isAdmin = roles.includes('admin');
-const isSuperAdmin = user?.email === 'info@362gradi.it';
-const isFullAdmin = isAdmin || [
-  'valentina362g@gmail.com',
-  'ilaria@362gradi.it', 
-  'marco@362gradi.it'
-].includes(user?.email || '');
-```
-
-### 7. Frontend: Aggiornare `GestioneDiario.tsx`
-
-Mostrare filtro Coach per tutti gli Admin, non solo SuperAdmin:
+Aggiungere uno stato specifico per il provisioning staff:
 
 ```typescript
-// Cambiare da:
-{isSuperAdmin && (
-  <Select ...>
+const [isProvisioning, setIsProvisioning] = useState(false);
 
-// A:
-{(isSuperAdmin || isAdmin) && (
-  <Select ...>
+// Nel button:
+{isLoading ? (
+  isProvisioning 
+    ? 'Configurazione account in corso...' 
+    : 'Caricamento...'
+) : (isCollaborator || isLogin) ? 'Accedi' : 'Registrati'}
 ```
-
-### 8. Frontend: Nuova pagina Profilo con cambio password
-
-Creare nuovo componente `ChangePasswordDialog.tsx`:
-
-```typescript
-// Componente per cambiare password usando supabase.auth.updateUser
-const ChangePasswordDialog = () => {
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleChangePassword = async () => {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
-    // Gestione errori e feedback
-  };
-};
-```
-
-Aggiungere questo componente alla pagina `Settings.tsx` nella sezione Account.
 
 ---
 
-## File da Modificare
+## Modifiche al File: `src/contexts/AuthContext.tsx`
 
-| File | Modifica |
-|------|----------|
-| `supabase/migrations/` | Nuova migrazione per aggiornare funzioni DB |
-| `src/hooks/useAdminClients.ts` | Aggiornare `getCollaboratorCoachName` |
-| `src/contexts/AuthContext.tsx` | Aggiungere logica `isFullAdmin` |
-| `src/pages/GestioneDiario.tsx` | Estendere filtro Coach a tutti gli Admin |
-| `src/pages/Settings.tsx` | Aggiungere sezione cambio password |
-| `src/components/account/ChangePasswordDialog.tsx` | Nuovo componente |
+### 5. Reindirizzamento Post-Login Intelligente
+
+Aggiornare `Auth.tsx` per reindirizzare in base al ruolo:
+
+```typescript
+useEffect(() => {
+  if (user) {
+    const userEmail = user.email?.toLowerCase() || '';
+    const isStaff = userEmail in STAFF_WHITELIST;
+    
+    if (isStaff) {
+      // Staff va alla dashboard gestione
+      navigate('/gestione-diario');
+    } else {
+      // Clienti vanno al diario
+      navigate('/diario');
+    }
+  }
+}, [user, navigate]);
+```
 
 ---
 
-## Flusso di Primo Accesso Collaboratore
+## Riepilogo File da Modificare
 
-1. Collaboratore accede con email whitelisted + password `362@diario`
-2. Sistema crea automaticamente profilo + ruolo corretto
-3. Dopo login, collaboratore viene invitato a cambiare password
-4. Nuova password viene salvata con `supabase.auth.updateUser`
+| File | Modifiche |
+|------|-----------|
+| `src/pages/Auth.tsx` | Aggiungere whitelist, funzione auto-provisioning, aggiornare handleSubmit e reindirizzamento |
+
+---
+
+## Test Case Richiesto
+
+**Scenario:** `michela.amadei@hotmail.it` con password `362@diario`
+
+1. Utente clicca switch "Collaboratore"
+2. Inserisce email: `michela.amadei@hotmail.it`
+3. Inserisce password: `362@diario`
+4. Clicca "Accedi"
+5. Sistema:
+   - Verifica email in whitelist -> SI
+   - Verifica password == 362@diario -> SI
+   - Tenta signIn -> Fallisce (utente non esiste)
+   - Tenta signUp automatico con metadata -> Successo
+   - Trigger `handle_new_user` assegna ruolo `collaborator`
+   - Utente viene reindirizzato a `/gestione-diario`
+6. Michela vede solo i propri clienti assegnati
 
 ---
 
 ## Note di Sicurezza
 
-- Le password predefinite sono gestite lato Supabase Auth
-- I collaboratori devono essere pre-registrati o il sistema li crea al primo login
-- RLS policies garantiscono che i coach vedano solo i propri clienti
-- Gli Admin possono vedere tutti i clienti con filtro opzionale
-
+- La password predefinita e usata SOLO per la prima creazione dell'account
+- Dopo il primo accesso, i collaboratori sono invitati a cambiare password tramite Settings
+- Il ruolo viene assegnato dal trigger database `handle_new_user`, non dal frontend
+- La whitelist frontend serve solo per abilitare l'auto-provisioning, i ruoli effettivi sono gestiti lato database
