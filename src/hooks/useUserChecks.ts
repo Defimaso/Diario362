@@ -206,6 +206,14 @@ export const useUserChecks = (clientId?: string) => {
     return data.signedUrl;
   };
 
+  // Get first check with photos for ghost overlay reference
+  const getFirstCheckWithPhotos = useCallback(() => {
+    return checks.find(c => 
+      c.check_number === 1 && 
+      (c.photo_front_url || c.photo_side_url || c.photo_back_url)
+    ) || null;
+  }, [checks]);
+
   return {
     checks,
     loading,
@@ -215,6 +223,7 @@ export const useUserChecks = (clientId?: string) => {
     getWeightChartData,
     saveCheck,
     getSignedPhotoUrl,
+    getFirstCheckWithPhotos,
     refetch: fetchChecks,
     totalChecks: TOTAL_CHECKS,
     completedChecksCount: checks.length,

@@ -9,7 +9,15 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Checks = () => {
-  const { loading, uploading, getCheckSlots, saveCheck, completedChecksCount, totalChecks } = useUserChecks();
+  const { 
+    loading, 
+    uploading, 
+    getCheckSlots, 
+    saveCheck, 
+    completedChecksCount, 
+    totalChecks,
+    getFirstCheckWithPhotos 
+  } = useUserChecks();
   const [selectedCheck, setSelectedCheck] = useState<{
     checkNumber: number;
     data: UserCheck | null;
@@ -18,6 +26,9 @@ const Checks = () => {
   const checkSlots = getCheckSlots();
   const completedSlots = checkSlots.filter(s => s.isCompleted);
   const pendingSlots = checkSlots.filter(s => !s.isCompleted);
+  
+  // Get first check data for ghost overlay
+  const firstCheck = getFirstCheckWithPhotos();
 
   if (loading) {
     return (
@@ -136,6 +147,7 @@ const Checks = () => {
         existingData={selectedCheck?.data || null}
         onSave={saveCheck}
         uploading={uploading}
+        firstCheckData={selectedCheck && selectedCheck.checkNumber > 1 ? firstCheck : null}
       />
     </div>
   );
