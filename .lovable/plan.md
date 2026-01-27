@@ -1,222 +1,286 @@
 
-# Piano di Implementazione: Auto-Provisioning Collaboratori
 
-## Problema Identificato
+# Piano di Implementazione: Modulo Avanzato Foto con Ghost Overlay
 
-Quando i collaboratori in whitelist provano ad accedere con la password predefinita `362@diario`, ricevono l'errore "Email o password non corretti" perché l'account non esiste ancora in Supabase Auth.
+## Riepilogo Obiettivi
 
-## Soluzione Tecnica
+| Funzionalita | Stato Attuale | Azione |
+|--------------|---------------|--------|
+| Caricamento da galleria mobile | Bloccato (`capture="environment"`) | Rimuovere attributo |
+| Ritaglio immagini | Non esiste | Implementare con react-easy-crop |
+| Compressione client-side | Non esiste | Implementare con Canvas API |
+| Ghost Overlay (riferimento Check #1) | Non esiste | Implementare overlay trasparente |
+| Confronto coerente nel widget | Parzialmente | Usare versioni ritagliate |
 
-### Whitelist da Gestire
+---
 
-| Tipo | Email | Nome Metadata |
-|------|-------|---------------|
-| ADMIN | `info@362gradi.it` | 362 Gradi Admin |
-| ADMIN | `valentina362g@gmail.com` | Valentina |
-| COACH | `michela.amadei@hotmail.it` | Michela |
-| COACH | `martina.fienga@hotmail.it` | Martina |
-| COACH | `spicri@gmail.com` | Cristina |
-
-### Flusso Auto-Provisioning
+## Architettura Soluzione
 
 ```text
-1. Utente inserisce email + password "362@diario"
-2. Sistema verifica se email e in whitelist
-3. SE email in whitelist E password == "362@diario":
-   a. Tenta signUp con metadata (full_name, role)
-   b. SE signUp ha successo -> utente creato e loggato
-   c. SE signUp fallisce (utente esiste) -> tenta signIn
-4. SE email NON in whitelist:
-   a. Procedi con normale signIn
-5. Reindirizzamento post-login:
-   - Admin -> /gestione-diario
-   - Coach -> /gestione-diario (filtro automatico)
++-------------------+     +-------------------+     +-------------------+
+|  Input File       | --> |  Image Cropper    | --> |  Compressione     |
+|  (senza capture)  |     |  + Ghost Overlay  |     |  + Upload         |
++-------------------+     +-------------------+     +-------------------+
+       |                        |                         |
+       v                        v                         v
+   Galleria/Camera          Aspect 3:4              Blob ottimizzato
+   a scelta utente          Griglia 3x3             Max 1200px, 85% quality
+                            Opacita 35%
 ```
 
 ---
 
-## Modifiche al File: `src/pages/Auth.tsx`
+## Dettagli Tecnici
 
-### 1. Aggiungere Costanti Whitelist
+### 1. Nuova Dipendenza
 
-Definire la mappa delle email con i relativi ruoli e nomi:
+Installare `react-easy-crop`:
 
-```typescript
-const STAFF_WHITELIST = {
-  // ADMIN
-  'info@362gradi.it': { role: 'admin', name: '362 Gradi Admin' },
-  'valentina362g@gmail.com': { role: 'admin', name: 'Valentina' },
-  // COACH
-  'michela.amadei@hotmail.it': { role: 'coach', name: 'Michela' },
-  'martina.fienga@hotmail.it': { role: 'coach', name: 'Martina' },
-  'spicri@gmail.com': { role: 'coach', name: 'Cristina' },
-};
-
-const DEFAULT_STAFF_PASSWORD = '362@diario';
+```bash
+npm install react-easy-crop
 ```
 
-### 2. Nuova Funzione di Auto-Provisioning
+### 2. Nuovo Componente: ImageCropperModal.tsx
 
-Creare una funzione dedicata per gestire il login staff:
+Creare `src/components/checks/ImageCropperModal.tsx`:
 
 ```typescript
-const handleStaffLogin = async (email: string, password: string) => {
-  const staffInfo = STAFF_WHITELIST[email.toLowerCase()];
-  
-  // Se non e in whitelist o la password non e quella predefinita,
-  // procedi con login normale
-  if (!staffInfo || password !== DEFAULT_STAFF_PASSWORD) {
-    return signIn(email, password);
-  }
-  
-  // Prova prima il login normale
-  const signInResult = await signIn(email, password);
-  
-  // Se il login fallisce per credenziali invalide, prova a creare l'utente
-  if (signInResult.error?.message === 'Invalid login credentials') {
-    // Tenta la registrazione automatica
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password: DEFAULT_STAFF_PASSWORD,
-      options: {
-        data: {
-          full_name: staffInfo.name,
-          staff_role: staffInfo.role,
-        }
-      }
-    });
-    
-    // Se la registrazione ha successo, il trigger handle_new_user
-    // assegnera automaticamente il ruolo corretto
-    if (!signUpError) {
-      // Dopo signUp con auto-confirm, riprova il login
-      return signIn(email, password);
-    }
-    
-    // Se fallisce per "already registered", riprova login
-    if (signUpError.message?.includes('already registered')) {
-      return signIn(email, password);
-    }
-    
-    return { error: signUpError };
-  }
-  
-  return signInResult;
+// Componente principale per ritaglio foto
+interface ImageCropperModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  imageSrc: string;                    // Blob URL dell'immagine selezionata
+  ghostImageSrc?: string | null;       // URL foto Check #1 (se checkNumber > 1)
+  aspectRatio?: number;                // Default 3/4
+  onCropComplete: (croppedBlob: Blob) => void;
+}
+
+// Funzionalita:
+// - Cropper con area fissa 3:4
+// - Griglia 3x3 sovrapposta
+// - Ghost overlay al 35% opacita se ghostImageSrc presente
+// - Slider per zoom
+// - Pulsanti Annulla / Conferma
+```
+
+### 3. Utility: imageCompression.ts
+
+Creare `src/lib/imageCompression.ts`:
+
+```typescript
+// Funzione per comprimere e ridimensionare immagini
+export const compressImage = async (
+  blob: Blob,
+  maxWidth: number = 1200,
+  maxHeight: number = 1600,
+  quality: number = 0.85
+): Promise<Blob> => {
+  // 1. Crea immagine da blob
+  // 2. Calcola dimensioni mantenendo aspect ratio
+  // 3. Disegna su canvas ridimensionato
+  // 4. Esporta come JPEG con qualita specificata
+  // 5. Ritorna Blob compresso
+};
+
+// Funzione per creare crop area
+export const getCroppedImg = (
+  imageSrc: string,
+  pixelCrop: { x: number; y: number; width: number; height: number }
+): Promise<Blob> => {
+  // 1. Carica immagine
+  // 2. Crea canvas con dimensioni crop
+  // 3. Disegna porzione ritagliata
+  // 4. Ritorna Blob
 };
 ```
 
-### 3. Modificare handleSubmit
+### 4. Modifica CheckFormModal.tsx
 
-Aggiornare la logica di submit per usare la nuova funzione:
+Aggiornare la gestione foto:
 
+**4.1. Rimuovere attributo capture:**
 ```typescript
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+// PRIMA (linea 114):
+capture="environment"
+
+// DOPO:
+// Rimuovere completamente l'attributo
+```
+
+**4.2. Aggiungere stato per cropper:**
+```typescript
+const [cropperState, setCropperState] = useState<{
+  isOpen: boolean;
+  imageSrc: string | null;
+  photoType: 'front' | 'side' | 'back' | null;
+}>({ isOpen: false, imageSrc: null, photoType: null });
+```
+
+**4.3. Aggiungere prop per Check #1 photos:**
+```typescript
+interface CheckFormModalProps {
+  // ... props esistenti
+  firstCheckData?: UserCheck | null;  // Dati del Check #1 per ghost overlay
+}
+```
+
+**4.4. Flusso file selection:**
+```typescript
+const handleFileSelect = (file: File, photoType: 'front' | 'side' | 'back') => {
+  const objectUrl = URL.createObjectURL(file);
+  setCropperState({
+    isOpen: true,
+    imageSrc: objectUrl,
+    photoType,
+  });
+};
+
+const handleCropComplete = async (croppedBlob: Blob) => {
+  const compressed = await compressImage(croppedBlob);
+  const file = new File([compressed], `${cropperState.photoType}.jpg`, { type: 'image/jpeg' });
   
-  if (!validateForm()) return;
-
-  setIsLoading(true);
-
-  try {
-    if (isCollaborator || isLogin) {
-      // Usa la nuova funzione per gestire auto-provisioning staff
-      const { error } = await handleStaffLogin(email.toLowerCase(), password);
-      
-      if (error) {
-        // Non mostrare errore generico per staff in whitelist
-        const isStaffEmail = email.toLowerCase() in STAFF_WHITELIST;
-        
-        toast({
-          variant: 'destructive',
-          title: 'Errore di accesso',
-          description: error.message === 'Invalid login credentials' 
-            ? isStaffEmail 
-              ? 'Errore durante la configurazione dell\'account. Riprova.'
-              : 'Email o password non corretti' 
-            : error.message,
-        });
-      }
-    } else {
-      // ... logica registrazione cliente esistente
-    }
-  } finally {
-    setIsLoading(false);
+  // Aggiorna stato in base a photoType
+  switch (cropperState.photoType) {
+    case 'front':
+      setPhotoFront(file);
+      setPhotoFrontPreview(URL.createObjectURL(compressed));
+      break;
+    // ... altri casi
   }
+  
+  setCropperState({ isOpen: false, imageSrc: null, photoType: null });
 };
 ```
 
-### 4. Migliorare Feedback Visivo Durante Provisioning
+### 5. Logica Ghost Overlay
 
-Aggiungere uno stato specifico per il provisioning staff:
+Nel ImageCropperModal, se `ghostImageSrc` e presente:
 
 ```typescript
-const [isProvisioning, setIsProvisioning] = useState(false);
+// Render ghost overlay sotto il cropper
+{ghostImageSrc && (
+  <div 
+    className="absolute inset-0 pointer-events-none z-0"
+    style={{ opacity: 0.35 }}
+  >
+    <img 
+      src={ghostImageSrc} 
+      alt="Reference" 
+      className="w-full h-full object-contain"
+    />
+  </div>
+)}
+```
 
-// Nel button:
-{isLoading ? (
-  isProvisioning 
-    ? 'Configurazione account in corso...' 
-    : 'Caricamento...'
-) : (isCollaborator || isLogin) ? 'Accedi' : 'Registrati'}
+### 6. Modifica useUserChecks.ts
+
+Aggiungere metodo per ottenere Check #1:
+
+```typescript
+// Nuovo metodo per ottenere il primo check con foto
+const getFirstCheckWithPhotos = useCallback(() => {
+  return checks.find(c => 
+    c.check_number === 1 && 
+    (c.photo_front_url || c.photo_side_url || c.photo_back_url)
+  ) || null;
+}, [checks]);
+
+// Aggiungere al return
+return {
+  // ... esistenti
+  getFirstCheckWithPhotos,
+};
+```
+
+### 7. Modifica Checks.tsx
+
+Passare dati Check #1 al modal:
+
+```typescript
+const Checks = () => {
+  const { 
+    // ... esistenti
+    getFirstCheckWithPhotos 
+  } = useUserChecks();
+  
+  const firstCheck = getFirstCheckWithPhotos();
+
+  return (
+    // ...
+    <CheckFormModal
+      // ... props esistenti
+      firstCheckData={selectedCheck?.checkNumber > 1 ? firstCheck : null}
+    />
+  );
+};
 ```
 
 ---
 
-## Modifiche al File: `src/contexts/AuthContext.tsx`
+## Componente ImageCropperModal - Struttura UI
 
-### 5. Reindirizzamento Post-Login Intelligente
-
-Aggiornare `Auth.tsx` per reindirizzare in base al ruolo:
-
-```typescript
-useEffect(() => {
-  if (user) {
-    const userEmail = user.email?.toLowerCase() || '';
-    const isStaff = userEmail in STAFF_WHITELIST;
-    
-    if (isStaff) {
-      // Staff va alla dashboard gestione
-      navigate('/gestione-diario');
-    } else {
-      // Clienti vanno al diario
-      navigate('/diario');
-    }
-  }
-}, [user, navigate]);
+```text
++------------------------------------------+
+|           Ritaglia Foto Fronte           |  <- Header
++------------------------------------------+
+|                                          |
+|    +------------------------------+      |
+|    |                              |      |
+|    |   [Ghost Image @ 35%]        |      |  <- Ghost overlay
+|    |                              |      |
+|    |   +----------------------+   |      |
+|    |   |                      |   |      |
+|    |   |   CROPPER AREA       |   |      |  <- Area di ritaglio
+|    |   |   (Aspect 3:4)       |   |      |
+|    |   |   [Griglia 3x3]      |   |      |
+|    |   |                      |   |      |
+|    |   +----------------------+   |      |
+|    |                              |      |
+|    +------------------------------+      |
+|                                          |
+|    [-------- Zoom Slider --------]       |
+|                                          |
+|    [Annulla]              [Conferma]     |
++------------------------------------------+
 ```
 
 ---
 
-## Riepilogo File da Modificare
+## File da Creare/Modificare
 
-| File | Modifiche |
-|------|-----------|
-| `src/pages/Auth.tsx` | Aggiungere whitelist, funzione auto-provisioning, aggiornare handleSubmit e reindirizzamento |
-
----
-
-## Test Case Richiesto
-
-**Scenario:** `michela.amadei@hotmail.it` con password `362@diario`
-
-1. Utente clicca switch "Collaboratore"
-2. Inserisce email: `michela.amadei@hotmail.it`
-3. Inserisce password: `362@diario`
-4. Clicca "Accedi"
-5. Sistema:
-   - Verifica email in whitelist -> SI
-   - Verifica password == 362@diario -> SI
-   - Tenta signIn -> Fallisce (utente non esiste)
-   - Tenta signUp automatico con metadata -> Successo
-   - Trigger `handle_new_user` assegna ruolo `collaborator`
-   - Utente viene reindirizzato a `/gestione-diario`
-6. Michela vede solo i propri clienti assegnati
+| File | Azione |
+|------|--------|
+| `package.json` | Aggiungere `react-easy-crop` |
+| `src/lib/imageCompression.ts` | Nuovo - utility compressione |
+| `src/components/checks/ImageCropperModal.tsx` | Nuovo - cropper con ghost |
+| `src/components/checks/CheckFormModal.tsx` | Modificare - integrare cropper |
+| `src/hooks/useUserChecks.ts` | Aggiungere `getFirstCheckWithPhotos` |
+| `src/pages/Checks.tsx` | Passare firstCheckData al modal |
 
 ---
 
-## Note di Sicurezza
+## Flusso Utente Completo
 
-- La password predefinita e usata SOLO per la prima creazione dell'account
-- Dopo il primo accesso, i collaboratori sono invitati a cambiare password tramite Settings
-- Il ruolo viene assegnato dal trigger database `handle_new_user`, non dal frontend
-- La whitelist frontend serve solo per abilitare l'auto-provisioning, i ruoli effettivi sono gestiti lato database
+1. Utente apre Check #5
+2. Clicca su "Fronte" per caricare foto
+3. Sistema operativo mostra scelta: Scatta Foto / Libreria
+4. Utente seleziona immagine
+5. Si apre ImageCropperModal con:
+   - Immagine selezionata in primo piano
+   - Foto Fronte del Check #1 in trasparenza (35%)
+   - Griglia 3x3 per allineamento
+6. Utente sposta/scala fino ad allineare le sagome
+7. Clicca "Conferma"
+8. Immagine viene ritagliata e compressa (max 1200px, 85% qualita)
+9. Preview aggiornata nel form
+10. Al salvataggio, viene caricata solo la versione finale
+
+---
+
+## Vantaggi per 362gradi
+
+- **Coerenza Visiva**: Confronti "Prima vs Dopo" mostrano cambiamenti reali
+- **Facilita d'Uso**: Guida visiva aiuta utenti a posizionarsi correttamente
+- **Performance**: Compressione riduce tempi di upload e costi storage
+- **Flessibilita**: Scelta tra galleria e camera soddisfa tutti i casi d'uso
+
