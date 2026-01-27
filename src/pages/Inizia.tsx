@@ -18,6 +18,7 @@ interface FunnelData {
   height: number | null;
   current_weight: number | null;
   target_weight: number | null;
+  body_type: string;
   min_historic_size: string;
   special_event: string;
   
@@ -25,36 +26,47 @@ interface FunnelData {
   metabolism: string;
   health_conditions: string[];
   medications: string;
+  digestion: string;
+  energy_level: string;
   sleep_hours: number | null;
   wake_quality: string;
   water_liters: number | null;
   
   // Block 3: Nutrition
   meals_per_day: number | null;
+  snacking_habit: string;
+  late_eating: boolean | null;
   weakness: string;
   eating_out_frequency: string;
+  alcohol_frequency: string;
   skip_breakfast: boolean | null;
   allergies: string;
   diet_type: string;
   
   // Block 4: Psychology
   why_now: string;
+  previous_diets: string[];
   past_obstacle: string;
   stress_eating: boolean | null;
   post_cheat_feeling: string;
+  biggest_fear: string;
   home_support: boolean | null;
+  motivation_source: string;
   weekend_challenge: string;
   
   // Block 5: Training
+  daily_activity: string;
   preferred_location: string;
   weekly_sessions: string;
   session_duration: string;
+  cardio_preference: string;
   home_equipment: string;
   injuries: string;
   experience_level: string;
   commit_daily_diary: boolean | null;
   
-  // Email & Result
+  // Final
+  name: string;
   email: string;
 }
 
@@ -64,33 +76,45 @@ const initialData: FunnelData = {
   height: null,
   current_weight: null,
   target_weight: null,
+  body_type: "",
   min_historic_size: "",
   special_event: "",
   metabolism: "",
   health_conditions: [],
   medications: "",
+  digestion: "",
+  energy_level: "",
   sleep_hours: null,
   wake_quality: "",
   water_liters: null,
   meals_per_day: null,
+  snacking_habit: "",
+  late_eating: null,
   weakness: "",
   eating_out_frequency: "",
+  alcohol_frequency: "",
   skip_breakfast: null,
   allergies: "",
   diet_type: "",
   why_now: "",
+  previous_diets: [],
   past_obstacle: "",
   stress_eating: null,
   post_cheat_feeling: "",
+  biggest_fear: "",
   home_support: null,
+  motivation_source: "",
   weekend_challenge: "",
+  daily_activity: "",
   preferred_location: "",
   weekly_sessions: "",
   session_duration: "",
+  cardio_preference: "",
   home_equipment: "",
   injuries: "",
   experience_level: "",
   commit_daily_diary: null,
+  name: "",
   email: "",
 };
 
@@ -102,56 +126,68 @@ interface Step {
   interstitialType?: "bio" | "metabolism" | "nutrition" | "psychology" | "training";
 }
 
-// Define all steps
+// Define all steps (51 total: 45 questions + 5 interstitials + 1 result)
 const steps: Step[] = [
-  // Block 1: Bio & Goal
+  // Block 1: Bio & Goal (8 domande + 1 interstitial)
   { type: "question", id: "gender" },
   { type: "question", id: "age" },
   { type: "question", id: "height" },
   { type: "question", id: "current_weight" },
   { type: "question", id: "target_weight" },
+  { type: "question", id: "body_type" },
   { type: "question", id: "min_historic_size" },
   { type: "question", id: "special_event" },
   { type: "interstitial", id: "interstitial_bio", interstitialType: "bio" },
   
-  // Block 2: Metabolism & Health
+  // Block 2: Metabolism & Health (8 domande + 1 interstitial)
   { type: "question", id: "metabolism" },
   { type: "question", id: "health_conditions" },
   { type: "question", id: "medications" },
+  { type: "question", id: "digestion" },
+  { type: "question", id: "energy_level" },
   { type: "question", id: "sleep_hours" },
   { type: "question", id: "wake_quality" },
   { type: "question", id: "water_liters" },
   { type: "interstitial", id: "interstitial_metabolism", interstitialType: "metabolism" },
   
-  // Block 3: Nutrition
+  // Block 3: Nutrition (9 domande + 1 interstitial)
   { type: "question", id: "meals_per_day" },
+  { type: "question", id: "snacking_habit" },
+  { type: "question", id: "late_eating" },
   { type: "question", id: "weakness" },
   { type: "question", id: "eating_out_frequency" },
+  { type: "question", id: "alcohol_frequency" },
   { type: "question", id: "skip_breakfast" },
   { type: "question", id: "allergies" },
   { type: "question", id: "diet_type" },
   { type: "interstitial", id: "interstitial_nutrition", interstitialType: "nutrition" },
   
-  // Block 4: Psychology
+  // Block 4: Psychology (9 domande + 1 interstitial)
   { type: "question", id: "why_now" },
+  { type: "question", id: "previous_diets" },
   { type: "question", id: "past_obstacle" },
   { type: "question", id: "stress_eating" },
   { type: "question", id: "post_cheat_feeling" },
+  { type: "question", id: "biggest_fear" },
   { type: "question", id: "home_support" },
+  { type: "question", id: "motivation_source" },
   { type: "question", id: "weekend_challenge" },
   { type: "interstitial", id: "interstitial_psychology", interstitialType: "psychology" },
   
-  // Block 5: Training
+  // Block 5: Training (9 domande + 1 interstitial)
+  { type: "question", id: "daily_activity" },
   { type: "question", id: "preferred_location" },
   { type: "question", id: "weekly_sessions" },
   { type: "question", id: "session_duration" },
+  { type: "question", id: "cardio_preference" },
   { type: "question", id: "home_equipment" },
   { type: "question", id: "injuries" },
   { type: "question", id: "experience_level" },
   { type: "question", id: "commit_daily_diary" },
   { type: "interstitial", id: "interstitial_training", interstitialType: "training" },
   
-  // Email gate & Result
+  // Final (2 domande + 1 result)
+  { type: "question", id: "name" },
   { type: "question", id: "email" },
   { type: "result", id: "result" },
 ];
@@ -224,6 +260,7 @@ const Inizia = () => {
     if (currentStep.type === "interstitial") {
       return (
         <FunnelInterstitial
+          key={currentStep.id}
           type={currentStep.interstitialType!}
           onComplete={goToNext}
         />
@@ -315,6 +352,22 @@ const Inizia = () => {
           />
         );
         
+      case "body_type":
+        return (
+          <SingleChoiceStep
+            question="Quale descrizione si avvicina di più al tuo fisico?"
+            options={[
+              { value: "ectomorph", label: "Magro, fatico a prendere peso", emoji: "🦴" },
+              { value: "mesomorph", label: "Atletico, prendo/perdo peso facilmente", emoji: "💪" },
+              { value: "endomorph", label: "Robusto, tendo ad accumulare", emoji: "🐻" },
+              { value: "mixed", label: "Un mix di questi", emoji: "🔀" },
+            ]}
+            value={data.body_type}
+            onChange={(v) => updateData("body_type", v)}
+            onNext={goToNext}
+          />
+        );
+        
       case "min_historic_size":
         return (
           <SingleChoiceStep
@@ -397,6 +450,40 @@ const Inizia = () => {
           />
         );
         
+      case "digestion":
+        return (
+          <SingleChoiceStep
+            question="Come va la tua digestione?"
+            options={[
+              { value: "excellent", label: "Ottima, nessun problema", emoji: "✅" },
+              { value: "good", label: "Buona, occasionali fastidi", emoji: "👍" },
+              { value: "bloating", label: "Spesso gonfiore", emoji: "🎈" },
+              { value: "irregular", label: "Irregolare", emoji: "🔄" },
+              { value: "problematic", label: "Problematica", emoji: "⚠️" },
+            ]}
+            value={data.digestion}
+            onChange={(v) => updateData("digestion", v)}
+            onNext={goToNext}
+          />
+        );
+        
+      case "energy_level":
+        return (
+          <SingleChoiceStep
+            question="Come valuti il tuo livello di energia durante il giorno?"
+            options={[
+              { value: "very_low", label: "Molto basso, sempre stanco/a", emoji: "😴" },
+              { value: "low", label: "Basso, crolli pomeridiani", emoji: "😪" },
+              { value: "moderate", label: "Moderato, alti e bassi", emoji: "😐" },
+              { value: "good", label: "Buono, abbastanza costante", emoji: "😊" },
+              { value: "high", label: "Alto, energia tutto il giorno", emoji: "⚡" },
+            ]}
+            value={data.energy_level}
+            onChange={(v) => updateData("energy_level", v)}
+            onNext={goToNext}
+          />
+        );
+        
       case "sleep_hours":
         return (
           <SingleChoiceStep
@@ -461,6 +548,34 @@ const Inizia = () => {
           />
         );
         
+      case "snacking_habit":
+        return (
+          <SingleChoiceStep
+            question="Fai spuntini tra i pasti?"
+            options={[
+              { value: "never", label: "Mai o quasi mai", emoji: "🚫" },
+              { value: "sometimes", label: "A volte, quando ho fame", emoji: "🤷" },
+              { value: "often", label: "Spesso, anche senza fame", emoji: "🍪" },
+              { value: "always", label: "Sempre, è un'abitudine", emoji: "🔄" },
+            ]}
+            value={data.snacking_habit}
+            onChange={(v) => updateData("snacking_habit", v)}
+            onNext={goToNext}
+          />
+        );
+        
+      case "late_eating":
+        return (
+          <BooleanStep
+            question="Mangi spesso dopo le 21?"
+            yesLabel="Sì, ceno tardi o faccio spuntini serali"
+            noLabel="No, finisco di mangiare presto"
+            value={data.late_eating}
+            onChange={(v) => updateData("late_eating", v)}
+            onNext={goToNext}
+          />
+        );
+        
       case "weakness":
         return (
           <SingleChoiceStep
@@ -490,6 +605,22 @@ const Inizia = () => {
             ]}
             value={data.eating_out_frequency}
             onChange={(v) => updateData("eating_out_frequency", v)}
+            onNext={goToNext}
+          />
+        );
+        
+      case "alcohol_frequency":
+        return (
+          <SingleChoiceStep
+            question="Quante volte bevi alcolici a settimana?"
+            options={[
+              { value: "never", label: "Mai", emoji: "🚫" },
+              { value: "rarely", label: "Raramente (1-2 volte/mese)", emoji: "🍷" },
+              { value: "weekly", label: "1-2 volte a settimana", emoji: "🍺" },
+              { value: "often", label: "3+ volte a settimana", emoji: "🍻" },
+            ]}
+            value={data.alcohol_frequency}
+            onChange={(v) => updateData("alcohol_frequency", v)}
             onNext={goToNext}
           />
         );
@@ -553,6 +684,25 @@ const Inizia = () => {
           />
         );
         
+      case "previous_diets":
+        return (
+          <MultiChoiceStep
+            question="Hai seguito diete in passato?"
+            subtitle="Seleziona tutte quelle che hai provato"
+            options={[
+              { value: "calorie_counting", label: "Conteggio calorie", emoji: "🔢" },
+              { value: "low_carb", label: "Low-carb/Chetogenica", emoji: "🥑" },
+              { value: "intermittent_fasting", label: "Digiuno intermittente", emoji: "⏰" },
+              { value: "meal_replacement", label: "Pasti sostitutivi", emoji: "🥤" },
+              { value: "nutritionist", label: "Seguita da nutrizionista", emoji: "👨‍⚕️" },
+            ]}
+            values={data.previous_diets}
+            onChange={(v) => updateData("previous_diets", v)}
+            onNext={goToNext}
+            allowNone
+          />
+        );
+        
       case "past_obstacle":
         return (
           <SingleChoiceStep
@@ -598,6 +748,23 @@ const Inizia = () => {
           />
         );
         
+      case "biggest_fear":
+        return (
+          <SingleChoiceStep
+            question="Qual è la tua più grande paura in questo percorso?"
+            options={[
+              { value: "failure", label: "Fallire di nuovo", emoji: "😰" },
+              { value: "giving_up", label: "Mollare dopo poco tempo", emoji: "🏳️" },
+              { value: "restrictions", label: "Dovermi privare troppo", emoji: "🚫" },
+              { value: "social", label: "Rinunciare alla vita sociale", emoji: "🎉" },
+              { value: "results", label: "Non vedere risultati", emoji: "📉" },
+            ]}
+            value={data.biggest_fear}
+            onChange={(v) => updateData("biggest_fear", v)}
+            onNext={goToNext}
+          />
+        );
+        
       case "home_support":
         return (
           <BooleanStep
@@ -607,6 +774,23 @@ const Inizia = () => {
             noLabel="No, sono solo/a in questo"
             value={data.home_support}
             onChange={(v) => updateData("home_support", v)}
+            onNext={goToNext}
+          />
+        );
+        
+      case "motivation_source":
+        return (
+          <SingleChoiceStep
+            question="Chi ti motiva di più?"
+            options={[
+              { value: "myself", label: "Me stesso/a", emoji: "💪" },
+              { value: "partner", label: "Il/La mio/a partner", emoji: "❤️" },
+              { value: "children", label: "I miei figli", emoji: "👨‍👩‍👧" },
+              { value: "health", label: "I medici/La mia salute", emoji: "🏥" },
+              { value: "community", label: "Una community/Gruppo", emoji: "👥" },
+            ]}
+            value={data.motivation_source}
+            onChange={(v) => updateData("motivation_source", v)}
             onNext={goToNext}
           />
         );
@@ -624,6 +808,23 @@ const Inizia = () => {
             ]}
             value={data.weekend_challenge}
             onChange={(v) => updateData("weekend_challenge", v)}
+            onNext={goToNext}
+          />
+        );
+        
+      case "daily_activity":
+        return (
+          <SingleChoiceStep
+            question="Come descriveresti la tua attività quotidiana?"
+            options={[
+              { value: "sedentary", label: "Sedentaria (lavoro d'ufficio)", emoji: "🪑" },
+              { value: "light", label: "Leggera (cammino poco)", emoji: "🚶" },
+              { value: "moderate", label: "Moderata (in piedi/cammino)", emoji: "🏃" },
+              { value: "active", label: "Attiva (lavoro fisico)", emoji: "💪" },
+              { value: "very_active", label: "Molto attiva (sport/lavoro pesante)", emoji: "🔥" },
+            ]}
+            value={data.daily_activity}
+            onChange={(v) => updateData("daily_activity", v)}
             onNext={goToNext}
           />
         );
@@ -671,6 +872,22 @@ const Inizia = () => {
             ]}
             value={data.session_duration}
             onChange={(v) => updateData("session_duration", v)}
+            onNext={goToNext}
+          />
+        );
+        
+      case "cardio_preference":
+        return (
+          <SingleChoiceStep
+            question="Preferisci allenamenti cardio o forza?"
+            options={[
+              { value: "cardio", label: "Cardio (corsa, bici, camminata)", emoji: "🏃" },
+              { value: "strength", label: "Forza (pesi, resistenza)", emoji: "🏋️" },
+              { value: "mixed", label: "Un mix equilibrato", emoji: "⚖️" },
+              { value: "flexibility", label: "Flessibilità (yoga, stretching)", emoji: "🧘" },
+            ]}
+            value={data.cardio_preference}
+            onChange={(v) => updateData("cardio_preference", v)}
             onNext={goToNext}
           />
         );
@@ -736,6 +953,18 @@ const Inizia = () => {
           />
         );
         
+      case "name":
+        return (
+          <TextInputStep
+            question="Come ti chiami?"
+            subtitle="Piacere di conoscerti!"
+            placeholder="Il tuo nome"
+            value={data.name}
+            onChange={(v) => updateData("name", v)}
+            onNext={goToNext}
+          />
+        );
+        
       case "email":
         return (
           <TextInputStep
@@ -752,6 +981,7 @@ const Inizia = () => {
                   .from("onboarding_leads")
                   .update({ 
                     email: data.email,
+                    name: data.name,
                     profile_badge: getProfileBadge(),
                     completed_at: new Date().toISOString()
                   })
