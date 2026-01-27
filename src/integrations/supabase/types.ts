@@ -202,6 +202,132 @@ export type Database = {
           },
         ]
       }
+      onboarding_leads: {
+        Row: {
+          age: number | null
+          allergies: string | null
+          commit_daily_diary: boolean | null
+          completed_at: string | null
+          created_at: string
+          current_weight: number | null
+          diet_type: string | null
+          eating_out_frequency: string | null
+          email: string | null
+          experience_level: string | null
+          gender: string | null
+          health_conditions: string[] | null
+          height: number | null
+          home_equipment: string | null
+          home_support: boolean | null
+          id: string
+          injuries: string | null
+          meals_per_day: number | null
+          medications: string | null
+          metabolism: string | null
+          min_historic_size: string | null
+          past_obstacle: string | null
+          post_cheat_feeling: string | null
+          predicted_weeks: number | null
+          preferred_location: string | null
+          profile_badge: string | null
+          session_duration: string | null
+          skip_breakfast: boolean | null
+          sleep_hours: number | null
+          special_event: string | null
+          stress_eating: boolean | null
+          target_weight: number | null
+          updated_at: string
+          wake_quality: string | null
+          water_liters: number | null
+          weakness: string | null
+          weekend_challenge: string | null
+          weekly_sessions: string | null
+          why_now: string | null
+        }
+        Insert: {
+          age?: number | null
+          allergies?: string | null
+          commit_daily_diary?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          current_weight?: number | null
+          diet_type?: string | null
+          eating_out_frequency?: string | null
+          email?: string | null
+          experience_level?: string | null
+          gender?: string | null
+          health_conditions?: string[] | null
+          height?: number | null
+          home_equipment?: string | null
+          home_support?: boolean | null
+          id?: string
+          injuries?: string | null
+          meals_per_day?: number | null
+          medications?: string | null
+          metabolism?: string | null
+          min_historic_size?: string | null
+          past_obstacle?: string | null
+          post_cheat_feeling?: string | null
+          predicted_weeks?: number | null
+          preferred_location?: string | null
+          profile_badge?: string | null
+          session_duration?: string | null
+          skip_breakfast?: boolean | null
+          sleep_hours?: number | null
+          special_event?: string | null
+          stress_eating?: boolean | null
+          target_weight?: number | null
+          updated_at?: string
+          wake_quality?: string | null
+          water_liters?: number | null
+          weakness?: string | null
+          weekend_challenge?: string | null
+          weekly_sessions?: string | null
+          why_now?: string | null
+        }
+        Update: {
+          age?: number | null
+          allergies?: string | null
+          commit_daily_diary?: boolean | null
+          completed_at?: string | null
+          created_at?: string
+          current_weight?: number | null
+          diet_type?: string | null
+          eating_out_frequency?: string | null
+          email?: string | null
+          experience_level?: string | null
+          gender?: string | null
+          health_conditions?: string[] | null
+          height?: number | null
+          home_equipment?: string | null
+          home_support?: boolean | null
+          id?: string
+          injuries?: string | null
+          meals_per_day?: number | null
+          medications?: string | null
+          metabolism?: string | null
+          min_historic_size?: string | null
+          past_obstacle?: string | null
+          post_cheat_feeling?: string | null
+          predicted_weeks?: number | null
+          preferred_location?: string | null
+          profile_badge?: string | null
+          session_duration?: string | null
+          skip_breakfast?: boolean | null
+          sleep_hours?: number | null
+          special_event?: string | null
+          stress_eating?: boolean | null
+          target_weight?: number | null
+          updated_at?: string
+          wake_quality?: string | null
+          water_liters?: number | null
+          weakness?: string | null
+          weekend_challenge?: string | null
+          weekly_sessions?: string | null
+          why_now?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
