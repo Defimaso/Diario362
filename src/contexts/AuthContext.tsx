@@ -13,6 +13,7 @@ interface AuthContextType {
   isCollaborator: boolean;
   isClient: boolean;
   isSuperAdmin: boolean;
+  isFullAdmin: boolean;
   signUp: (email: string, password: string, fullName: string, phoneNumber?: string, coachName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
@@ -146,6 +147,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const isCollaborator = roles.includes('collaborator');
   const isClient = roles.includes('client');
   const isSuperAdmin = user?.email === 'info@362gradi.it';
+  
+  // Full admin includes all admin emails (for coach filter visibility)
+  const isFullAdmin = isAdmin || [
+    'info@362gradi.it',
+    'valentina362g@gmail.com',
+    'ilaria@362gradi.it',
+    'marco@362gradi.it'
+  ].includes(user?.email || '');
 
   return (
     <AuthContext.Provider value={{
@@ -157,6 +166,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       isCollaborator,
       isClient,
       isSuperAdmin,
+      isFullAdmin,
       signUp,
       signIn,
       signOut,

@@ -341,8 +341,8 @@ const GestioneDiario = () => {
             ))}
           </div>
 
-          {/* Coach Filter (only for super admin) */}
-          {isSuperAdmin && (
+          {/* Coach Filter (for all admins) */}
+          {(isSuperAdmin || isAdmin) && (
             <Select value={coachFilter} onValueChange={(v) => setCoachFilter(v as CoachFilter)}>
               <SelectTrigger className="w-[140px] bg-card">
                 <Filter className="w-4 h-4 mr-2" />
