@@ -100,6 +100,26 @@ export const useStaffVideoCorrections = () => {
 
       if (error) throw error;
 
+      // Find the video to get client info
+      const video = clientVideos.find(v => v.id === videoId);
+      
+      // Send push notification to client
+      if (video) {
+        try {
+          await supabase.functions.invoke('notify-video-correction', {
+            body: {
+              type: 'feedback_added',
+              videoId,
+              clientId: video.user_id,
+              exerciseName: video.exercise_name,
+              coachId: user.id,
+            }
+          });
+        } catch (notifyError) {
+          console.warn('Failed to send notification:', notifyError);
+        }
+      }
+
       await fetchClientVideos();
       return { error: null };
     } catch (error) {
