@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import Diario from "./pages/Diario";
 import GestioneDiario from "./pages/GestioneDiario";
 import Checks from "./pages/Checks";
+import Nutrizione from "./pages/Nutrizione";
 import InstallApp from "./pages/InstallApp";
 import Settings from "./pages/Settings";
 import Inizia from "./pages/Inizia";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/diario" element={<Diario />} />
             <Route path="/gestionediario" element={<GestioneDiario />} />
             <Route path="/checks" element={<Checks />} />
+            <Route path="/nutrizione" element={<Nutrizione />} />
             <Route path="/install" element={<InstallApp />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/inizia" element={<Inizia />} />

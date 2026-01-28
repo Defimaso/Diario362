@@ -1,13 +1,15 @@
 import { useState, useEffect, forwardRef } from 'react';
-import { Camera, TrendingDown, TrendingUp, Scale, FileText } from 'lucide-react';
+import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import DailyCheckinStatus from './DailyCheckinStatus';
 import DailyCheckinDetails from './DailyCheckinDetails';
 import { useAuditLog } from '@/hooks/useAuditLog';
+import { useUserDiet } from '@/hooks/useUserDiet';
 
 interface UserCheck {
   id: string;
@@ -41,6 +43,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
   const [dailyCheckins, setDailyCheckins] = useState<DailyCheckin[]>([]);
   const [loading, setLoading] = useState(true);
   const { logAction } = useAuditLog();
+  const { dietPlan, loading: dietLoading, downloadDietPlan } = useUserDiet(clientId);
 
   useEffect(() => {
     const fetchChecks = async () => {
@@ -329,6 +332,40 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
               </tbody>
             </table>
           </div>
+        )}
+      </div>
+
+      {/* Nutrition Section */}
+      <div className="bg-card rounded-xl p-3 sm:p-4 border border-[hsl(var(--section-purple))]/30">
+        <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
+          <Apple className="w-4 h-4 text-[hsl(var(--section-purple))]" />
+          Piano Alimentare
+        </h4>
+        
+        {dietLoading ? (
+          <div className="h-16 bg-muted rounded-lg animate-pulse" />
+        ) : dietPlan ? (
+          <div className="flex items-center justify-between gap-3 p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2 rounded-lg bg-[hsl(var(--section-purple))]/10">
+                <FileText className="w-5 h-5 text-[hsl(var(--section-purple))]" />
+              </div>
+              <div className="min-w-0">
+                <p className="font-medium text-sm truncate">{dietPlan.file_name}</p>
+                <p className="text-xs text-muted-foreground">
+                  Caricato: {format(new Date(dietPlan.uploaded_at), 'dd/MM/yyyy', { locale: it })}
+                </p>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={downloadDietPlan}>
+              <Download className="w-4 h-4 mr-1" />
+              Scarica
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Nessun piano alimentare caricato
+          </p>
         )}
       </div>
 
