@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ELITE_BADGES, Badge, getUnlockedBadges, getPhaseInfo } from '@/lib/badges';
-import { getBadgeIcon } from '@/lib/badgeIcons';
-import { Lock, Trophy, Star } from 'lucide-react';
+import { getBadgeEmoji, getBadgeGlowColor, getBadgeSolidColor } from '@/lib/badgeEmojis';
+import { Trophy, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SpiritAnimalDrawer from './SpiritAnimalDrawer';
 
@@ -24,49 +24,59 @@ const BadgeCard = ({
   onClick: () => void;
 }) => {
   const phaseInfo = getPhaseInfo(badge.phase);
-  const BadgeIcon = getBadgeIcon(badge.id);
+  const emoji = getBadgeEmoji(badge.id);
+  const glowColor = getBadgeGlowColor(badge.id);
+  const solidColor = getBadgeSolidColor(badge.id);
   
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       whileHover={isUnlocked ? { scale: 1.05 } : undefined}
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.92 }}
       onClick={onClick}
       className={cn(
-        "relative p-2 sm:p-3 rounded-xl border transition-all duration-300 cursor-pointer",
-        isUnlocked 
-          ? "bg-card border-badge-gold/50 shadow-lg" 
-          : "bg-muted/30 border-border/50",
-        isCurrentBadge && "ring-2 ring-badge-gold shadow-badge-glow"
+        "relative p-2 sm:p-3 rounded-xl transition-all duration-300 cursor-pointer flex flex-col items-center",
+        isCurrentBadge && "ring-2 ring-badge-gold"
       )}
     >
       {/* Current Badge Indicator */}
       {isCurrentBadge && (
-        <div className="absolute -top-1.5 -right-1.5">
+        <div className="absolute -top-1.5 -right-1.5 z-10">
           <Star className="w-4 h-4 text-badge-gold fill-badge-gold" />
         </div>
       )}
       
-      {/* Badge Icon in Circle */}
+      {/* Badge Emoji in Circle */}
       <div className="flex justify-center mb-1.5">
-        <div className={cn(
-          "w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center transition-all",
-          isUnlocked 
-            ? "border-badge-gold bg-badge-gold/10" 
-            : "border-muted-foreground/30 bg-muted/50"
-        )}>
-          <BadgeIcon className={cn(
-            "w-5 h-5 sm:w-6 sm:h-6",
-            isUnlocked ? "text-badge-gold" : "text-muted-foreground/40"
-          )} />
+        <div 
+          className={cn(
+            "w-16 h-16 sm:w-14 sm:h-14 rounded-full flex items-center justify-center transition-all duration-300",
+            isUnlocked 
+              ? "border-2" 
+              : "border border-muted-foreground/30 grayscale opacity-40"
+          )}
+          style={isUnlocked ? {
+            borderColor: solidColor,
+            boxShadow: `0 0 20px ${glowColor}, 0 0 40px ${glowColor.replace('0.6', '0.3')}`,
+            background: `radial-gradient(circle, ${glowColor.replace('0.6', '0.15')} 0%, transparent 70%)`,
+          } : undefined}
+        >
+          <span 
+            className="text-3xl sm:text-2xl"
+            style={isUnlocked ? {
+              filter: `drop-shadow(0 0 8px ${glowColor})`,
+            } : undefined}
+          >
+            {emoji}
+          </span>
         </div>
       </div>
       
       {/* Badge Name */}
       <h4 className={cn(
-        "text-[10px] sm:text-xs font-semibold text-center truncate",
-        isUnlocked ? "text-badge-gold" : "text-muted-foreground"
+        "text-[10px] sm:text-xs font-semibold text-center truncate w-full",
+        isUnlocked ? "text-foreground" : "text-muted-foreground"
       )}>
         {isUnlocked ? badge.name : '???'}
       </h4>
@@ -76,15 +86,8 @@ const BadgeCard = ({
         "text-[9px] sm:text-[10px] text-center",
         isUnlocked ? "text-muted-foreground" : "text-muted-foreground/50"
       )}>
-        {badge.requiredStreak}gg
+        {badge.id === 20 ? '300 tot' : `${badge.requiredStreak}gg`}
       </p>
-      
-      {/* Lock Icon for Locked Badges */}
-      {!isUnlocked && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/30 rounded-xl">
-          <Lock className="w-4 h-4 text-muted-foreground/50" />
-        </div>
-      )}
       
       {/* Phase Indicator */}
       {isUnlocked && (
@@ -146,8 +149,8 @@ const BadgeGallery = ({ streak, totalCheckins, className }: BadgeGalleryProps) =
               </span>
             </div>
             
-            {/* Responsive grid: 4 columns on mobile, 5 on larger screens */}
-            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3">
+            {/* Responsive grid: 3 columns on mobile, 5 on larger screens */}
+            <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
               {phaseBadges.map((badge) => (
                 <BadgeCard
                   key={badge.id}

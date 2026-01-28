@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { Badge, getPhaseInfo, ELITE_BADGES } from '@/lib/badges';
-import { getBadgeIcon } from '@/lib/badgeIcons';
+import { getBadgeEmoji, getBadgeGlowColor, getBadgeSolidColor } from '@/lib/badgeEmojis';
 import { getSpiritContent } from '@/lib/badgeSpirits';
 import { Check, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,9 @@ const SpiritAnimalDrawer = ({
 }: SpiritAnimalDrawerProps) => {
   if (!badge) return null;
 
-  const BadgeIcon = getBadgeIcon(badge.id);
+  const emoji = getBadgeEmoji(badge.id);
+  const glowColor = getBadgeGlowColor(badge.id);
+  const solidColor = getBadgeSolidColor(badge.id);
   const phaseInfo = getPhaseInfo(badge.phase);
   const spiritContent = getSpiritContent(badge.id);
   
@@ -49,27 +51,38 @@ const SpiritAnimalDrawer = ({
             </DrawerTitle>
           </DrawerHeader>
 
-          {/* Badge Icon */}
+          {/* Badge Emoji */}
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: 'spring', stiffness: 200, damping: 15 }}
             className="flex justify-center mb-4"
           >
-            <div className={cn(
-              "relative w-24 h-24 rounded-full flex items-center justify-center",
-              isUnlocked 
-                ? "bg-badge-gold/20 border-2 border-badge-gold" 
-                : "bg-muted/50 border-2 border-muted-foreground/30"
-            )}>
-              <BadgeIcon className={cn(
-                "w-12 h-12",
-                isUnlocked ? "text-badge-gold" : "text-muted-foreground/50"
-              )} />
+            <div 
+              className={cn(
+                "relative w-28 h-28 rounded-full flex items-center justify-center",
+                !isUnlocked && "grayscale opacity-40"
+              )}
+              style={isUnlocked ? {
+                border: `3px solid ${solidColor}`,
+                boxShadow: `0 0 40px ${glowColor}, 0 0 80px ${glowColor.replace('0.6', '0.3')}`,
+                background: `radial-gradient(circle, ${glowColor.replace('0.6', '0.2')} 0%, transparent 70%)`,
+              } : {
+                border: '2px solid hsl(var(--muted-foreground) / 0.3)',
+              }}
+            >
+              <span 
+                className="text-6xl"
+                style={isUnlocked ? {
+                  filter: `drop-shadow(0 0 15px ${glowColor})`,
+                } : undefined}
+              >
+                {emoji}
+              </span>
               
               {!isUnlocked && (
                 <div className="absolute inset-0 rounded-full bg-background/60 backdrop-blur-sm flex items-center justify-center">
-                  <Lock className="w-8 h-8 text-muted-foreground" />
+                  <Lock className="w-10 h-10 text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -99,9 +112,9 @@ const SpiritAnimalDrawer = ({
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
             className={cn(
-              "text-2xl font-bold text-center mb-1",
-              isUnlocked ? "text-badge-gold" : "text-muted-foreground"
+              "text-2xl font-bold text-center mb-1"
             )}
+            style={isUnlocked ? { color: solidColor } : undefined}
           >
             {isUnlocked ? badge.name : '???'}
           </motion.h2>
@@ -128,10 +141,15 @@ const SpiritAnimalDrawer = ({
                   Qualità Positive
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
-                  {spiritContent.traits.map((trait, index) => (
+                  {spiritContent.traits.map((trait) => (
                     <div key={trait} className="flex items-center gap-2">
-                      <div className="w-5 h-5 rounded-full bg-badge-gold/20 flex items-center justify-center">
-                        <Check className="w-3 h-3 text-badge-gold" />
+                      <div 
+                        className="w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{
+                          backgroundColor: `${glowColor.replace('0.6', '0.2')}`,
+                        }}
+                      >
+                        <Check className="w-3 h-3" style={{ color: solidColor }} />
                       </div>
                       <span className="text-sm text-foreground">{trait}</span>
                     </div>
@@ -156,12 +174,16 @@ const SpiritAnimalDrawer = ({
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
-                className="bg-badge-gold/10 border border-badge-gold/30 rounded-xl p-4"
+                className="rounded-xl p-4"
+                style={{
+                  backgroundColor: `${glowColor.replace('0.6', '0.1')}`,
+                  border: `1px solid ${glowColor.replace('0.6', '0.3')}`,
+                }}
               >
-                <p className="text-base italic text-badge-gold text-center">
+                <p className="text-base italic text-center" style={{ color: solidColor }}>
                   "{badge.motivationalQuote}"
                 </p>
-                <p className="text-xs text-badge-gold/70 text-right mt-2">
+                <p className="text-xs text-right mt-2" style={{ color: `${solidColor}99` }}>
                   — 362gradi
                 </p>
               </motion.div>
