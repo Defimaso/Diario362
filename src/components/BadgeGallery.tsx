@@ -1,7 +1,10 @@
-import { motion, AnimatePresence } from 'framer-motion';
-import { ELITE_BADGES, Badge, getUnlockedBadges, getLockedBadges, getPhaseInfo } from '@/lib/badges';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { ELITE_BADGES, Badge, getUnlockedBadges, getPhaseInfo } from '@/lib/badges';
+import { getBadgeIcon } from '@/lib/badgeIcons';
 import { Lock, Trophy, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import SpiritAnimalDrawer from './SpiritAnimalDrawer';
 
 interface BadgeGalleryProps {
   streak: number;
@@ -12,21 +15,26 @@ interface BadgeGalleryProps {
 const BadgeCard = ({ 
   badge, 
   isUnlocked, 
-  isCurrentBadge 
+  isCurrentBadge,
+  onClick
 }: { 
   badge: Badge; 
   isUnlocked: boolean; 
   isCurrentBadge: boolean;
+  onClick: () => void;
 }) => {
   const phaseInfo = getPhaseInfo(badge.phase);
+  const BadgeIcon = getBadgeIcon(badge.id);
   
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileHover={isUnlocked ? { scale: 1.05, y: -5 } : undefined}
+      whileHover={isUnlocked ? { scale: 1.05 } : undefined}
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
       className={cn(
-        "relative p-4 rounded-xl border transition-all duration-300",
+        "relative p-2 sm:p-3 rounded-xl border transition-all duration-300 cursor-pointer",
         isUnlocked 
           ? "bg-card border-badge-gold/50 shadow-lg" 
           : "bg-muted/30 border-border/50",
@@ -35,46 +43,53 @@ const BadgeCard = ({
     >
       {/* Current Badge Indicator */}
       {isCurrentBadge && (
-        <div className="absolute -top-2 -right-2">
-          <Star className="w-5 h-5 text-badge-gold fill-badge-gold" />
+        <div className="absolute -top-1.5 -right-1.5">
+          <Star className="w-4 h-4 text-badge-gold fill-badge-gold" />
         </div>
       )}
       
-      {/* Badge Icon */}
-      <div className={cn(
-        "text-4xl text-center mb-2",
-        !isUnlocked && "opacity-30 grayscale"
-      )}>
-        {badge.emoji}
+      {/* Badge Icon in Circle */}
+      <div className="flex justify-center mb-1.5">
+        <div className={cn(
+          "w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 flex items-center justify-center transition-all",
+          isUnlocked 
+            ? "border-badge-gold bg-badge-gold/10" 
+            : "border-muted-foreground/30 bg-muted/50"
+        )}>
+          <BadgeIcon className={cn(
+            "w-5 h-5 sm:w-6 sm:h-6",
+            isUnlocked ? "text-badge-gold" : "text-muted-foreground/40"
+          )} />
+        </div>
       </div>
       
       {/* Badge Name */}
       <h4 className={cn(
-        "text-sm font-semibold text-center truncate",
+        "text-[10px] sm:text-xs font-semibold text-center truncate",
         isUnlocked ? "text-badge-gold" : "text-muted-foreground"
       )}>
         {isUnlocked ? badge.name : '???'}
       </h4>
       
-      {/* Description */}
+      {/* Days Required */}
       <p className={cn(
-        "text-xs text-center mt-1",
+        "text-[9px] sm:text-[10px] text-center",
         isUnlocked ? "text-muted-foreground" : "text-muted-foreground/50"
       )}>
-        {isUnlocked ? badge.description : `${badge.requiredStreak} giorni`}
+        {badge.requiredStreak}gg
       </p>
       
       {/* Lock Icon for Locked Badges */}
       {!isUnlocked && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/50 rounded-xl">
-          <Lock className="w-6 h-6 text-muted-foreground/50" />
+        <div className="absolute inset-0 flex items-center justify-center bg-background/30 rounded-xl">
+          <Lock className="w-4 h-4 text-muted-foreground/50" />
         </div>
       )}
       
       {/* Phase Indicator */}
       {isUnlocked && (
         <div 
-          className="absolute top-2 left-2 w-2 h-2 rounded-full"
+          className="absolute top-1.5 left-1.5 w-1.5 h-1.5 rounded-full"
           style={{ backgroundColor: phaseInfo.color }}
         />
       )}
@@ -83,11 +98,23 @@ const BadgeCard = ({
 };
 
 const BadgeGallery = ({ streak, totalCheckins, className }: BadgeGalleryProps) => {
+  const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  
   const unlockedBadges = getUnlockedBadges(streak, totalCheckins);
   const currentBadgeId = unlockedBadges[unlockedBadges.length - 1]?.id || 1;
   
   // Group badges by phase
   const phases = ['immediate', 'consolidation', 'transformation', 'mastery'] as const;
+
+  const handleBadgeClick = (badge: Badge) => {
+    setSelectedBadge(badge);
+    setIsDrawerOpen(true);
+  };
+
+  const isBadgeUnlocked = (badge: Badge) => {
+    return unlockedBadges.some(b => b.id === badge.id);
+  };
   
   return (
     <div className={cn("space-y-6", className)}>
@@ -119,19 +146,31 @@ const BadgeGallery = ({ streak, totalCheckins, className }: BadgeGalleryProps) =
               </span>
             </div>
             
-            <div className="grid grid-cols-5 gap-2">
+            {/* Responsive grid: 4 columns on mobile, 5 on larger screens */}
+            <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3">
               {phaseBadges.map((badge) => (
                 <BadgeCard
                   key={badge.id}
                   badge={badge}
-                  isUnlocked={unlockedBadges.some(b => b.id === badge.id)}
+                  isUnlocked={isBadgeUnlocked(badge)}
                   isCurrentBadge={badge.id === currentBadgeId}
+                  onClick={() => handleBadgeClick(badge)}
                 />
               ))}
             </div>
           </div>
         );
       })}
+
+      {/* Spirit Animal Drawer */}
+      <SpiritAnimalDrawer
+        badge={selectedBadge}
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        isUnlocked={selectedBadge ? isBadgeUnlocked(selectedBadge) : false}
+        streak={streak}
+        totalCheckins={totalCheckins}
+      />
     </div>
   );
 };

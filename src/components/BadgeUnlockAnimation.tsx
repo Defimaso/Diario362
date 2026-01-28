@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge, getPhaseInfo } from '@/lib/badges';
+import { getBadgeIcon } from '@/lib/badgeIcons';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect } from 'react';
@@ -22,6 +23,7 @@ const BadgeUnlockAnimation = ({ badge, isOpen, onClose }: BadgeUnlockAnimationPr
   if (!badge) return null;
 
   const phaseInfo = getPhaseInfo(badge.phase);
+  const BadgeIcon = getBadgeIcon(badge.id);
 
   return (
     <AnimatePresence>
@@ -102,7 +104,7 @@ const BadgeUnlockAnimation = ({ badge, isOpen, onClose }: BadgeUnlockAnimationPr
               </span>
             </motion.div>
 
-            {/* Emoji with Glow */}
+            {/* Icon with Glow */}
             <motion.div
               animate={{
                 scale: [1, 1.2, 1],
@@ -113,9 +115,11 @@ const BadgeUnlockAnimation = ({ badge, isOpen, onClose }: BadgeUnlockAnimationPr
                 repeat: Infinity,
                 ease: 'easeInOut',
               }}
-              className="text-9xl mb-6 drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]"
+              className="flex justify-center mb-6"
             >
-              {badge.emoji}
+              <div className="w-32 h-32 rounded-full bg-badge-gold/20 border-4 border-badge-gold flex items-center justify-center drop-shadow-[0_0_30px_rgba(255,215,0,0.5)]">
+                <BadgeIcon className="w-16 h-16 text-badge-gold" />
+              </div>
             </motion.div>
 
             {/* Title */}

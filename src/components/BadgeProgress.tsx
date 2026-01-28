@@ -7,6 +7,7 @@ import {
   getBadgeProgress,
   getPhaseInfo 
 } from '@/lib/badges';
+import { getBadgeIcon } from '@/lib/badgeIcons';
 import { cn } from '@/lib/utils';
 import { ChevronRight, Crown } from 'lucide-react';
 
@@ -24,21 +25,29 @@ const BadgeProgress = ({ streak, totalCheckins, className, compact = false }: Ba
   const progress = getBadgeProgress(streak, totalCheckins);
   const phaseInfo = getPhaseInfo(currentBadge.phase);
   
+  const CurrentBadgeIcon = getBadgeIcon(currentBadge.id);
+  const NextBadgeIcon = nextBadge ? getBadgeIcon(nextBadge.id) : null;
+  
   if (compact) {
     return (
       <div className={cn("flex items-center gap-3", className)}>
-        <div className="text-2xl">{currentBadge.emoji}</div>
+        <div className="w-10 h-10 rounded-full bg-badge-gold/10 border border-badge-gold/50 flex items-center justify-center">
+          <CurrentBadgeIcon className="w-5 h-5 text-badge-gold" />
+        </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold text-badge-gold truncate">
               {currentBadge.name}
             </span>
-            {nextBadge && (
+            {nextBadge && NextBadgeIcon && (
               <>
                 <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
-                <span className="text-xs text-muted-foreground truncate">
-                  {nextBadge.emoji} {nextBadge.name}
-                </span>
+                <div className="flex items-center gap-1">
+                  <NextBadgeIcon className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-xs text-muted-foreground truncate">
+                    {nextBadge.name}
+                  </span>
+                </div>
               </>
             )}
           </div>
@@ -67,7 +76,6 @@ const BadgeProgress = ({ streak, totalCheckins, className, compact = false }: Ba
       {/* Current Badge Display */}
       <div className="flex items-center gap-4 mb-4">
         <motion.div 
-          className="text-5xl"
           animate={{ 
             scale: [1, 1.1, 1],
           }}
@@ -76,8 +84,9 @@ const BadgeProgress = ({ streak, totalCheckins, className, compact = false }: Ba
             repeat: Infinity,
             ease: "easeInOut"
           }}
+          className="w-14 h-14 rounded-full bg-badge-gold/20 border-2 border-badge-gold flex items-center justify-center"
         >
-          {currentBadge.emoji}
+          <CurrentBadgeIcon className="w-8 h-8 text-badge-gold" />
         </motion.div>
         
         <div className="flex-1">
@@ -98,10 +107,14 @@ const BadgeProgress = ({ streak, totalCheckins, className, compact = false }: Ba
       </div>
       
       {/* Progress to Next Badge */}
-      {nextBadge ? (
+      {nextBadge && NextBadgeIcon ? (
         <div className="space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Prossimo: {nextBadge.emoji} {nextBadge.name}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Prossimo:</span>
+              <NextBadgeIcon className="w-4 h-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{nextBadge.name}</span>
+            </div>
             <span className="font-medium">
               Mancano <span className="text-badge-gold">{checkinsToNext}</span> check-in
             </span>
