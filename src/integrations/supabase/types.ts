@@ -124,7 +124,11 @@ export type Database = {
           id: string
           mindset: number | null
           nutrition_adherence: boolean | null
+          nutrition_notes: string | null
+          nutrition_score: number | null
           recovery: number | null
+          training_rest_day: boolean | null
+          training_score: number | null
           two_percent_edge: string | null
           updated_at: string
           user_id: string
@@ -136,7 +140,11 @@ export type Database = {
           id?: string
           mindset?: number | null
           nutrition_adherence?: boolean | null
+          nutrition_notes?: string | null
+          nutrition_score?: number | null
           recovery?: number | null
+          training_rest_day?: boolean | null
+          training_score?: number | null
           two_percent_edge?: string | null
           updated_at?: string
           user_id: string
@@ -148,7 +156,11 @@ export type Database = {
           id?: string
           mindset?: number | null
           nutrition_adherence?: boolean | null
+          nutrition_notes?: string | null
+          nutrition_score?: number | null
           recovery?: number | null
+          training_rest_day?: boolean | null
+          training_score?: number | null
           two_percent_edge?: string | null
           updated_at?: string
           user_id?: string
@@ -628,6 +640,71 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      video_correction_feedback: {
+        Row: {
+          coach_id: string
+          created_at: string
+          feedback: string
+          id: string
+          is_read: boolean
+          video_id: string
+        }
+        Insert: {
+          coach_id: string
+          created_at?: string
+          feedback: string
+          id?: string
+          is_read?: boolean
+          video_id: string
+        }
+        Update: {
+          coach_id?: string
+          created_at?: string
+          feedback?: string
+          id?: string
+          is_read?: boolean
+          video_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_correction_feedback_video_id_fkey"
+            columns: ["video_id"]
+            isOneToOne: false
+            referencedRelation: "video_corrections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      video_corrections: {
+        Row: {
+          created_at: string
+          exercise_name: string
+          id: string
+          notes: string | null
+          updated_at: string
+          user_id: string
+          video_url: string
+        }
+        Insert: {
+          created_at?: string
+          exercise_name: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+          video_url: string
+        }
+        Update: {
+          created_at?: string
+          exercise_name?: string
+          id?: string
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+          video_url?: string
         }
         Relationships: []
       }

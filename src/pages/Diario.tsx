@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
 import StatsOverview from "@/components/StatsOverview";
 import QuickActionCard from "@/components/QuickActionCard";
 import WeeklyChart from "@/components/WeeklyChart";
-import DailyCheckinModalNew from "@/components/DailyCheckinModalNew";
+import CheckinModalRedesign from "@/components/CheckinModalRedesign";
 import BadgeProgress from "@/components/BadgeProgress";
 import BadgeGallery from "@/components/BadgeGallery";
 import BadgeUnlockAnimation from "@/components/BadgeUnlockAnimation";
@@ -15,11 +15,14 @@ import ProgressWidget from "@/components/checks/ProgressWidget";
 import Footer from "@/components/legal/Footer";
 import CookieBanner from "@/components/legal/CookieBanner";
 import BottomDock from "@/components/BottomDock";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCheckins } from "@/hooks/useCheckins";
 import { useBadges } from "@/hooks/useBadges";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+
 const Diario = () => {
   const { user, signOut, loading: authLoading, isAdmin, isCollaborator, isSuperAdmin } = useAuth();
   const { 
@@ -277,6 +280,10 @@ const Diario = () => {
               variant="orange"
               onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
             />
+            <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">
+              <Info className="w-3 h-3" />
+              Usa le stesse credenziali di Teachable
+            </p>
           </motion.div>
 
           <motion.div
@@ -291,6 +298,10 @@ const Diario = () => {
               variant="purple"
               onClick={() => window.open('https://app.nutrium.com/', '_blank')}
             />
+            <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">
+              <Info className="w-3 h-3" />
+              Usa le stesse credenziali di Nutrium
+            </p>
           </motion.div>
 
           {/* Install App - only show if not in standalone mode */}
@@ -311,8 +322,8 @@ const Diario = () => {
           )}
         </div>
 
-        {/* Daily Checkin Modal */}
-        <DailyCheckinModalNew
+        {/* Daily Checkin Modal - NEW REDESIGN */}
+        <CheckinModalRedesign
           isOpen={isCheckinOpen}
           onClose={() => setIsCheckinOpen(false)}
           onComplete={handleCheckinComplete}
@@ -335,6 +346,9 @@ const Diario = () => {
       
       {/* Cookie Banner */}
       <CookieBanner />
+      
+      {/* PWA Install Prompt */}
+      <PWAInstallPrompt />
     </div>
   );
 };

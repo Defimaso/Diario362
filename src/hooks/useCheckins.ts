@@ -83,10 +83,35 @@ export const useCheckins = () => {
     energy: number;
     mindset: number;
     two_percent_edge: string;
+    nutrition_score?: number;
+    nutrition_notes?: string;
+    training_score?: number | null;
+    training_rest_day?: boolean;
   }) => {
     if (!user) return { error: new Error('Not authenticated') };
 
     const today = new Date().toISOString().split('T')[0];
+
+    // Prepare data with new fields
+    const dataToSave: any = {
+      recovery: checkinData.recovery,
+      nutrition_adherence: checkinData.nutrition_adherence,
+      energy: checkinData.energy,
+      mindset: checkinData.mindset,
+      two_percent_edge: checkinData.two_percent_edge,
+    };
+
+    // Add new fields if present
+    if (checkinData.nutrition_score !== undefined) {
+      dataToSave.nutrition_score = checkinData.nutrition_score;
+    }
+    if (checkinData.nutrition_notes !== undefined) {
+      dataToSave.nutrition_notes = checkinData.nutrition_notes;
+    }
+    if (checkinData.training_rest_day !== undefined) {
+      dataToSave.training_rest_day = checkinData.training_rest_day;
+      dataToSave.training_score = checkinData.training_rest_day ? null : checkinData.training_score;
+    }
 
     // Check if today's checkin exists
     const existing = checkins.find(c => c.date === today);
@@ -96,7 +121,7 @@ export const useCheckins = () => {
       const { error } = await supabase
         .from('daily_checkins')
         .update({
-          ...checkinData,
+          ...dataToSave,
           updated_at: new Date().toISOString(),
         })
         .eq('id', existing.id);
@@ -112,7 +137,7 @@ export const useCheckins = () => {
         .insert({
           user_id: user.id,
           date: today,
-          ...checkinData,
+          ...dataToSave,
         });
 
       if (!error) {
