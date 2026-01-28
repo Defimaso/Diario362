@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,9 @@ const VideoPlayerModal = ({
               <X className="w-4 h-4" />
             </Button>
           </div>
+          <DialogDescription className="sr-only">
+            Video esercizio {title} di {trainerName}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="px-4 pb-4">
@@ -63,10 +66,11 @@ const VideoPlayerModal = ({
             // Vertical player for Shorts (9:16)
             <div className="aspect-[9/16] max-h-[70vh] mx-auto rounded-xl overflow-hidden bg-black">
               <iframe
-                src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${videoId}`}
                 className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
                 title={title}
               />
             </div>
@@ -74,10 +78,11 @@ const VideoPlayerModal = ({
             // Horizontal player for standard videos (16:9)
             <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
               <iframe
-                src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
+                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
                 className="w-full h-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
+                referrerPolicy="strict-origin-when-cross-origin"
                 title={title}
               />
             </div>
