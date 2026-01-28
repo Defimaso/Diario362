@@ -134,17 +134,10 @@ const Auth = () => {
     return signInResult;
   };
 
-  // Reindirizzamento post-login intelligente
+  // Reindirizzamento post-login - tutti atterrano su /diario
   useEffect(() => {
     if (user) {
-      const userEmail = user.email?.toLowerCase() || '';
-      const isStaff = userEmail in STAFF_WHITELIST;
-      
-      if (isStaff) {
-        navigate('/gestione-diario');
-      } else {
-        navigate('/diario');
-      }
+      navigate('/diario');
     }
   }, [user, navigate]);
 
