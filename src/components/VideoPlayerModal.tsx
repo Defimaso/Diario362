@@ -28,6 +28,26 @@ const VideoPlayerModal = ({
 
   const trainerName = trainer === 'maso' ? 'Maso' : 'Martina';
 
+  // Build embed URL with maximum compatibility parameters
+  const getEmbedUrl = (id: string, isShorts: boolean) => {
+    const params = new URLSearchParams({
+      autoplay: '1',
+      rel: '0',
+      modestbranding: '1',
+      playsinline: '1',
+      mute: '1',          // Ensures autoplay works on all browsers
+      enablejsapi: '1',   // Enables JS API for controls
+    });
+
+    if (isShorts) {
+      params.set('loop', '1');
+      params.set('playlist', id);
+    }
+
+    // Use youtube-nocookie.com for privacy-enhanced embedding
+    return `https://www.youtube-nocookie.com/embed/${id}?${params.toString()}`;
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent 
@@ -66,7 +86,7 @@ const VideoPlayerModal = ({
             // Vertical player for Shorts (9:16)
             <div className="aspect-[9/16] max-h-[70vh] mx-auto rounded-xl overflow-hidden bg-black">
               <iframe
-                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${videoId}`}
+                src={getEmbedUrl(videoId, true)}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
@@ -78,7 +98,7 @@ const VideoPlayerModal = ({
             // Horizontal player for standard videos (16:9)
             <div className="aspect-video w-full rounded-xl overflow-hidden bg-black">
               <iframe
-                src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&modestbranding=1`}
+                src={getEmbedUrl(videoId, false)}
                 className="w-full h-full"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                 allowFullScreen
