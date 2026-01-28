@@ -155,6 +155,39 @@ export type Database = {
         }
         Relationships: []
       }
+      exercise_videos: {
+        Row: {
+          category: string
+          created_at: string | null
+          id: string
+          sort_order: number | null
+          title: string
+          trainer: string
+          video_type: string | null
+          video_url: string
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          id?: string
+          sort_order?: number | null
+          title: string
+          trainer: string
+          video_type?: string | null
+          video_url: string
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          id?: string
+          sort_order?: number | null
+          title?: string
+          trainer?: string
+          video_type?: string | null
+          video_url?: string
+        }
+        Relationships: []
+      }
       monthly_checks: {
         Row: {
           check_date: string | null

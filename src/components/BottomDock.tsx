@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardCheck, Apple, TrendingUp, User } from 'lucide-react';
+import { ClipboardCheck, Apple, Dumbbell, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -11,8 +11,8 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/diario', icon: ClipboardCheck, label: 'Diario' },
   { path: '/nutrizione', icon: Apple, label: 'Nutrizione' },
-  { path: '/checks', icon: TrendingUp, label: 'Progressi' },
-  { path: '/settings', icon: User, label: 'Profilo' },
+  { path: '/allenamento', icon: Dumbbell, label: 'Allenamento' },
+  { path: '/progressi', icon: TrendingUp, label: 'Progressi' },
 ];
 
 const BottomDock = () => {
