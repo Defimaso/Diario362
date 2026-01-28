@@ -98,16 +98,41 @@ export const useVideoCorrections = () => {
       if (!urlData?.signedUrl) throw new Error('Failed to get video URL');
 
       // Insert record
-      const { error: insertError } = await supabase
+      const { data: insertData, error: insertError } = await supabase
         .from('video_corrections')
         .insert({
           user_id: user.id,
           video_url: urlData.signedUrl,
           exercise_name: exerciseName,
           notes: notes || null,
-        });
+        })
+        .select()
+        .single();
 
       if (insertError) throw insertError;
+
+      // Get user profile for name
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name')
+        .eq('id', user.id)
+        .single();
+
+      // Send push notification to coaches
+      try {
+        await supabase.functions.invoke('notify-video-correction', {
+          body: {
+            type: 'video_uploaded',
+            videoId: insertData.id,
+            clientId: user.id,
+            clientName: profile?.full_name || user.email,
+            exerciseName,
+          }
+        });
+      } catch (notifyError) {
+        console.warn('Failed to send notification:', notifyError);
+        // Don't fail the upload if notification fails
+      }
 
       await fetchVideos();
       return { error: null };
