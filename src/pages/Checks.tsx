@@ -7,6 +7,7 @@ import CheckSlotCard from '@/components/checks/CheckSlotCard';
 import CheckFormModal from '@/components/checks/CheckFormModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import BottomDock from '@/components/BottomDock';
 
 const Checks = () => {
   const { 
@@ -45,7 +46,7 @@ const Checks = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24">
       {/* Header */}
       <header className="sticky top-0 z-40 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-4">
         <div className="flex items-center gap-3">
@@ -149,6 +150,9 @@ const Checks = () => {
         uploading={uploading}
         firstCheckData={selectedCheck && selectedCheck.checkNumber > 1 ? firstCheck : null}
       />
+
+      {/* Bottom Dock */}
+      <BottomDock />
     </div>
   );
 };
