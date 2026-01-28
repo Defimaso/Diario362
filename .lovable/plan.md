@@ -1,345 +1,232 @@
 
-# Piano di Implementazione: Dock di Navigazione e Modulo Nutrizione
+# Piano di Implementazione: Archivio Video e Fix Tab Progressi
 
-## Panoramica Architettura
+## Panoramica Modifiche
 
-```text
-+------------------+     +------------------+     +------------------+
-|     App.tsx      |     |   BottomDock     |     |    Nutrizione    |
-|   (Routes)       | --> | (Glassmorphism)  | --> |   (PDF Upload)   |
-|   + /nutrizione  |     | Fixed Bottom Bar |     |   user-diets     |
-+------------------+     +------------------+     +------------------+
-         |                       |                        |
-         v                       v                        v
-+------------------+     +------------------+     +------------------+
-| ClientExpanded   |     |   Diario.tsx     |     |   Supabase       |
-| (Staff Nutrition)|     |   Checks.tsx     |     |   Storage        |
-| (PDF Viewer)     |     |   Settings.tsx   |     |   + RLS          |
-+------------------+     +------------------+     +------------------+
-```
+| Componente | Stato Attuale | Nuovo Stato |
+|------------|---------------|-------------|
+| Tab Progressi | Mostra form per inserire check | Solo analytics (grafici + foto) |
+| Dock | 4 icone (Diario, Nutrizione, Progressi, Profilo) | 4 icone (Diario, Nutrizione, Allenamento, Progressi) |
+| Allenamento | Non esiste | Nuova sezione archivio video |
+| Profilo | In Dock | Spostato in header/menu |
 
 ---
 
-## Parte 1: Dock di Navigazione (Bottom Bar)
+## Parte 1: Database - Tabella `exercise_videos`
 
-### Struttura del Componente `BottomDock.tsx`
-
-**Icone e Destinazioni:**
-
-| Posizione | Nome | Icona | Rotta | Descrizione |
-|-----------|------|-------|-------|-------------|
-| 1 | Diario | `ClipboardCheck` | `/diario` | Home con check giornalieri |
-| 2 | Nutrizione | `Apple` | `/nutrizione` | Nuovo modulo PDF |
-| 3 | Progressi | `TrendingUp` | `/checks` | Tab verde esistente |
-| 4 | Profilo | `User` | `/settings` | Badge + impostazioni |
-
-**Design Glassmorphism:**
-```typescript
-// Stile del Dock
-<nav className="fixed bottom-0 left-0 right-0 z-50">
-  <div className="mx-auto max-w-lg px-4 pb-safe">
-    <div className={cn(
-      "flex justify-around items-center py-3 px-4 rounded-2xl mb-2",
-      "bg-card/80 backdrop-blur-xl border border-border/50",
-      "shadow-lg"
-    )}>
-      {/* Nav Items */}
-    </div>
-  </div>
-</nav>
-```
-
-**Stato Attivo (Rosso 362gradi):**
-```typescript
-// Colore attivo per l'icona corrente
-const isActive = currentPath === item.path;
-
-<item.icon className={cn(
-  "w-6 h-6 transition-colors",
-  isActive 
-    ? "text-[hsl(var(--section-red))]"  // Rosso 362gradi
-    : "text-muted-foreground"
-)} />
-```
-
-### File da Creare: `src/components/BottomDock.tsx`
-
-Componente standalone che:
-- Usa `useLocation` per determinare la pagina attiva
-- Applica stile glassmorphism con `backdrop-blur-xl`
-- Colora l'icona attiva in rosso (`--section-red`)
-- Supporta `pb-safe` per iPhone con notch
-
----
-
-## Parte 2: Modulo Nutrizione (Pagina Cliente)
-
-### Struttura Pagina `Nutrizione.tsx`
-
-```text
-+--------------------------------------------------+
-|  <- Indietro              NUTRIZIONE              |
-+--------------------------------------------------+
-|                                                  |
-|  +--------------------------------------------+  |
-|  |                                            |  |
-|  |     🍎  Il Tuo Piano Alimentare           |  |
-|  |                                            |  |
-|  |  [Se nessun file caricato:]                |  |
-|  |  +--------------------------------------+  |  |
-|  |  |  📄 Carica il tuo PDF               |  |  |
-|  |  |     (solo formato .pdf)             |  |  |
-|  |  +--------------------------------------+  |  |
-|  |                                            |  |
-|  |  [Se file presente:]                       |  |
-|  |  +--------------------------------------+  |  |
-|  |  |  📄 piano_alimentare.pdf            |  |  |
-|  |  |  Caricato il: 28/01/2026            |  |  |
-|  |  |  [Scarica]  [Sostituisci]           |  |  |
-|  |  +--------------------------------------+  |  |
-|  |                                            |  |
-|  +--------------------------------------------+  |
-|                                                  |
-|  +--------------------------------------------+  |
-|  |  ℹ️ Info                                  |  |
-|  |  Il tuo piano e visibile solo a te        |  |
-|  |  e ai tuoi coach assegnati.               |  |
-|  +--------------------------------------------+  |
-|                                                  |
-+--------------------------------------------------+
-|           [====== DOCK ======]                   |
-+--------------------------------------------------+
-```
-
-### Funzionalita
-
-1. **Upload PDF**: Input file con validazione `.pdf`
-2. **Visualizzazione**: Nome file + data caricamento
-3. **Download**: Link diretto al file
-4. **Sostituzione**: Elimina vecchio + carica nuovo
-
----
-
-## Parte 3: Database - Storage Bucket
-
-### Nuovo Bucket: `user-diets`
+### Schema Tabella
 
 ```sql
--- Crea bucket per i piani alimentari
-INSERT INTO storage.buckets (id, name, public)
-VALUES ('user-diets', 'user-diets', false);
-
--- Il bucket e PRIVATO (public: false)
--- L'accesso avviene tramite signed URLs
-```
-
-### RLS Policies per Storage
-
-```sql
--- Policy: Utenti possono caricare nella propria cartella
-CREATE POLICY "Users can upload own diet files"
-ON storage.objects FOR INSERT
-TO authenticated
-WITH CHECK (
-  bucket_id = 'user-diets' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Policy: Utenti possono vedere i propri file
-CREATE POLICY "Users can view own diet files"
-ON storage.objects FOR SELECT
-TO authenticated
-USING (
-  bucket_id = 'user-diets' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Policy: Utenti possono eliminare i propri file
-CREATE POLICY "Users can delete own diet files"
-ON storage.objects FOR DELETE
-TO authenticated
-USING (
-  bucket_id = 'user-diets' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-
--- Policy: Utenti possono aggiornare i propri file
-CREATE POLICY "Users can update own diet files"
-ON storage.objects FOR UPDATE
-TO authenticated
-USING (
-  bucket_id = 'user-diets' AND
-  (storage.foldername(name))[1] = auth.uid()::text
-);
-```
-
----
-
-## Parte 4: Database - Tabella Metadata
-
-### Nuova Tabella: `user_diet_plans`
-
-```sql
-CREATE TABLE public.user_diet_plans (
+CREATE TABLE public.exercise_videos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  file_name TEXT NOT NULL,
-  file_path TEXT NOT NULL,
-  file_size INTEGER,
-  uploaded_at TIMESTAMPTZ DEFAULT now(),
-  updated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id) -- Un solo piano per utente
-);
-
--- Enable RLS
-ALTER TABLE public.user_diet_plans ENABLE ROW LEVEL SECURITY;
-
--- Policy: Utenti vedono il proprio piano
-CREATE POLICY "Users can view own diet plan"
-ON public.user_diet_plans FOR SELECT
-TO authenticated
-USING (auth.uid() = user_id);
-
--- Policy: Utenti possono inserire il proprio piano
-CREATE POLICY "Users can insert own diet plan"
-ON public.user_diet_plans FOR INSERT
-TO authenticated
-WITH CHECK (auth.uid() = user_id);
-
--- Policy: Utenti possono aggiornare il proprio piano
-CREATE POLICY "Users can update own diet plan"
-ON public.user_diet_plans FOR UPDATE
-TO authenticated
-USING (auth.uid() = user_id);
-
--- Policy: Utenti possono eliminare il proprio piano
-CREATE POLICY "Users can delete own diet plan"
-ON public.user_diet_plans FOR DELETE
-TO authenticated
-USING (auth.uid() = user_id);
-
--- Policy: Admin vedono tutti i piani
-CREATE POLICY "Admins can view all diet plans"
-ON public.user_diet_plans FOR SELECT
-TO authenticated
-USING (
-  public.has_role(auth.uid(), 'admin') OR 
-  public.is_super_admin(auth.uid())
-);
-
--- Policy: Collaboratori vedono piani dei clienti assegnati
-CREATE POLICY "Collaborators can view assigned client diet plans"
-ON public.user_diet_plans FOR SELECT
-TO authenticated
-USING (
-  public.has_role(auth.uid(), 'collaborator') AND
-  public.can_collaborator_see_client(auth.uid(), user_id)
+  title TEXT NOT NULL,
+  category TEXT NOT NULL,  -- 'kettlebell', 'manubri', 'corpo_libero', etc.
+  trainer TEXT NOT NULL,   -- 'maso' o 'martina'
+  video_url TEXT NOT NULL,
+  video_type TEXT DEFAULT 'shorts',  -- 'shorts' (9:16) o 'standard' (16:9)
+  sort_order INTEGER DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 ```
 
----
+### Categorie Previste
 
-## Parte 5: Hook per la Gestione Nutrizione
+| Categoria | Display Name | Icona |
+|-----------|--------------|-------|
+| kettlebell | Kettlebell | Dumbbell |
+| manubri | Manubri | Dumbbell |
+| bilanciere | Bilanciere | Dumbbell |
+| corpo_libero | Corpo Libero | PersonStanding |
+| macchinari | Macchinari | Settings |
+| elastici | Elastici/Loop Band | Circle |
+| trx | TRX/Anelli | Link |
+| mobilita | Mobilita e Stretching | Waves |
 
-### Nuovo Hook: `src/hooks/useUserDiet.ts`
+### RLS Policies
 
-```typescript
-interface UserDietPlan {
-  id: string;
-  user_id: string;
-  file_name: string;
-  file_path: string;
-  file_size: number | null;
-  uploaded_at: string;
-}
+```sql
+-- Tutti gli utenti autenticati possono vedere i video
+CREATE POLICY "Authenticated users can view exercises"
+ON public.exercise_videos FOR SELECT
+TO authenticated
+USING (true);
 
-export const useUserDiet = (clientId?: string) => {
-  // Funzioni:
-  // - fetchDietPlan(): Recupera piano esistente
-  // - uploadDietPlan(file: File): Carica nuovo PDF
-  // - deleteDietPlan(): Elimina piano
-  // - getSignedUrl(): Ottiene URL firmato per download
-  // - replaceDietPlan(file: File): Sostituisce piano
-}
+-- Solo admin possono modificare
+CREATE POLICY "Admins can manage exercises"
+ON public.exercise_videos FOR ALL
+TO authenticated
+USING (public.has_role(auth.uid(), 'admin') OR public.is_super_admin(auth.uid()));
 ```
 
+### Dati Iniziali - Martina (estratti dal documento)
+
+| Categoria | Esercizi Estratti |
+|-----------|-------------------|
+| Kettlebell | Stacchi, Sumo Deadlift High Pull, Goblet Squat, One Leg Deadlift |
+| Manubri | Curl, Thruster, Russian Twist, Push Jerk, French Press, Affondi Posteriori, Rematore, Renegade Row, Stacchi Rumeni, Alzate Laterali, Rematore su Panca, Spinte, Hammer Curl, Hip Thrust One Leg, Reverse Fly |
+| Corpo Libero | Sit Up Butterfly, Reverse Lunge, Sit Up, Plank Up and Down, Dips, V-Pushups, Affondi in Camminata, Crunch Inverso, Crunch, Trazioni, Pushups, Step Ups, Ponte Glutei, Plank, Squat Jump, Burpees, Hollow Hold, V-Sit Up, Air Squat, Side Plank, Mountain Climbers |
+| Bilanciere | Squat, Push Press, Rematore, Stacchi Rumeni, Hip Thrust, Press, Abduzioni con Disco, Stacco da Terra |
+| Macchinari | Shoulder Press, Leg Press, Row, Hip Thrust, Pulley, Push Down, Lat Machine |
+| Elastici | Curl Bicipiti, Abduzioni, Glute Bridge |
+| Mobilita | Foam Roller Routine, Mobilita Corpo Libero, Ciciling Spalla, Windmill, Halo, Cat Cow, Squat Reach, Mobility Spalle, Mobilita Anche, Stretching vari |
+| TRX | Australian Pull Up |
+
+### Dati Iniziali - Maso (da lista testuale)
+
+I video di Maso verranno inseriti con la stessa struttura, organizzati per categoria (Manubri, Bilanciere, Loop Band, etc.).
+
 ---
 
-## Parte 6: Integrazione Staff Dashboard
+## Parte 2: Nuova Pagina Allenamento
 
-### Modifica: `src/components/ClientExpandedView.tsx`
+### Struttura UI
 
-Aggiungere sezione "Nutrizione" dopo "Storico Check":
+```text
++--------------------------------------------------+
+|  🏋️ ALLENAMENTO                                   |
++--------------------------------------------------+
+|  [🔍 Cerca esercizio...                        ] |
++--------------------------------------------------+
+|                                                  |
+|  📂 KETTLEBELL                                   |
+|  +--------------------------------------------+  |
+|  | 🎬 Stacchi         | Martina 🟪           |  |
+|  | 🎬 Goblet Squat    | Martina 🟪           |  |
+|  +--------------------------------------------+  |
+|                                                  |
+|  📂 MANUBRI                                      |
+|  +--------------------------------------------+  |
+|  | 🎬 Curl Manubri    | Maso 🟦              |  |
+|  | 🎬 Thruster        | Martina 🟪           |  |
+|  | 🎬 French Press    | Maso 🟦              |  |
+|  +--------------------------------------------+  |
+|                                                  |
+|  📂 CORPO LIBERO                                 |
+|  +--------------------------------------------+  |
+|  | ...                                        |  |
+|  +--------------------------------------------+  |
+|                                                  |
++--------------------------------------------------+
+|     [DOCK: Diario | Nutrizione | Allenamento | Progressi]  |
++--------------------------------------------------+
+```
+
+### Componenti
+
+1. **Search Bar**: Filtro in tempo reale per nome esercizio
+2. **Category Accordion**: Sezioni espandibili per categoria
+3. **Video Card**: Titolo + Trainer Badge (Blu/Viola)
+4. **Video Player Modal**: 
+   - Shorts: Aspect ratio 9:16 (verticale)
+   - Standard: Aspect ratio 16:9 (orizzontale)
+
+### Trainer Badge Colori
+
+| Trainer | Colore | HSL |
+|---------|--------|-----|
+| Maso | Blu 🟦 | hsl(210, 100%, 50%) |
+| Martina | Viola 🟪 | hsl(270, 80%, 60%) |
+
+---
+
+## Parte 3: Fix Tab Progressi
+
+### Pagina Attuale `/checks`
+
+Attualmente mostra:
+- Header "I Tuoi Check"
+- Progress bar completamento
+- Tabs "Da Fare" / "Completati"
+- Form per inserire nuovi check
+
+### Nuova Pagina `/progressi`
+
+Mostrera SOLO:
+- Grafico andamento peso (WeightChart)
+- Comparazione foto (PhotoComparison)
+- Storico tabellare (HistoryTable - opzionale)
+
+### Strategia di Implementazione
+
+1. **Rinominare rotta**: `/checks` rimane per la gestione check (accessibile da Diario)
+2. **Creare nuova pagina**: `/progressi` con solo analytics
+3. **Aggiornare Dock**: Puntare "Progressi" a `/progressi`
+
+### Contenuto Pagina Progressi
 
 ```typescript
-// Nuova sezione nel ClientExpandedView
-{/* Nutrition Section */}
-<div className="bg-card rounded-xl p-3 sm:p-4 border border-section-purple/30">
-  <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
-    <Apple className="w-4 h-4" />
-    Piano Alimentare
-  </h4>
-  
-  {dietPlan ? (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <FileText className="w-5 h-5 text-section-purple" />
-        <div>
-          <p className="font-medium">{dietPlan.file_name}</p>
-          <p className="text-xs text-muted-foreground">
-            Caricato: {format(new Date(dietPlan.uploaded_at), 'dd/MM/yyyy')}
-          </p>
-        </div>
-      </div>
-      <Button size="sm" variant="outline" onClick={handleDownload}>
-        <Download className="w-4 h-4 mr-1" />
-        Scarica
-      </Button>
+// src/pages/Progressi.tsx
+const Progressi = () => {
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <header>
+        <h1>I Tuoi Progressi</h1>
+        <p>Analizza il tuo percorso</p>
+      </header>
+      
+      <main className="p-4 space-y-4">
+        {/* Grafico Peso */}
+        <WeightChart data={progressChecks} getFilteredData={getFilteredData} />
+        
+        {/* Comparazione Foto */}
+        <PhotoComparison
+          datesWithPhotos={datesWithPhotos}
+          getSignedPhotoUrl={getSignedPhotoUrl}
+          comparisonDefaults={comparisonDefaults}
+        />
+        
+        {/* Storico opzionale */}
+        <HistoryTable data={progressChecks} monthlyChecks={monthlyChecks} />
+      </main>
+      
+      <BottomDock />
     </div>
-  ) : (
-    <p className="text-sm text-muted-foreground text-center py-4">
-      Nessun piano alimentare caricato
-    </p>
-  )}
-</div>
+  );
+};
 ```
 
 ---
 
-## Parte 7: Routing e Layout
+## Parte 4: Aggiornamento Bottom Dock
 
-### Modifica: `src/App.tsx`
+### Nuova Configurazione
 
 ```typescript
-// Aggiungere import
-import Nutrizione from "./pages/Nutrizione";
-
-// Aggiungere route
-<Route path="/nutrizione" element={<Nutrizione />} />
+const navItems: NavItem[] = [
+  { path: '/diario', icon: ClipboardCheck, label: 'Diario' },
+  { path: '/nutrizione', icon: Apple, label: 'Nutrizione' },
+  { path: '/allenamento', icon: Dumbbell, label: 'Allenamento' },  // NUOVO
+  { path: '/progressi', icon: TrendingUp, label: 'Progressi' },    // FIX rotta
+];
 ```
 
-### Pagine con Dock Visibile
+### Accesso a Profilo/Settings
 
-| Pagina | Mostra Dock | Note |
-|--------|-------------|------|
-| `/diario` | Si | Home cliente |
-| `/nutrizione` | Si | Nuovo modulo |
-| `/checks` | Si | Progressi |
-| `/settings` | Si | Profilo |
-| `/auth` | No | Login/Signup |
-| `/gestionediario` | No | Dashboard staff |
-| `/inizia` | No | Funnel onboarding |
+Il Profilo viene spostato dal Dock all'header delle pagine principali (icona utente in alto a destra).
 
-### Struttura Layout con Dock
+---
 
+## Parte 5: Conferme Logica Esistente
+
+### Redirect Staff su /diario
+
+**Gia implementato** in `Auth.tsx` linea 137-142:
 ```typescript
-// Layout wrapper per pagine con dock
-const PageWithDock = ({ children }) => (
-  <div className="min-h-screen bg-background pb-20">
-    {children}
-    <BottomDock />
-  </div>
-);
+useEffect(() => {
+  if (user) {
+    navigate('/diario');
+  }
+}, [user, navigate]);
+```
+
+Tutti i collaboratori (info@362gradi.it, valentina362g@gmail.com, michela.amadei@hotmail.it, martina.fienga@hotmail.it, spicri@gmail.com) atterrano su `/diario`.
+
+### Branding Footer
+
+**Gia implementato** in `Footer.tsx` linea 39-40:
+```typescript
+<p>© 2026 MerryProject Global - Dubai</p>
+<p className="text-primary/80">Ecosystem: 362gradi.ae | defimasi.ae</p>
 ```
 
 ---
@@ -348,77 +235,95 @@ const PageWithDock = ({ children }) => (
 
 | File | Azione | Priorita |
 |------|--------|----------|
-| `src/components/BottomDock.tsx` | Nuovo - Dock navigation | Alta |
-| `src/pages/Nutrizione.tsx` | Nuovo - Pagina nutrizione | Alta |
-| `src/hooks/useUserDiet.ts` | Nuovo - Hook gestione PDF | Alta |
-| `src/App.tsx` | Modificare - Aggiungere route | Alta |
-| `src/pages/Diario.tsx` | Modificare - Integrare Dock + padding bottom | Alta |
-| `src/pages/Checks.tsx` | Modificare - Integrare Dock | Media |
-| `src/pages/Settings.tsx` | Modificare - Integrare Dock | Media |
-| `src/components/ClientExpandedView.tsx` | Modificare - Sezione nutrizione staff | Media |
-| Database Migration | Nuovo - Tabella + bucket + RLS | Alta |
+| Database Migration | Creare tabella `exercise_videos` + seed data | Alta |
+| `src/pages/Allenamento.tsx` | Nuovo - Archivio video | Alta |
+| `src/pages/Progressi.tsx` | Nuovo - Solo analytics | Alta |
+| `src/hooks/useExerciseVideos.ts` | Nuovo - Hook per video | Alta |
+| `src/components/VideoPlayerModal.tsx` | Nuovo - Player verticale/orizzontale | Alta |
+| `src/components/BottomDock.tsx` | Modificare - Nuove icone | Alta |
+| `src/App.tsx` | Aggiungere routes /allenamento e /progressi | Alta |
+| `src/pages/Diario.tsx` | Aggiungere link a /checks per gestione | Media |
 
 ---
 
 ## Vincoli Tecnici Rispettati
 
-1. **Badge Glow**: Nessuna modifica a `BadgeGallery.tsx`, `BadgeProgress.tsx`, `BadgeUnlockAnimation.tsx`
-
-2. **Ghost Crop**: Nessuna modifica a `CheckFormModal.tsx`, `ImageCropperModal.tsx`
-
-3. **Funnel /inizia**: Nessuna modifica a `Inizia.tsx` e componenti funnel
-
-4. **Accessi Staff**: Il redirect `/diario` rimane invariato. Il Dock non appare in `/gestionediario`
-
-5. **RLS Privacy**: I PDF sono accessibili solo al proprietario e ai coach assegnati tramite `can_collaborator_see_client()`
+1. **Badge Glow**: Nessuna modifica ai componenti badge
+2. **Ghost Crop**: CheckFormModal e ImageCropperModal invariati
+3. **Funnel /inizia**: Nessuna modifica
+4. **Modulo Nutrizione**: Nessuna modifica
+5. **Staff Access**: Redirect confermato su /diario
 
 ---
 
-## Dettaglio Stile Glassmorphism
+## Video Player - Supporto Multi-Formato
 
-```css
-/* Effetto vetro per il Dock */
-.dock-glass {
-  background: hsla(var(--card), 0.8);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid hsla(var(--border), 0.5);
-  box-shadow: 
-    0 -4px 30px hsla(0, 0%, 0%, 0.1),
-    inset 0 1px 0 hsla(255, 255%, 255%, 0.1);
-}
+### YouTube Shorts (9:16)
+
+```typescript
+// URL format: youtube.com/shorts/VIDEO_ID
+const ShortsPlayer = ({ videoId }: { videoId: string }) => (
+  <div className="aspect-[9/16] max-h-[80vh] mx-auto">
+    <iframe
+      src={`https://www.youtube.com/embed/${videoId}`}
+      className="w-full h-full rounded-xl"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+      allowFullScreen
+    />
+  </div>
+);
+```
+
+### YouTube Standard (16:9)
+
+```typescript
+// URL format: youtube.com/watch?v=VIDEO_ID o youtu.be/VIDEO_ID
+const StandardPlayer = ({ videoId }: { videoId: string }) => (
+  <div className="aspect-video w-full">
+    <iframe
+      src={`https://www.youtube.com/embed/${videoId}`}
+      className="w-full h-full rounded-xl"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+      allowFullScreen
+    />
+  </div>
+);
 ```
 
 ---
 
-## Flusso Upload PDF
+## Struttura Dati Video (Esempio Inserimento)
 
-```text
-1. Utente clicca "Carica PDF"
-      |
-2. Input file apre file picker (accept=".pdf")
-      |
-3. Validazione client-side:
-   - Tipo file: application/pdf
-   - Dimensione max: 10MB
-      |
-4. Upload a Supabase Storage:
-   - Bucket: user-diets
-   - Path: {user_id}/{timestamp}_{filename}.pdf
-      |
-5. Inserimento record in user_diet_plans:
-   - file_name, file_path, file_size, uploaded_at
-      |
-6. UI aggiornata con nome file e opzioni
+```sql
+INSERT INTO exercise_videos (title, category, trainer, video_url, video_type) VALUES
+-- Martina - Kettlebell
+('Stacchi con Kettlebell', 'kettlebell', 'martina', 'https://youtube.com/shorts/XXX', 'shorts'),
+('Goblet Squat Kettlebell', 'kettlebell', 'martina', 'https://youtube.com/shorts/XXX', 'shorts'),
+
+-- Martina - Manubri  
+('Stacchi Rumeni Manubri', 'manubri', 'martina', 'https://youtube.com/shorts/M-ue6r1gMcU', 'shorts'),
+('Alzate Laterali Manubri', 'manubri', 'martina', 'https://youtube.com/shorts/kAmDh4QVvoA', 'shorts'),
+
+-- Martina - Corpo Libero
+('Sit Up Butterfly', 'corpo_libero', 'martina', 'https://youtube.com/shorts/sGGSN6ozpSw', 'shorts'),
+('Mountain Climbers', 'corpo_libero', 'martina', 'https://youtube.com/shorts/wcl4bpMDBr0', 'shorts'),
+
+-- Martina - Mobilita
+('Routine Completa Foam Roller', 'mobilita', 'martina', 'https://youtu.be/CmIWyGE1q9k', 'standard'),
+('Mobilita a Corpo Libero', 'mobilita', 'martina', 'https://youtu.be/y3c44hq9N8E', 'standard');
+
+-- Maso videos da aggiungere con stessa struttura
 ```
 
 ---
 
-## Vantaggi dell'Implementazione
+## Riepilogo Navigazione Finale
 
-1. **Navigazione Intuitiva**: Dock sempre visibile per accesso rapido alle sezioni
-2. **Privacy Garantita**: PDF privati con RLS, visibili solo a proprietario e coach
-3. **Gestione Semplice**: Upload/download/sostituzione in un click
-4. **Integrazione Staff**: Coach vedono i piani nella dashboard esistente
-5. **Preservazione Funzionalita**: Badge, Crop, Funnel e Staff access rimangono intatti
-6. **Mobile-First**: Dock ottimizzato per touch con safe-area-inset
+| Icona Dock | Destinazione | Contenuto |
+|------------|--------------|-----------|
+| Diario | `/diario` | Check giornalieri + link a gestione check mensili |
+| Nutrizione | `/nutrizione` | Upload/download PDF dieta |
+| Allenamento | `/allenamento` | Archivio video esercizi |
+| Progressi | `/progressi` | Grafici peso + comparazione foto |
+
+Accesso Settings/Profilo tramite icona nell'header delle pagine.
