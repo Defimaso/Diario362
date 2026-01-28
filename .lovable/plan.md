@@ -1,286 +1,326 @@
 
 
-# Piano di Implementazione: Modulo Avanzato Foto con Ghost Overlay
+# Piano di Implementazione: Ottimizzazione Badge e Schede Spirito Animale
 
-## Riepilogo Obiettivi
+## Riepilogo Attuale
 
-| Funzionalita | Stato Attuale | Azione |
-|--------------|---------------|--------|
-| Caricamento da galleria mobile | Bloccato (`capture="environment"`) | Rimuovere attributo |
-| Ritaglio immagini | Non esiste | Implementare con react-easy-crop |
-| Compressione client-side | Non esiste | Implementare con Canvas API |
-| Ghost Overlay (riferimento Check #1) | Non esiste | Implementare overlay trasparente |
-| Confronto coerente nel widget | Parzialmente | Usare versioni ritagliate |
+Il sistema attuale utilizza **emoji** per rappresentare i 20 badge animali. Il problema segnalato riguarda:
+1. Alcune emoji (come la Libellula 🪰) non vengono renderizzate correttamente su tutti i dispositivi
+2. La griglia a 5 colonne su mobile risulta troppo compressa
+3. Mancano le schede dettaglio motivazionali al click
 
 ---
 
 ## Architettura Soluzione
 
 ```text
-+-------------------+     +-------------------+     +-------------------+
-|  Input File       | --> |  Image Cropper    | --> |  Compressione     |
-|  (senza capture)  |     |  + Ghost Overlay  |     |  + Upload         |
-+-------------------+     +-------------------+     +-------------------+
-       |                        |                         |
-       v                        v                         v
-   Galleria/Camera          Aspect 3:4              Blob ottimizzato
-   a scelta utente          Griglia 3x3             Max 1200px, 85% quality
-                            Opacita 35%
++------------------------+     +------------------------+
+|   Badge Gallery        | --> |   SpiritAnimalDrawer   |
+|   - Lucide Icons       |     |   - Dettaglio animale  |
+|   - Griglia responsive |     |   - Frase motivazionale|
+|   - Press animation    |     |   - Stato locked/open  |
++------------------------+     +------------------------+
+        |
+        v
+  Mobile: 4 colonne
+  Tablet: 5 colonne
+  Desktop: 5 colonne
 ```
 
 ---
 
-## Dettagli Tecnici
+## Parte 1: Mappatura Icone Lucide per Ogni Badge
 
-### 1. Nuova Dipendenza
+Sostituire le emoji con icone Lucide per garantire rendering consistente:
 
-Installare `react-easy-crop`:
+| ID | Nome | Emoji Attuale | Icona Lucide Proposta |
+|----|------|---------------|----------------------|
+| 1 | Colibri | 🐦 | `Bird` |
+| 2 | Libellula | 🪰 | `Sparkles` (trasformazione/leggerezza) |
+| 3 | Geco | 🦎 | `Repeat` (adattamento) |
+| 4 | Volpe | 🦊 | `Target` (strategia) |
+| 5 | Lince | 🐱 | `Eye` (visione) |
+| 6 | Gazzella | 🦌 | `Zap` (velocita) |
+| 7 | Falco | 🦅 | `Telescope` (prospettiva) |
+| 8 | Pantera | 🐆 | `Moon` (silenzio/potenza) |
+| 9 | Lupo | 🐺 | `Shield` (lealta) |
+| 10 | Tigre | 🐅 | `Flame` (determinazione) |
+| 11 | Giaguaro | 🐆 | `Rocket` (esplosivita) |
+| 12 | Leone | 🦁 | `Crown` (comando) |
+| 13 | Aquila Reale | 🦅 | `Mountain` (dominio) |
+| 14 | Squalo Bianco | 🦈 | `Crosshair` (focus) |
+| 15 | Condor | 🦅 | `Wind` (resistenza) |
+| 16 | Leopardo Nevi | 🐆 | `Snowflake` (rarita) |
+| 17 | Stallone Nero | 🐴 | `Sword` (forza/eleganza) |
+| 18 | Ghepardo | 🐆 | `Timer` (performance) |
+| 19 | Fenice | 🔥 | `Sunrise` (rinascita) |
+| 20 | Drago 362 | 🐉 | `Star` (maestria) |
 
-```bash
-npm install react-easy-crop
-```
+---
 
-### 2. Nuovo Componente: ImageCropperModal.tsx
+## Parte 2: Contenuto Schede "Lo Spirito dell'Animale"
 
-Creare `src/components/checks/ImageCropperModal.tsx`:
+Aggiungere dati estesi al sistema badge:
 
 ```typescript
-// Componente principale per ritaglio foto
-interface ImageCropperModalProps {
+// Nuovo campo da aggiungere a Badge interface
+interface BadgeExtended extends Badge {
+  icon: LucideIcon;                    // Icona Lucide
+  spiritTraits: string[];              // 3-4 qualita positive
+  spiritDescription: string;           // Descrizione approfondita
+  unlockMessage?: string;              // Messaggio per badge bloccati
+}
+```
+
+### Esempi Contenuto Spirito Animale:
+
+**Colibri (ID 1):**
+- Qualita: Agilita, Leggerezza, Persistenza, Gioia
+- Descrizione: "Il Colibri e l'unico uccello che puo volare in tutte le direzioni. Rappresenta la capacita di adattarsi rapidamente e trovare dolcezza in ogni momento del percorso."
+- Frase: "Il viaggio di mille miglia inizia con un singolo battito d'ali."
+
+**Libellula (ID 2):**
+- Qualita: Precisione, Trasformazione, Chiarezza, Equilibrio
+- Descrizione: "La Libellula simboleggia il cambiamento profondo. Nasce nell'acqua e conquista l'aria, proprio come tu stai trasformando il tuo corpo e la tua mente."
+- Frase: "La precisione e la madre del successo."
+
+**Leone (ID 12):**
+- Qualita: Coraggio, Leadership, Protezione, Nobiltà
+- Descrizione: "Il Leone non cerca approvazione. Comanda con il cuore e protegge con la forza. Hai raggiunto il livello dove la tua determinazione ispira gli altri."
+- Frase: "Il Re non cerca approvazione. Comanda con coraggio."
+
+---
+
+## Parte 3: Modifiche Tecniche
+
+### 3.1 Nuovo File: `src/lib/badgeIcons.ts`
+
+Mappatura centralizzata tra badge ID e icone Lucide:
+
+```typescript
+import { 
+  Bird, Sparkles, Repeat, Target, Eye, Zap, Telescope, 
+  Moon, Shield, Flame, Rocket, Crown, Mountain, Crosshair,
+  Wind, Snowflake, Sword, Timer, Sunrise, Star, LucideIcon
+} from 'lucide-react';
+
+export const BADGE_ICONS: Record<number, LucideIcon> = {
+  1: Bird,         // Colibri
+  2: Sparkles,     // Libellula
+  3: Repeat,       // Geco
+  4: Target,       // Volpe
+  5: Eye,          // Lince
+  6: Zap,          // Gazzella
+  7: Telescope,    // Falco
+  8: Moon,         // Pantera
+  9: Shield,       // Lupo
+  10: Flame,       // Tigre
+  11: Rocket,      // Giaguaro
+  12: Crown,       // Leone
+  13: Mountain,    // Aquila Reale
+  14: Crosshair,   // Squalo Bianco
+  15: Wind,        // Condor
+  16: Snowflake,   // Leopardo Nevi
+  17: Sword,       // Stallone Nero
+  18: Timer,       // Ghepardo
+  19: Sunrise,     // Fenice
+  20: Star,        // Drago 362
+};
+
+export const getBadgeIcon = (badgeId: number): LucideIcon => {
+  return BADGE_ICONS[badgeId] || Star;
+};
+```
+
+### 3.2 Nuovo File: `src/lib/badgeSpirits.ts`
+
+Contenuti estesi per le schede spirito:
+
+```typescript
+export interface SpiritContent {
+  traits: string[];
+  description: string;
+  unlockMessage: string;
+}
+
+export const SPIRIT_CONTENTS: Record<number, SpiritContent> = {
+  1: {
+    traits: ['Agilita', 'Leggerezza', 'Persistenza', 'Gioia'],
+    description: 'Il Colibri e l\'unico uccello che puo volare...',
+    unlockMessage: 'Continua i tuoi check per risvegliare lo spirito del Colibri',
+  },
+  // ... altri 19 badge
+};
+```
+
+### 3.3 Nuovo Componente: `src/components/SpiritAnimalDrawer.tsx`
+
+Drawer/Modal per mostrare i dettagli dell'animale:
+
+```typescript
+interface SpiritAnimalDrawerProps {
+  badge: Badge | null;
   isOpen: boolean;
   onClose: () => void;
-  imageSrc: string;                    // Blob URL dell'immagine selezionata
-  ghostImageSrc?: string | null;       // URL foto Check #1 (se checkNumber > 1)
-  aspectRatio?: number;                // Default 3/4
-  onCropComplete: (croppedBlob: Blob) => void;
+  isUnlocked: boolean;
 }
 
-// Funzionalita:
-// - Cropper con area fissa 3:4
-// - Griglia 3x3 sovrapposta
-// - Ghost overlay al 35% opacita se ghostImageSrc presente
-// - Slider per zoom
-// - Pulsanti Annulla / Conferma
+// Struttura UI:
+// - Icona centrale grande (colorata o grigia)
+// - Titolo: "[Nome] - Il tuo Spirito Guida"
+// - Lista qualita positive con icone Check
+// - Descrizione spirito in blocco elegante
+// - Frase motivazionale in corsivo
+// - Se bloccato: overlay sfocato + messaggio incoraggiamento
 ```
 
-### 3. Utility: imageCompression.ts
+### 3.4 Modifica: `src/components/BadgeGallery.tsx`
 
-Creare `src/lib/imageCompression.ts`:
+Aggiornare per usare Lucide icons e griglia responsive:
 
 ```typescript
-// Funzione per comprimere e ridimensionare immagini
-export const compressImage = async (
-  blob: Blob,
-  maxWidth: number = 1200,
-  maxHeight: number = 1600,
-  quality: number = 0.85
-): Promise<Blob> => {
-  // 1. Crea immagine da blob
-  // 2. Calcola dimensioni mantenendo aspect ratio
-  // 3. Disegna su canvas ridimensionato
-  // 4. Esporta come JPEG con qualita specificata
-  // 5. Ritorna Blob compresso
-};
+// Cambio griglia da grid-cols-5 a responsive
+<div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3">
 
-// Funzione per creare crop area
-export const getCroppedImg = (
-  imageSrc: string,
-  pixelCrop: { x: number; y: number; width: number; height: number }
-): Promise<Blob> => {
-  // 1. Carica immagine
-  // 2. Crea canvas con dimensioni crop
-  // 3. Disegna porzione ritagliata
-  // 4. Ritorna Blob
-};
+// Cambio da emoji a Lucide icon
+const BadgeIcon = getBadgeIcon(badge.id);
+<div className={cn(
+  "w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center",
+  isUnlocked 
+    ? "border-badge-gold bg-badge-gold/10" 
+    : "border-muted-foreground/30 bg-muted/50 grayscale"
+)}>
+  <BadgeIcon className={cn(
+    "w-6 h-6 sm:w-7 sm:h-7",
+    isUnlocked ? "text-badge-gold" : "text-muted-foreground/50"
+  )} />
+</div>
+
+// Aggiungere animazione press
+whileTap={{ scale: 0.95 }}
+onClick={() => onBadgeClick(badge)}
 ```
 
-### 4. Modifica CheckFormModal.tsx
+### 3.5 Modifica: `src/components/BadgeProgress.tsx`
 
-Aggiornare la gestione foto:
+Usare Lucide icon invece di emoji:
 
-**4.1. Rimuovere attributo capture:**
 ```typescript
-// PRIMA (linea 114):
-capture="environment"
+const CurrentBadgeIcon = getBadgeIcon(currentBadge.id);
+const NextBadgeIcon = nextBadge ? getBadgeIcon(nextBadge.id) : null;
 
-// DOPO:
-// Rimuovere completamente l'attributo
+// Sostituire {currentBadge.emoji} con:
+<CurrentBadgeIcon className="w-10 h-10 text-badge-gold" />
 ```
 
-**4.2. Aggiungere stato per cropper:**
-```typescript
-const [cropperState, setCropperState] = useState<{
-  isOpen: boolean;
-  imageSrc: string | null;
-  photoType: 'front' | 'side' | 'back' | null;
-}>({ isOpen: false, imageSrc: null, photoType: null });
-```
+### 3.6 Modifica: `src/components/BadgeUnlockAnimation.tsx`
 
-**4.3. Aggiungere prop per Check #1 photos:**
-```typescript
-interface CheckFormModalProps {
-  // ... props esistenti
-  firstCheckData?: UserCheck | null;  // Dati del Check #1 per ghost overlay
-}
-```
-
-**4.4. Flusso file selection:**
-```typescript
-const handleFileSelect = (file: File, photoType: 'front' | 'side' | 'back') => {
-  const objectUrl = URL.createObjectURL(file);
-  setCropperState({
-    isOpen: true,
-    imageSrc: objectUrl,
-    photoType,
-  });
-};
-
-const handleCropComplete = async (croppedBlob: Blob) => {
-  const compressed = await compressImage(croppedBlob);
-  const file = new File([compressed], `${cropperState.photoType}.jpg`, { type: 'image/jpeg' });
-  
-  // Aggiorna stato in base a photoType
-  switch (cropperState.photoType) {
-    case 'front':
-      setPhotoFront(file);
-      setPhotoFrontPreview(URL.createObjectURL(compressed));
-      break;
-    // ... altri casi
-  }
-  
-  setCropperState({ isOpen: false, imageSrc: null, photoType: null });
-};
-```
-
-### 5. Logica Ghost Overlay
-
-Nel ImageCropperModal, se `ghostImageSrc` e presente:
+Usare Lucide icon nella celebrazione:
 
 ```typescript
-// Render ghost overlay sotto il cropper
-{ghostImageSrc && (
-  <div 
-    className="absolute inset-0 pointer-events-none z-0"
-    style={{ opacity: 0.35 }}
-  >
-    <img 
-      src={ghostImageSrc} 
-      alt="Reference" 
-      className="w-full h-full object-contain"
-    />
-  </div>
-)}
-```
+const BadgeIcon = getBadgeIcon(badge.id);
 
-### 6. Modifica useUserChecks.ts
-
-Aggiungere metodo per ottenere Check #1:
-
-```typescript
-// Nuovo metodo per ottenere il primo check con foto
-const getFirstCheckWithPhotos = useCallback(() => {
-  return checks.find(c => 
-    c.check_number === 1 && 
-    (c.photo_front_url || c.photo_side_url || c.photo_back_url)
-  ) || null;
-}, [checks]);
-
-// Aggiungere al return
-return {
-  // ... esistenti
-  getFirstCheckWithPhotos,
-};
-```
-
-### 7. Modifica Checks.tsx
-
-Passare dati Check #1 al modal:
-
-```typescript
-const Checks = () => {
-  const { 
-    // ... esistenti
-    getFirstCheckWithPhotos 
-  } = useUserChecks();
-  
-  const firstCheck = getFirstCheckWithPhotos();
-
-  return (
-    // ...
-    <CheckFormModal
-      // ... props esistenti
-      firstCheckData={selectedCheck?.checkNumber > 1 ? firstCheck : null}
-    />
-  );
-};
+// Sostituire emoji con:
+<motion.div className="w-24 h-24 rounded-full bg-badge-gold/20 flex items-center justify-center">
+  <BadgeIcon className="w-16 h-16 text-badge-gold" />
+</motion.div>
 ```
 
 ---
 
-## Componente ImageCropperModal - Struttura UI
+## Parte 4: Struttura UI della Scheda Spirito
 
 ```text
-+------------------------------------------+
-|           Ritaglia Foto Fronte           |  <- Header
-+------------------------------------------+
-|                                          |
-|    +------------------------------+      |
-|    |                              |      |
-|    |   [Ghost Image @ 35%]        |      |  <- Ghost overlay
-|    |                              |      |
-|    |   +----------------------+   |      |
-|    |   |                      |   |      |
-|    |   |   CROPPER AREA       |   |      |  <- Area di ritaglio
-|    |   |   (Aspect 3:4)       |   |      |
-|    |   |   [Griglia 3x3]      |   |      |
-|    |   |                      |   |      |
-|    |   +----------------------+   |      |
-|    |                              |      |
-|    +------------------------------+      |
-|                                          |
-|    [-------- Zoom Slider --------]       |
-|                                          |
-|    [Annulla]              [Conferma]     |
-+------------------------------------------+
++--------------------------------------------------+
+|                 [Drag Handle]                     |
++--------------------------------------------------+
+|                                                  |
+|          +----------------------+                |
+|          |                      |                |
+|          |   [ICONA ANIMALE]    |   <- Grande, colorata
+|          |     w-20 h-20        |                |
+|          |                      |                |
+|          +----------------------+                |
+|                                                  |
+|           LEONE - Il tuo Spirito Guida          |  <- Titolo oro
+|                                                  |
+|  +--------------------------------------------+  |
+|  |  ✓ Coraggio                                |  |
+|  |  ✓ Leadership                              |  |  <- Qualita positive
+|  |  ✓ Protezione                              |  |
+|  |  ✓ Nobilta                                 |  |
+|  +--------------------------------------------+  |
+|                                                  |
+|  "Il Leone non cerca approvazione.              |
+|   Comanda con il cuore e protegge               |  <- Descrizione
+|   con la forza..."                              |
+|                                                  |
+|  +--------------------------------------------+  |
+|  |  "Il Re non cerca approvazione.            |  |
+|  |   Comanda con coraggio."                   |  |  <- Frase motivazionale
+|  |                           — 362gradi       |  |     corsivo, bordo oro
+|  +--------------------------------------------+  |
+|                                                  |
+|             Livello 12 di 20                     |
+|                                                  |
++--------------------------------------------------+
+```
+
+### Per Badge Bloccati:
+
+```text
++--------------------------------------------------+
+|                                                  |
+|          +----------------------+                |
+|          |   [ICONA GRIGIA]     |   <- Grayscale
+|          |     + overlay blur   |                |
+|          +----------------------+                |
+|                                                  |
+|                    ???                           |
+|                                                  |
+|  +--------------------------------------------+  |
+|  |                                            |  |
+|  |   🔒 Continua i tuoi check giornalieri    |  |
+|  |      per risvegliare lo spirito           |  |
+|  |      del LEONE                            |  |
+|  |                                            |  |
+|  |   Mancano ancora 108 check-in             |  |
+|  |                                            |  |
+|  +--------------------------------------------+  |
+|                                                  |
++--------------------------------------------------+
 ```
 
 ---
 
 ## File da Creare/Modificare
 
-| File | Azione |
-|------|--------|
-| `package.json` | Aggiungere `react-easy-crop` |
-| `src/lib/imageCompression.ts` | Nuovo - utility compressione |
-| `src/components/checks/ImageCropperModal.tsx` | Nuovo - cropper con ghost |
-| `src/components/checks/CheckFormModal.tsx` | Modificare - integrare cropper |
-| `src/hooks/useUserChecks.ts` | Aggiungere `getFirstCheckWithPhotos` |
-| `src/pages/Checks.tsx` | Passare firstCheckData al modal |
+| File | Azione | Priorita |
+|------|--------|----------|
+| `src/lib/badgeIcons.ts` | Nuovo - mappatura icone | Alta |
+| `src/lib/badgeSpirits.ts` | Nuovo - contenuti spirito | Alta |
+| `src/components/SpiritAnimalDrawer.tsx` | Nuovo - drawer dettaglio | Alta |
+| `src/components/BadgeGallery.tsx` | Modificare - icone + griglia | Alta |
+| `src/components/BadgeProgress.tsx` | Modificare - icone Lucide | Media |
+| `src/components/BadgeUnlockAnimation.tsx` | Modificare - icone Lucide | Media |
+| `src/pages/Diario.tsx` | Integrare drawer | Bassa |
 
 ---
 
-## Flusso Utente Completo
+## Vantaggi dell'Implementazione
 
-1. Utente apre Check #5
-2. Clicca su "Fronte" per caricare foto
-3. Sistema operativo mostra scelta: Scatta Foto / Libreria
-4. Utente seleziona immagine
-5. Si apre ImageCropperModal con:
-   - Immagine selezionata in primo piano
-   - Foto Fronte del Check #1 in trasparenza (35%)
-   - Griglia 3x3 per allineamento
-6. Utente sposta/scala fino ad allineare le sagome
-7. Clicca "Conferma"
-8. Immagine viene ritagliata e compressa (max 1200px, 85% qualita)
-9. Preview aggiornata nel form
-10. Al salvataggio, viene caricata solo la versione finale
+1. **Rendering Consistente**: Lucide icons funzionano su tutti i dispositivi/browser
+2. **Layout Mobile Ottimizzato**: 4 colonne su mobile per badge piu grandi e leggibili
+3. **Engagement Aumentato**: Le schede spirito creano connessione emotiva con il percorso
+4. **Feedback Tattile**: Animazione press migliora l'esperienza touch
+5. **Gamification Avanzata**: I badge bloccati mostrano obiettivo chiaro e motivazione
 
 ---
 
-## Vantaggi per 362gradi
+## Note di Branding
 
-- **Coerenza Visiva**: Confronti "Prima vs Dopo" mostrano cambiamenti reali
-- **Facilita d'Uso**: Guida visiva aiuta utenti a posizionarsi correttamente
-- **Performance**: Compressione riduce tempi di upload e costi storage
-- **Flessibilita**: Scelta tra galleria e camera soddisfa tutti i casi d'uso
+- Font: Sans-serif principale dell'app
+- Colori: `badge-gold` (#FFD700) per elementi sbloccati, `muted-foreground` per bloccati
+- Sfondo scheda: `bg-background` (scuro) o `bg-card` in base al tema
+- Richiamo 362gradi nella firma delle frasi motivazionali
 
