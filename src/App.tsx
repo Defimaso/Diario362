@@ -9,7 +9,7 @@ import Diario from "./pages/Diario";
 import GestioneDiario from "./pages/GestioneDiario";
 import Checks from "./pages/Checks";
 import Nutrizione from "./pages/Nutrizione";
-import Allenamento from "./pages/Allenamento";
+import AllenamentoRedesign from "./pages/AllenamentoRedesign";
 import Progressi from "./pages/Progressi";
 import InstallApp from "./pages/InstallApp";
 import Settings from "./pages/Settings";
@@ -32,7 +32,7 @@ const App = () => (
             <Route path="/gestionediario" element={<GestioneDiario />} />
             <Route path="/checks" element={<Checks />} />
             <Route path="/nutrizione" element={<Nutrizione />} />
-            <Route path="/allenamento" element={<Allenamento />} />
+            <Route path="/allenamento" element={<AllenamentoRedesign />} />
             <Route path="/progressi" element={<Progressi />} />
             <Route path="/install" element={<InstallApp />} />
             <Route path="/settings" element={<Settings />} />

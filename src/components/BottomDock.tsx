@@ -1,6 +1,7 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ClipboardCheck, Apple, Dumbbell, TrendingUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useVideoCorrections } from '@/hooks/useVideoCorrections';
 
 interface NavItem {
   path: string;
@@ -18,6 +19,7 @@ const navItems: NavItem[] = [
 const BottomDock = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { unreadCount } = useVideoCorrections();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50">
@@ -32,25 +34,31 @@ const BottomDock = () => {
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             const Icon = item.icon;
+            const showBadge = item.path === '/allenamento' && unreadCount > 0;
 
             return (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={cn(
-                  "flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200",
+                  "flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200 relative",
                   "hover:bg-muted/50 active:scale-95",
                   isActive && "bg-muted/30"
                 )}
               >
-                <Icon
-                  className={cn(
-                    "w-6 h-6 transition-colors",
-                    isActive
-                      ? "text-[hsl(var(--section-red))]"
-                      : "text-muted-foreground"
+                <div className="relative">
+                  <Icon
+                    className={cn(
+                      "w-6 h-6 transition-colors",
+                      isActive
+                        ? "text-[hsl(var(--section-red))]"
+                        : "text-muted-foreground"
+                    )}
+                  />
+                  {showBadge && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
                   )}
-                />
+                </div>
                 <span
                   className={cn(
                     "text-[10px] font-medium transition-colors",
