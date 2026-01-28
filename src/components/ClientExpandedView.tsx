@@ -1,5 +1,5 @@
 import { useState, useEffect, forwardRef } from 'react';
-import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download } from 'lucide-react';
+import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays } from 'date-fns';
@@ -10,6 +10,7 @@ import DailyCheckinStatus from './DailyCheckinStatus';
 import DailyCheckinDetails from './DailyCheckinDetails';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useUserDiet } from '@/hooks/useUserDiet';
+import StaffVideoFeedbackPanel from './staff/StaffVideoFeedbackPanel';
 
 interface UserCheck {
   id: string;
@@ -333,6 +334,11 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
             </table>
           </div>
         )}
+      </div>
+
+      {/* Video Corrections Section */}
+      <div className="bg-card rounded-xl p-3 sm:p-4 border border-primary/30">
+        <StaffVideoFeedbackPanel clientId={clientId} />
       </div>
 
       {/* Nutrition Section */}
