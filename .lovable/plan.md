@@ -1,329 +1,235 @@
 
-# Piano di Implementazione: Archivio Video e Fix Tab Progressi
+# Piano di Implementazione: Fix Totale Visibilità Video e Archivio
 
-## Panoramica Modifiche
+## Analisi Situazione Attuale
 
-| Componente | Stato Attuale | Nuovo Stato |
-|------------|---------------|-------------|
-| Tab Progressi | Mostra form per inserire check | Solo analytics (grafici + foto) |
-| Dock | 4 icone (Diario, Nutrizione, Progressi, Profilo) | 4 icone (Diario, Nutrizione, Allenamento, Progressi) |
-| Allenamento | Non esiste | Nuova sezione archivio video |
-| Profilo | In Dock | Spostato in header/menu |
+### Stato del Database
+- **Martina**: ~60 video inseriti con URL YouTube Shorts funzionanti
+- **Maso**: 0 video nel database - TUTTI mancanti
 
----
-
-## Parte 1: Database - Tabella `exercise_videos`
-
-### Schema Tabella
-
-```sql
-CREATE TABLE public.exercise_videos (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  category TEXT NOT NULL,  -- 'kettlebell', 'manubri', 'corpo_libero', etc.
-  trainer TEXT NOT NULL,   -- 'maso' o 'martina'
-  video_url TEXT NOT NULL,
-  video_type TEXT DEFAULT 'shorts',  -- 'shorts' (9:16) o 'standard' (16:9)
-  sort_order INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ DEFAULT now()
-);
-```
-
-### Categorie Previste
-
-| Categoria | Display Name | Icona |
-|-----------|--------------|-------|
-| kettlebell | Kettlebell | Dumbbell |
-| manubri | Manubri | Dumbbell |
-| bilanciere | Bilanciere | Dumbbell |
-| corpo_libero | Corpo Libero | PersonStanding |
-| macchinari | Macchinari | Settings |
-| elastici | Elastici/Loop Band | Circle |
-| trx | TRX/Anelli | Link |
-| mobilita | Mobilita e Stretching | Waves |
-
-### RLS Policies
-
-```sql
--- Tutti gli utenti autenticati possono vedere i video
-CREATE POLICY "Authenticated users can view exercises"
-ON public.exercise_videos FOR SELECT
-TO authenticated
-USING (true);
-
--- Solo admin possono modificare
-CREATE POLICY "Admins can manage exercises"
-ON public.exercise_videos FOR ALL
-TO authenticated
-USING (public.has_role(auth.uid(), 'admin') OR public.is_super_admin(auth.uid()));
-```
-
-### Dati Iniziali - Martina (estratti dal documento)
-
-| Categoria | Esercizi Estratti |
-|-----------|-------------------|
-| Kettlebell | Stacchi, Sumo Deadlift High Pull, Goblet Squat, One Leg Deadlift |
-| Manubri | Curl, Thruster, Russian Twist, Push Jerk, French Press, Affondi Posteriori, Rematore, Renegade Row, Stacchi Rumeni, Alzate Laterali, Rematore su Panca, Spinte, Hammer Curl, Hip Thrust One Leg, Reverse Fly |
-| Corpo Libero | Sit Up Butterfly, Reverse Lunge, Sit Up, Plank Up and Down, Dips, V-Pushups, Affondi in Camminata, Crunch Inverso, Crunch, Trazioni, Pushups, Step Ups, Ponte Glutei, Plank, Squat Jump, Burpees, Hollow Hold, V-Sit Up, Air Squat, Side Plank, Mountain Climbers |
-| Bilanciere | Squat, Push Press, Rematore, Stacchi Rumeni, Hip Thrust, Press, Abduzioni con Disco, Stacco da Terra |
-| Macchinari | Shoulder Press, Leg Press, Row, Hip Thrust, Pulley, Push Down, Lat Machine |
-| Elastici | Curl Bicipiti, Abduzioni, Glute Bridge |
-| Mobilita | Foam Roller Routine, Mobilita Corpo Libero, Ciciling Spalla, Windmill, Halo, Cat Cow, Squat Reach, Mobility Spalle, Mobilita Anche, Stretching vari |
-| TRX | Australian Pull Up |
-
-### Dati Iniziali - Maso (da lista testuale)
-
-I video di Maso verranno inseriti con la stessa struttura, organizzati per categoria (Manubri, Bilanciere, Loop Band, etc.).
+### Componenti Funzionanti
+- `VideoPlayerModal.tsx`: Usa correttamente il formato embed `https://www.youtube.com/embed/{id}?autoplay=1`
+- `extractVideoId()`: Gestisce correttamente tutti i formati YouTube (shorts, watch?v=, youtu.be)
+- `BottomDock`: Configurato con le 4 icone corrette
+- `Progressi`: Mostra solo analytics (grafici e foto)
 
 ---
 
-## Parte 2: Nuova Pagina Allenamento
+## Parte 1: Popolamento Database con Video di Maso
 
-### Struttura UI
+### Video da Inserire (estratti dal documento)
+
+#### Bilanciere (5 video)
+| Titolo | URL | Tipo |
+|--------|-----|------|
+| Pendlay Row | youtube.com/watch?v=vrYacoEbj38 | standard |
+| Reverse Row | youtube.com/watch?v=EbQIbrUNsGM | standard |
+| Stacco da Terra | youtube.com/watch?v=dIAOJD_Abhk | standard |
+| Stacco Sumo | youtube.com/watch?v=4xJcNYQoc08 | standard |
+| Thrusters | youtube.com/watch?v=orMtEDrQBMw | standard |
+
+#### Loop Band / Elastici (8 video)
+| Titolo | URL | Tipo |
+|--------|-----|------|
+| Band Press | youtube.com/watch?v=jGoTff9Kk1k | standard |
+| Band Thruster | youtube.com/watch?v=g4pIkPuB_pM | standard |
+| Band Affondi | youtube.com/watch?v=YMhUsQhCT2Q | standard |
+| Band Row | youtube.com/watch?v=gMjikWoCvR8 | standard |
+| Band Pushup | youtube.com/watch?v=CsMPYgApahs | standard |
+| Band Front Squat | youtube.com/watch?v=QjE7bqi4oBg | standard |
+| Band Good Morning | youtube.com/watch?v=IeQiWgRrKS0 | standard |
+| Band Squat | youtube.com/watch?v=EaWpZHMlfqs | standard |
+
+#### Stretching / Mobilita (22 video)
+| Titolo | URL |
+|--------|-----|
+| Psoas | youtube.com/watch?v=U7q0pBMksM4 |
+| Psoas Torsione | youtube.com/watch?v=gE1GEaNMO8s |
+| Piriforme | youtube.com/watch?v=fqBe8_KRkkU |
+| Torsione Tronco | youtube.com/watch?v=Yib3w3w8q5Y |
+| Lombari | youtube.com/watch?v=uHJaBVEv46k |
+| Gatto Mucca | youtube.com/watch?v=YnZIqN_4VRk |
+| Dorsali | youtube.com/watch?v=0Q6KClsElJQ |
+| Kneel Torsion | youtube.com/watch?v=nXLZLr9SCOA |
+| Adduttori | youtube.com/watch?v=TXLfnSaJFcY |
+| Adduttori 2 | youtube.com/watch?v=dVNdx_ldvSY |
+| Child Pose | youtube.com/watch?v=KzFIo43x7GY |
+| Child Pose 2 | youtube.com/watch?v=pNipg9tYNnw |
+| Side Bretzel | youtube.com/watch?v=54sy1_0ntrY |
+| Quads | youtube.com/watch?v=lX1VnsN07jQ |
+| Collo | youtube.com/watch?v=cWIkiWnWWfM |
+| Lombari 2 | youtube.com/watch?v=OrYAzT5c9s0 |
+| Glutei | youtube.com/watch?v=psHXMNUAbDs |
+| Torsione | youtube.com/watch?v=G78br_pWYSA |
+| Pike | youtube.com/watch?v=vVkcNr1Z4AE |
+| Straddle | youtube.com/watch?v=DARSNYZ-t28 |
+| Spine Extension | youtube.com/watch?v=ES6Clie-NUg |
+| The Needle | youtube.com/watch?v=FUeKyRtqSBA |
+| Open Book | youtube.com/watch?v=plLlk842MOU |
+| Best Stretch | youtube.com/watch?v=eWQlAGKIShY |
+
+#### Gym / Macchinari (55+ video)
+Tutti i video con URL completi dal documento (Aperture Laterali, Arnold Press, Aperture Frontali, Abductor Machine, Adductor Machine, Back Squat, Bike, Bulgarian Split Squat, etc.)
+
+### SQL di Inserimento
+
+```sql
+-- Maso - Bilanciere (standard videos)
+INSERT INTO exercise_videos (title, category, trainer, video_url, video_type, sort_order) VALUES
+('Pendlay Row', 'bilanciere', 'maso', 'https://www.youtube.com/watch?v=vrYacoEbj38', 'standard', 1),
+('Reverse Row', 'bilanciere', 'maso', 'https://www.youtube.com/watch?v=EbQIbrUNsGM', 'standard', 2),
+('Stacco da Terra', 'bilanciere', 'maso', 'https://www.youtube.com/watch?v=dIAOJD_Abhk', 'standard', 3),
+('Stacco Sumo', 'bilanciere', 'maso', 'https://www.youtube.com/watch?v=4xJcNYQoc08', 'standard', 4),
+('Thrusters Bilanciere', 'bilanciere', 'maso', 'https://www.youtube.com/watch?v=orMtEDrQBMw', 'standard', 5);
+
+-- Maso - Loop Band / Elastici (standard videos)
+INSERT INTO exercise_videos (title, category, trainer, video_url, video_type, sort_order) VALUES
+('Band Press', 'elastici', 'maso', 'https://www.youtube.com/watch?v=jGoTff9Kk1k', 'standard', 1),
+('Band Thruster', 'elastici', 'maso', 'https://www.youtube.com/watch?v=g4pIkPuB_pM', 'standard', 2),
+('Band Affondi', 'elastici', 'maso', 'https://www.youtube.com/watch?v=YMhUsQhCT2Q', 'standard', 3),
+('Band Row', 'elastici', 'maso', 'https://www.youtube.com/watch?v=gMjikWoCvR8', 'standard', 4),
+('Band Pushup', 'elastici', 'maso', 'https://www.youtube.com/watch?v=CsMPYgApahs', 'standard', 5),
+('Band Front Squat', 'elastici', 'maso', 'https://www.youtube.com/watch?v=QjE7bqi4oBg', 'standard', 6),
+('Band Good Morning', 'elastici', 'maso', 'https://www.youtube.com/watch?v=IeQiWgRrKS0', 'standard', 7),
+('Band Squat', 'elastici', 'maso', 'https://www.youtube.com/watch?v=EaWpZHMlfqs', 'standard', 8);
+
+-- Maso - Stretching / Mobilita (standard videos)
+INSERT INTO exercise_videos (title, category, trainer, video_url, video_type, sort_order) VALUES
+('Psoas', 'mobilita', 'maso', 'https://www.youtube.com/watch?v=U7q0pBMksM4', 'standard', 1),
+('Psoas Torsione', 'mobilita', 'maso', 'https://www.youtube.com/watch?v=gE1GEaNMO8s', 'standard', 2),
+('Piriforme', 'mobilita', 'maso', 'https://www.youtube.com/watch?v=fqBe8_KRkkU', 'standard', 3),
+-- ... altri 19 video di mobilita ...
+('Best Stretch', 'mobilita', 'maso', 'https://www.youtube.com/watch?v=eWQlAGKIShY', 'standard', 22);
+
+-- Maso - Gym / Macchinari (standard videos)
+INSERT INTO exercise_videos (title, category, trainer, video_url, video_type, sort_order) VALUES
+('Aperture Laterali', 'macchinari', 'maso', 'https://www.youtube.com/watch?v=qKHqP3koS1A', 'standard', 1),
+('Arnold Press', 'macchinari', 'maso', 'https://www.youtube.com/watch?v=fXfTVqyxYXM', 'standard', 2),
+-- ... altri ~53 video di macchinari ...
+```
+
+---
+
+## Parte 2: Verifica Sistema Embed
+
+### Flusso Conversione URL (gia implementato correttamente)
 
 ```text
-+--------------------------------------------------+
-|  🏋️ ALLENAMENTO                                   |
-+--------------------------------------------------+
-|  [🔍 Cerca esercizio...                        ] |
-+--------------------------------------------------+
-|                                                  |
-|  📂 KETTLEBELL                                   |
-|  +--------------------------------------------+  |
-|  | 🎬 Stacchi         | Martina 🟪           |  |
-|  | 🎬 Goblet Squat    | Martina 🟪           |  |
-|  +--------------------------------------------+  |
-|                                                  |
-|  📂 MANUBRI                                      |
-|  +--------------------------------------------+  |
-|  | 🎬 Curl Manubri    | Maso 🟦              |  |
-|  | 🎬 Thruster        | Martina 🟪           |  |
-|  | 🎬 French Press    | Maso 🟦              |  |
-|  +--------------------------------------------+  |
-|                                                  |
-|  📂 CORPO LIBERO                                 |
-|  +--------------------------------------------+  |
-|  | ...                                        |  |
-|  +--------------------------------------------+  |
-|                                                  |
-+--------------------------------------------------+
-|     [DOCK: Diario | Nutrizione | Allenamento | Progressi]  |
-+--------------------------------------------------+
+URL Originale                         extractVideoId()         Embed URL
+------------------------------        ----------------         --------------------------
+youtube.com/shorts/ABC123        -->  "ABC123"            -->  youtube.com/embed/ABC123
+youtube.com/watch?v=XYZ789       -->  "XYZ789"            -->  youtube.com/embed/XYZ789
+youtu.be/DEF456                  -->  "DEF456"            -->  youtube.com/embed/DEF456
 ```
 
-### Componenti
-
-1. **Search Bar**: Filtro in tempo reale per nome esercizio
-2. **Category Accordion**: Sezioni espandibili per categoria
-3. **Video Card**: Titolo + Trainer Badge (Blu/Viola)
-4. **Video Player Modal**: 
-   - Shorts: Aspect ratio 9:16 (verticale)
-   - Standard: Aspect ratio 16:9 (orizzontale)
-
-### Trainer Badge Colori
-
-| Trainer | Colore | HSL |
-|---------|--------|-----|
-| Maso | Blu 🟦 | hsl(210, 100%, 50%) |
-| Martina | Viola 🟪 | hsl(270, 80%, 60%) |
-
----
-
-## Parte 3: Fix Tab Progressi
-
-### Pagina Attuale `/checks`
-
-Attualmente mostra:
-- Header "I Tuoi Check"
-- Progress bar completamento
-- Tabs "Da Fare" / "Completati"
-- Form per inserire nuovi check
-
-### Nuova Pagina `/progressi`
-
-Mostrera SOLO:
-- Grafico andamento peso (WeightChart)
-- Comparazione foto (PhotoComparison)
-- Storico tabellare (HistoryTable - opzionale)
-
-### Strategia di Implementazione
-
-1. **Rinominare rotta**: `/checks` rimane per la gestione check (accessibile da Diario)
-2. **Creare nuova pagina**: `/progressi` con solo analytics
-3. **Aggiornare Dock**: Puntare "Progressi" a `/progressi`
-
-### Contenuto Pagina Progressi
+### Codice Esistente (FUNZIONANTE)
 
 ```typescript
-// src/pages/Progressi.tsx
-const Progressi = () => {
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      <header>
-        <h1>I Tuoi Progressi</h1>
-        <p>Analizza il tuo percorso</p>
-      </header>
-      
-      <main className="p-4 space-y-4">
-        {/* Grafico Peso */}
-        <WeightChart data={progressChecks} getFilteredData={getFilteredData} />
-        
-        {/* Comparazione Foto */}
-        <PhotoComparison
-          datesWithPhotos={datesWithPhotos}
-          getSignedPhotoUrl={getSignedPhotoUrl}
-          comparisonDefaults={comparisonDefaults}
-        />
-        
-        {/* Storico opzionale */}
-        <HistoryTable data={progressChecks} monthlyChecks={monthlyChecks} />
-      </main>
-      
-      <BottomDock />
-    </div>
-  );
+// useExerciseVideos.ts - linea 97-111
+const extractVideoId = (url: string): string | null => {
+  const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]+)/);
+  if (shortsMatch) return shortsMatch[1];
+
+  const watchMatch = url.match(/youtube\.com\/watch\?v=([a-zA-Z0-9_-]+)/);
+  if (watchMatch) return watchMatch[1];
+
+  const shortMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+  if (shortMatch) return shortMatch[1];
+
+  return null;
 };
+
+// VideoPlayerModal.tsx - linea 66
+src={`https://www.youtube.com/embed/${videoId}?autoplay=1`}
 ```
+
+Nessuna modifica necessaria al sistema di embed.
 
 ---
 
-## Parte 4: Aggiornamento Bottom Dock
+## Parte 3: Conferma Navigazione
 
-### Nuova Configurazione
+### Dock Attuale (CORRETTO)
 
-```typescript
-const navItems: NavItem[] = [
-  { path: '/diario', icon: ClipboardCheck, label: 'Diario' },
-  { path: '/nutrizione', icon: Apple, label: 'Nutrizione' },
-  { path: '/allenamento', icon: Dumbbell, label: 'Allenamento' },  // NUOVO
-  { path: '/progressi', icon: TrendingUp, label: 'Progressi' },    // FIX rotta
-];
-```
+| Posizione | Icona | Label | Rotta | Contenuto |
+|-----------|-------|-------|-------|-----------|
+| 1 | ClipboardCheck | Diario | /diario | Check giornalieri |
+| 2 | Apple | Nutrizione | /nutrizione | PDF Dieta |
+| 3 | Dumbbell | Allenamento | /allenamento | Archivio Video |
+| 4 | TrendingUp | Progressi | /progressi | Grafici + Foto |
 
-### Accesso a Profilo/Settings
+Nessuna modifica necessaria.
 
-Il Profilo viene spostato dal Dock all'header delle pagine principali (icona utente in alto a destra).
+### Progressi Page (CORRETTO)
 
----
+Mostra solo:
+- WeightChart (grafico peso)
+- PhotoComparison (confronto foto)
+- HistoryTable (storico)
 
-## Parte 5: Conferme Logica Esistente
-
-### Redirect Staff su /diario
-
-**Gia implementato** in `Auth.tsx` linea 137-142:
-```typescript
-useEffect(() => {
-  if (user) {
-    navigate('/diario');
-  }
-}, [user, navigate]);
-```
-
-Tutti i collaboratori (info@362gradi.it, valentina362g@gmail.com, michela.amadei@hotmail.it, martina.fienga@hotmail.it, spicri@gmail.com) atterrano su `/diario`.
-
-### Branding Footer
-
-**Gia implementato** in `Footer.tsx` linea 39-40:
-```typescript
-<p>© 2026 MerryProject Global - Dubai</p>
-<p className="text-primary/80">Ecosystem: 362gradi.ae | defimasi.ae</p>
-```
+Nessuna modifica necessaria.
 
 ---
 
-## File da Creare/Modificare
+## Parte 4: Riepilogo Modifiche
 
-| File | Azione | Priorita |
-|------|--------|----------|
-| Database Migration | Creare tabella `exercise_videos` + seed data | Alta |
-| `src/pages/Allenamento.tsx` | Nuovo - Archivio video | Alta |
-| `src/pages/Progressi.tsx` | Nuovo - Solo analytics | Alta |
-| `src/hooks/useExerciseVideos.ts` | Nuovo - Hook per video | Alta |
-| `src/components/VideoPlayerModal.tsx` | Nuovo - Player verticale/orizzontale | Alta |
-| `src/components/BottomDock.tsx` | Modificare - Nuove icone | Alta |
-| `src/App.tsx` | Aggiungere routes /allenamento e /progressi | Alta |
-| `src/pages/Diario.tsx` | Aggiungere link a /checks per gestione | Media |
+### Database Migration
+
+Una singola migration SQL per inserire tutti i video di Maso (~90 video) nelle categorie:
+
+| Categoria | Trainer | Numero Video | Tipo |
+|-----------|---------|--------------|------|
+| bilanciere | maso | 5 | standard |
+| elastici | maso | 8 | standard |
+| mobilita | maso | 22 | standard |
+| macchinari | maso | 55 | standard |
+| **Totale Maso** | | **~90** | |
+
+### File da Modificare
+
+| File | Azione |
+|------|--------|
+| Database Migration | Nuovo - INSERT di ~90 video Maso |
+
+### File NON Modificati (preservati)
+
+- Badge system: `BadgeGallery.tsx`, `BadgeProgress.tsx`, `BadgeUnlockAnimation.tsx`
+- Ghost Crop: `CheckFormModal.tsx`, `ImageCropperModal.tsx`
+- Nutrizione: `Nutrizione.tsx`, `useUserDiet.ts`
+- BottomDock: gia configurato correttamente
+- VideoPlayerModal: gia funzionante
+- extractVideoId(): gia funzionante
+- Progressi: gia configurato correttamente
 
 ---
 
-## Vincoli Tecnici Rispettati
+## Risultato Finale
 
-1. **Badge Glow**: Nessuna modifica ai componenti badge
-2. **Ghost Crop**: CheckFormModal e ImageCropperModal invariati
-3. **Funnel /inizia**: Nessuna modifica
-4. **Modulo Nutrizione**: Nessuna modifica
-5. **Staff Access**: Redirect confermato su /diario
+### Archivio Video Completo
 
----
+| Categoria | Maso | Martina | Totale |
+|-----------|------|---------|--------|
+| Corpo Libero | 46 | 21 | 67 |
+| Manubri | 75 | 15 | 90 |
+| Kettlebell | 25 | 4 | 29 |
+| Bilanciere | 5 | 8 | 13 |
+| Macchinari | 55 | 7 | 62 |
+| Elastici | 8 | 3 | 11 |
+| Mobilita | 22 | 12 | 34 |
+| TRX | 0 | 1 | 1 |
+| **TOTALE** | **~236** | **~71** | **~307** |
 
-## Video Player - Supporto Multi-Formato
+### Navigazione Funzionante
 
-### YouTube Shorts (9:16)
-
-```typescript
-// URL format: youtube.com/shorts/VIDEO_ID
-const ShortsPlayer = ({ videoId }: { videoId: string }) => (
-  <div className="aspect-[9/16] max-h-[80vh] mx-auto">
-    <iframe
-      src={`https://www.youtube.com/embed/${videoId}`}
-      className="w-full h-full rounded-xl"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-      allowFullScreen
-    />
-  </div>
-);
+```text
+[Diario] -> Check giornalieri
+[Nutrizione] -> PDF Dieta  
+[Allenamento] -> 300+ Video (Maso + Martina)
+[Progressi] -> Solo grafici e foto (NO check form)
 ```
 
-### YouTube Standard (16:9)
+### Video Player
 
-```typescript
-// URL format: youtube.com/watch?v=VIDEO_ID o youtu.be/VIDEO_ID
-const StandardPlayer = ({ videoId }: { videoId: string }) => (
-  <div className="aspect-video w-full">
-    <iframe
-      src={`https://www.youtube.com/embed/${videoId}`}
-      className="w-full h-full rounded-xl"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
-      allowFullScreen
-    />
-  </div>
-);
-```
-
----
-
-## Struttura Dati Video (Esempio Inserimento)
-
-```sql
-INSERT INTO exercise_videos (title, category, trainer, video_url, video_type) VALUES
--- Martina - Kettlebell
-('Stacchi con Kettlebell', 'kettlebell', 'martina', 'https://youtube.com/shorts/XXX', 'shorts'),
-('Goblet Squat Kettlebell', 'kettlebell', 'martina', 'https://youtube.com/shorts/XXX', 'shorts'),
-
--- Martina - Manubri  
-('Stacchi Rumeni Manubri', 'manubri', 'martina', 'https://youtube.com/shorts/M-ue6r1gMcU', 'shorts'),
-('Alzate Laterali Manubri', 'manubri', 'martina', 'https://youtube.com/shorts/kAmDh4QVvoA', 'shorts'),
-
--- Martina - Corpo Libero
-('Sit Up Butterfly', 'corpo_libero', 'martina', 'https://youtube.com/shorts/sGGSN6ozpSw', 'shorts'),
-('Mountain Climbers', 'corpo_libero', 'martina', 'https://youtube.com/shorts/wcl4bpMDBr0', 'shorts'),
-
--- Martina - Mobilita
-('Routine Completa Foam Roller', 'mobilita', 'martina', 'https://youtu.be/CmIWyGE1q9k', 'standard'),
-('Mobilita a Corpo Libero', 'mobilita', 'martina', 'https://youtu.be/y3c44hq9N8E', 'standard');
-
--- Maso videos da aggiungere con stessa struttura
-```
-
----
-
-## Riepilogo Navigazione Finale
-
-| Icona Dock | Destinazione | Contenuto |
-|------------|--------------|-----------|
-| Diario | `/diario` | Check giornalieri + link a gestione check mensili |
-| Nutrizione | `/nutrizione` | Upload/download PDF dieta |
-| Allenamento | `/allenamento` | Archivio video esercizi |
-| Progressi | `/progressi` | Grafici peso + comparazione foto |
-
-Accesso Settings/Profilo tramite icona nell'header delle pagine.
+- Shorts (9:16): Per video YouTube Shorts
+- Standard (16:9): Per video YouTube lunghi
+- Autoplay: Abilitato per tutti
