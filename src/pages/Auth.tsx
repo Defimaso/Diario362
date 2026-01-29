@@ -56,6 +56,8 @@ const coaches = [
   'Ilaria / Martina',
   'Martina / Michela',
   'Marco',
+  'Michela',
+  'Martina',
   'Cristina'
 ];
 
