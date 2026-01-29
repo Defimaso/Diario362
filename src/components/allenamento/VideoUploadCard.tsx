@@ -7,14 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useVideoCorrections } from '@/hooks/useVideoCorrections';
-import { compressVideo, formatFileSize } from '@/lib/videoCompression';
+import { formatFileSize } from '@/lib/videoCompression';
 import { cn } from '@/lib/utils';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
 const VideoUploadCard = () => {
   const [isUploading, setIsUploading] = useState(false);
-  const [isCompressing, setIsCompressing] = useState(false);
   const [exerciseName, setExerciseName] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -71,24 +70,12 @@ const VideoUploadCard = () => {
       return;
     }
 
-    setIsCompressing(true);
+    setIsUploading(true);
     
     try {
-      // Compress video before upload
-      const compressedFile = await compressVideo(selectedFile);
-      const compressionRatio = ((1 - compressedFile.size / selectedFile.size) * 100).toFixed(0);
-      
-      if (compressedFile.size < selectedFile.size) {
-        toast({
-          title: 'Video compresso',
-          description: `Dimensione ridotta del ${compressionRatio}%`,
-        });
-      }
-
-      setIsCompressing(false);
-      setIsUploading(true);
-
-      const { error } = await uploadVideo(compressedFile, exerciseName.trim(), notes.trim());
+      // Upload original file to preserve audio
+      // Note: Compression was disabled because it strips audio on mobile browsers
+      const { error } = await uploadVideo(selectedFile, exerciseName.trim(), notes.trim());
 
       if (error) {
         throw error;
@@ -111,7 +98,6 @@ const VideoUploadCard = () => {
         description: 'Non è stato possibile caricare il video',
       });
     } finally {
-      setIsCompressing(false);
       setIsUploading(false);
     }
   };
@@ -183,7 +169,7 @@ const VideoUploadCard = () => {
             placeholder="Es. Squat, Stacco, Panca..."
             value={exerciseName}
             onChange={(e) => setExerciseName(e.target.value)}
-            disabled={isUploading || isCompressing}
+            disabled={isUploading}
           />
         </div>
 
@@ -195,7 +181,7 @@ const VideoUploadCard = () => {
             placeholder="Descrivi eventuali dubbi o sensazioni..."
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            disabled={isUploading || isCompressing}
+            disabled={isUploading}
             className="resize-none"
             rows={2}
           />
@@ -204,15 +190,10 @@ const VideoUploadCard = () => {
         {/* Upload Button */}
         <Button
           onClick={handleUpload}
-          disabled={!selectedFile || !exerciseName.trim() || isUploading || isCompressing}
+          disabled={!selectedFile || !exerciseName.trim() || isUploading}
           className="w-full"
         >
-          {isCompressing ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Compressione...
-            </>
-          ) : isUploading ? (
+          {isUploading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Caricamento...
@@ -228,7 +209,7 @@ const VideoUploadCard = () => {
         {/* Info */}
         <p className="text-xs text-muted-foreground flex items-start gap-1.5">
           <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-          I video vengono compressi automaticamente prima dell'upload per velocizzare il caricamento.
+          I video vengono caricati nel formato originale per preservare l'audio.
         </p>
       </div>
     </motion.div>
