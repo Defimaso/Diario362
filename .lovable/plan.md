@@ -1,251 +1,341 @@
 
+# Piano: Fix Video Audio, Push Notifications e Nutrium Deep Link
 
-# Piano: Import Video Completo + Fix Shorts Compatibilità
+## Analisi dei Problemi
 
-## Analisi del Documento
+### 1. Audio Video Caricati (Staff)
+I componenti `StaffVideoFeedbackPanel.tsx` e `VideoFeedbackList.tsx` usano un player video con l'attributo `controls` ma mancano alcuni attributi critici per garantire l'audio funzionante su tutti i browser.
 
-Ho estratto **tutti i video con URL validi** dalla lista. Ecco il riepilogo:
+**Linee interessate:**
+- `StaffVideoFeedbackPanel.tsx`, linea 132-136
+- `VideoFeedbackList.tsx`, linea 142-147
 
-### Video MASO con URL Completi
+### 2. Push Notifications Non Funzionanti
+I log mostrano un errore critico nell'edge function `notify-video-correction`:
 
-| Categoria | Numero Video | Tipo |
-|-----------|--------------|------|
-| Manubri Playlist | 8 | standard |
-| Manubri Shorts/3Ways | 24 | shorts |
-| Bilanciere | 18 | standard |
-| Loop Band / Elastici | 8 | standard |
-| Mobilità / Stretching | 24 | standard |
-| Macchinari / Gym | 55+ | standard |
-| Kettlebell | 6 | standard |
-| Corpo Libero | 46 | standard |
-| **Totale Maso** | **~189** | |
+```
+TypeError: Object prototype may only be an Object or null: undefined
+at https://esm.sh/jws@4.0.1/es2022/jws.mjs
+```
 
-### Video MARTINA con URL Completi (da Page 8)
+Il problema deriva dalla libreria `web-push` (`https://esm.sh/web-push@3.6.7`) che ha problemi di compatibilita con Deno Edge Runtime. La libreria dipende da `jws` che a sua volta usa `util.inherits` - un pattern Node.js non supportato in Deno.
 
-| Categoria | Numero Video | Tipo |
-|-----------|--------------|------|
-| Mobilità / Stretching | 20 | shorts + standard |
-| Corpo Libero | 24 | shorts |
-| **Totale Martina** | **~44** | |
+### 3. Nutrium Deep Link
+Attualmente manca il pulsante per aprire l'app Nutrium direttamente dalla sezione Nutrizione.
 
-### Video SENZA URL (solo "Video" o "Watch")
-
-Circa 100 esercizi di Maso nelle sezioni Kettlebell e Manubri hanno solo placeholder "Watch" senza URL reali. Questi NON verranno inseriti.
+### 4. Dashboard Staff - Notifiche Manuali
+Manca un tasto per inviare notifiche push manuali ai clienti.
 
 ---
 
-## Parte 1: Fix Shorts - Compatibilità Massima
+## Parte 1: Fix Audio Video Player
 
-Il problema degli Shorts che non si vedono nell'anteprima è dovuto alle restrizioni di YouTube sugli iframe. Implementeremo:
+### Modifiche ai File
 
-### Modifiche a `VideoPlayerModal.tsx`
+| File | Linee | Modifica |
+|------|-------|----------|
+| `StaffVideoFeedbackPanel.tsx` | 132-136 | Aggiunta attributi audio |
+| `VideoFeedbackList.tsx` | 142-147 | Aggiunta attributi audio |
+
+### Codice Video Player Corretto
+
+```tsx
+<video
+  src={video.video_url}
+  className="w-full aspect-video object-contain"
+  controls
+  playsInline          // Safari iOS compatibility
+  preload="metadata"   // Carica solo metadata inizialmente
+  // NO autoplay, NO muted - l'utente deve cliccare play
+/>
+```
+
+**Attributi chiave:**
+- `controls` - Mostra i controlli del player (volume incluso)
+- `playsInline` - Impedisce fullscreen automatico su iOS Safari
+- `preload="metadata"` - Carica solo le info iniziali
+- **NON** usare `autoplay` - causa muting forzato
+- **NON** usare `muted` - rimuove l'audio
+
+---
+
+## Parte 2: Fix Push Notifications (Libreria Deno-Native)
+
+### Problema Identificato
+
+La libreria `web-push` da npm non e compatibile con Deno Edge Runtime. Dobbiamo usare una libreria nativa per Deno.
+
+### Soluzione: JSR @negrel/webpush
+
+Questa libreria e stata specificamente creata per Deno e non ha dipendenze Node.js problematiche.
+
+### Nuova Edge Function
 
 ```typescript
-// Parametri ottimizzati per massima compatibilità
-const shortsParams = new URLSearchParams({
-  autoplay: '1',
-  rel: '0',
-  modestbranding: '1',
-  playsinline: '1',
-  mute: '1',              // NUOVO: molti browser bloccano autoplay con audio
-  enablejsapi: '1',       // NUOVO: consente controlli
-  origin: window.location.origin,  // NUOVO: specifica origine
-});
+// supabase/functions/notify-video-correction/index.ts
 
-// Uso youtube-nocookie.com per privacy
-src={`https://www.youtube-nocookie.com/embed/${videoId}?${shortsParams}`}
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { 
+  ApplicationServer,
+  type PushSubscription 
+} from 'jsr:@negrel/webpush@0.5.0'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, ...',
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders })
+  }
+
+  try {
+    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')!
+    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!
+    
+    // Crea ApplicationServer con VAPID keys
+    const appServer = await ApplicationServer.new({
+      contactInformation: 'mailto:info@362gradi.it',
+      vapidKeys: {
+        publicKey: vapidPublicKey,
+        privateKey: vapidPrivateKey,
+      }
+    })
+    
+    // ... logica esistente per determinare destinatari
+    
+    // Per ogni subscription
+    const pushSubscription: PushSubscription = {
+      endpoint: sub.endpoint,
+      keys: {
+        p256dh: sub.p256dh,
+        auth: sub.auth
+      }
+    }
+    
+    const subscriber = appServer.subscribe(pushSubscription)
+    await subscriber.pushTextMessage(JSON.stringify(payload), {})
+    
+  } catch (error) {
+    // error handling
+  }
+})
 ```
 
-### Modifiche Chiave
+### Stessa Fix per send-push-notification
 
-1. **`mute=1`**: I browser moderni bloccano l'autoplay con audio. Il video parte muto e l'utente può attivare l'audio.
-
-2. **`youtube-nocookie.com`**: Dominio privacy-enhanced che evita alcuni blocchi di tracking.
-
-3. **`origin`**: Specifica l'origine esatta per sicurezza CORS.
-
-4. **`enablejsapi=1`**: Abilita l'API JavaScript per gestione eventi.
+Applicare la stessa modifica alla funzione `send-push-notification/index.ts`.
 
 ---
 
-## Parte 2: Import Database - Solo Nuovi Video
+## Parte 3: Nutrium Deep Link
 
-### Strategia di Insert
-
-```sql
--- Uso INSERT con ON CONFLICT DO NOTHING
--- Conflitto basato su (title, trainer) o video_url
-
-INSERT INTO exercise_videos (title, category, trainer, video_url, video_type, sort_order)
-VALUES (...)
-ON CONFLICT (video_url) DO NOTHING;
-```
-
-### Nuovo Indice Univoco
-
-Prima di inserire, creiamo un indice univoco su `video_url` per prevenire duplicati:
-
-```sql
-CREATE UNIQUE INDEX IF NOT EXISTS exercise_videos_url_unique 
-ON exercise_videos(video_url);
-```
-
-### Video da Inserire
-
-#### Maso - Manubri Playlist (8 video standard)
-
-| Titolo | URL |
-|--------|-----|
-| Back Lunges | youtube.com/watch?v=yp7bGETJSBY |
-| Curl | youtube.com/watch?v=55VCQp-lV0k |
-| Deadlift | youtube.com/watch?v=pr8xWzwuO3A |
-| Press | youtube.com/watch?v=eHV-deENTDc |
-| Row | youtube.com/watch?v=Y6QDUOA4oUc |
-| Squat | youtube.com/watch?v=5TKbe55T_U4 |
-| Triceps Extension | youtube.com/watch?v=Fcv4orfBxTA |
-| Upright Row | youtube.com/watch?v=J72c9jOc_0M |
-
-#### Maso - Manubri Shorts (24 video shorts)
-
-| Titolo | URL |
-|--------|-----|
-| Reverse Fly | youtube.com/shorts/n94-KZ15SXI |
-| Upright Row | youtube.com/shorts/5rdRxULkQyc |
-| Triceps Extension | youtube.com/shorts/IehhyupTFzI |
-| Sumo Squat | youtube.com/shorts/Vs-p9Ahocv8 |
-| SDHP | youtube.com/shorts/iyVa786uTMc |
-| Step Up | youtube.com/shorts/lDCpuHeYlF0 |
-| Squat | youtube.com/shorts/Yk_0rcwJIZU |
-| Situps | youtube.com/shorts/tj0J4X9KWww |
-| Single Leg Deadlift | youtube.com/shorts/495-KA96xpg |
-| Row | youtube.com/shorts/qniV-PtoNXg |
-| Romanian Deadlift | youtube.com/shorts/VP7cxb87Lns |
-| Pushup | youtube.com/shorts/bSDoTMeZMII |
-| Push Press | youtube.com/shorts/6EGOb1KRum4 |
-| Press | youtube.com/shorts/d8pHS_jX4RE |
-| Plank | youtube.com/shorts/sfzFg_Z2gB8 |
-| One Arm Row | youtube.com/shorts/drnGd6YCASE |
-| Frontal Raises | youtube.com/shorts/n5xQWndDfSc |
-| Front Lunges | youtube.com/shorts/jqJN4tDjfpQ |
-| Floor Press | youtube.com/shorts/hmC0JHdEfjA |
-| Deadlift | youtube.com/shorts/rIZIw8ZmztI |
-| Curl | youtube.com/shorts/oWVStCiTwwA |
-| Crunch | youtube.com/shorts/iUZ4MISyzME |
-| Burpees | youtube.com/shorts/S5rFcEKwd88 |
-| Back Lunges | youtube.com/shorts/S5rFcEKwd88 |
-
-#### Maso - Bilanciere (18 video)
-
-Affondi, Back Squat, Curl, Chinup, Dip, Front Squat, Overhead Squat, Panca Piana, Push Press, Press, Pendlay Row, Reverse Row, Stacco da Terra, Stacco Sumo, Thrusters
-
-#### Maso - Loop Band / Elastici (8 video)
-
-Già inseriti nel database.
-
-#### Maso - Mobilità / Stretching (24 video)
-
-Già inseriti nel database.
-
-#### Maso - Gym / Macchinari (55+ video)
-
-Tutti con URL validi dal documento.
-
-#### Maso - Kettlebell (6 video con URL)
-
-KB ONE ARM SWING, KB MUSCLE CLEAN, KB RACK LUNGES, KB DH CLEAN, KB POWER CLEAN, KB DH SNATCH
-
-#### Maso - Corpo Libero (46 video)
-
-Tutti i bodyweight exercises con URL validi.
-
-#### Martina - Mobilità (20 video)
-
-Shorts di stretching e routine.
-
-#### Martina - Corpo Libero (24 video)
-
-Tutti con URL shorts validi.
-
----
-
-## Parte 3: Modifiche ai File
-
-### File da Modificare
-
-| File | Modifica |
-|------|----------|
-| `src/components/VideoPlayerModal.tsx` | Parametri iframe per compatibilità massima |
-| Database | INSERT di ~200 nuovi video |
-
-### File NON Modificati
-
-- Badge system
-- Ghost Crop
-- Nutrizione
-- BottomDock
-- Progressi
-
----
-
-## Riepilogo Finale
-
-### Archivio Video Atteso Post-Import
-
-| Categoria | Prima | Dopo |
-|-----------|-------|------|
-| Manubri | ~15 | ~47 |
-| Corpo Libero | ~21 | ~91 |
-| Kettlebell | ~4 | ~10 |
-| Bilanciere | ~13 | ~31 |
-| Macchinari | ~7 | ~62 |
-| Elastici | ~3 | ~11 |
-| Mobilità | ~12 | ~56 |
-| TRX | ~1 | ~1 |
-| **TOTALE** | **~68** | **~309** |
-
-### Fix Shorts
-
-Il player utilizzerà:
-- `youtube-nocookie.com` per privacy
-- `mute=1` per autoplay garantito
-- `origin` per CORS
-- Parametri ottimizzati per embed
-
----
-
-## Sezione Tecnica
-
-### VideoPlayerModal.tsx - Nuovi Parametri
+### Logica Deep Link Cross-Platform
 
 ```typescript
-const getShortsEmbedUrl = (videoId: string) => {
-  const params = new URLSearchParams({
-    autoplay: '1',
-    rel: '0',
-    modestbranding: '1',
-    playsinline: '1',
-    mute: '1',
-    enablejsapi: '1',
-    loop: '1',
-    playlist: videoId,
-  });
-  return `https://www.youtube-nocookie.com/embed/${videoId}?${params}`;
+const openNutrium = () => {
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isAndroid = /android/.test(userAgent);
+  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+  
+  if (isAndroid) {
+    // Intent per Android
+    window.location.href = 'intent://#Intent;package=com.nutrium.nutrium;scheme=nutrium;end';
+    // Fallback dopo timeout
+    setTimeout(() => {
+      window.location.href = 'https://app.nutrium.com';
+    }, 2000);
+  } else if (isIOS) {
+    // Schema URL per iOS
+    window.location.href = 'nutrium://';
+    // Fallback dopo timeout
+    setTimeout(() => {
+      window.location.href = 'https://apps.apple.com/app/nutrium/id1111111111';
+    }, 2000);
+  } else {
+    // Desktop - apri webapp
+    window.open('https://app.nutrium.com', '_blank');
+  }
 };
 ```
 
-### SQL Insert - Esempio
+### Modifica a Nutrizione.tsx
 
-```sql
--- Maso Manubri Shorts
-INSERT INTO exercise_videos (title, category, trainer, video_url, video_type, sort_order)
-SELECT * FROM (VALUES
-  ('Reverse Fly', 'manubri', 'maso', 'https://www.youtube.com/shorts/n94-KZ15SXI', 'shorts', 100),
-  ('Upright Row Shorts', 'manubri', 'maso', 'https://www.youtube.com/shorts/5rdRxULkQyc', 'shorts', 101),
-  -- ... altri video
-) AS v(title, category, trainer, video_url, video_type, sort_order)
-WHERE NOT EXISTS (
-  SELECT 1 FROM exercise_videos e 
-  WHERE e.video_url = v.video_url
-);
+Aggiungi un nuovo pulsante sotto la sezione del piano alimentare:
+
+```tsx
+<motion.section
+  initial={{ opacity: 0, y: 20 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ delay: 0.25 }}
+>
+  <div className="card-elegant rounded-2xl p-4 border border-[hsl(var(--section-purple))]/30">
+    <div className="flex items-center gap-3 mb-3">
+      <ExternalLink className="w-5 h-5 text-[hsl(var(--section-purple))]" />
+      <h2 className="font-semibold">Nutrium</h2>
+    </div>
+    
+    <p className="text-sm text-muted-foreground mb-4">
+      Accedi alla versione completa della tua dieta su Nutrium.
+    </p>
+    
+    <p className="text-xs text-muted-foreground mb-4 italic">
+      Nota: Usa le stesse credenziali che utilizzi per Nutrium.
+    </p>
+    
+    <Button onClick={openNutrium} className="w-full">
+      <ExternalLink className="w-4 h-4 mr-2" />
+      Apri Dieta su Nutrium
+    </Button>
+  </div>
+</motion.section>
 ```
 
+---
+
+## Parte 4: Staff Dashboard - Notifiche Manuali
+
+### Nuovo Componente SendNotificationButton
+
+Crea un pulsante che permette allo staff di inviare una notifica push manuale a un cliente specifico.
+
+```tsx
+// src/components/staff/SendNotificationButton.tsx
+
+interface SendNotificationButtonProps {
+  clientId: string;
+  clientName: string;
+}
+
+const SendNotificationButton = ({ clientId, clientName }: Props) => {
+  const [sending, setSending] = useState(false);
+  
+  const sendNotification = async () => {
+    setSending(true);
+    try {
+      await supabase.functions.invoke('send-push-notification', {
+        body: {
+          userId: clientId,
+          title: '📢 Promemoria dal tuo Coach',
+          body: 'Non dimenticare di compilare il tuo check-in giornaliero!',
+          data: { url: '/diario' }
+        }
+      });
+      toast.success('Notifica inviata!');
+    } catch (error) {
+      toast.error('Errore nell\'invio della notifica');
+    }
+    setSending(false);
+  };
+  
+  return (
+    <Button 
+      variant="outline" 
+      size="sm"
+      onClick={sendNotification}
+      disabled={sending}
+    >
+      <Bell className="w-4 h-4 mr-1" />
+      {sending ? 'Invio...' : 'Invia Promemoria'}
+    </Button>
+  );
+};
+```
+
+### Integrazione in ClientExpandedView
+
+Aggiungi il pulsante nella vista espansa del cliente nella dashboard staff:
+
+```tsx
+// In ClientExpandedView.tsx, nella sezione header o actions
+<SendNotificationButton 
+  clientId={clientId} 
+  clientName={clientName} 
+/>
+```
+
+---
+
+## Riepilogo File da Modificare
+
+| File | Tipo | Descrizione |
+|------|------|-------------|
+| `StaffVideoFeedbackPanel.tsx` | Edit | Fix attributi video player |
+| `VideoFeedbackList.tsx` | Edit | Fix attributi video player |
+| `notify-video-correction/index.ts` | Rewrite | Usa @negrel/webpush |
+| `send-push-notification/index.ts` | Rewrite | Usa @negrel/webpush |
+| `Nutrizione.tsx` | Edit | Aggiungi pulsante Nutrium |
+| `SendNotificationButton.tsx` | New | Componente notifica manuale |
+| `ClientExpandedView.tsx` | Edit | Integra pulsante notifica |
+
+---
+
+## Sezione Tecnica: Web Push con @negrel/webpush
+
+### Import e Setup
+
+```typescript
+import { 
+  ApplicationServer,
+  type PushSubscription 
+} from 'jsr:@negrel/webpush@0.5.0'
+
+// Crea server con VAPID keys
+const appServer = await ApplicationServer.new({
+  contactInformation: 'mailto:info@362gradi.it',
+  vapidKeys: {
+    publicKey: Deno.env.get('VAPID_PUBLIC_KEY')!,
+    privateKey: Deno.env.get('VAPID_PRIVATE_KEY')!,
+  }
+})
+```
+
+### Invio Notifica
+
+```typescript
+// Converti subscription dal database
+const pushSub: PushSubscription = {
+  endpoint: dbSubscription.endpoint,
+  keys: {
+    p256dh: dbSubscription.p256dh,
+    auth: dbSubscription.auth
+  }
+}
+
+// Crea subscriber e invia
+const subscriber = appServer.subscribe(pushSub)
+await subscriber.pushTextMessage(JSON.stringify({
+  title: 'Titolo',
+  body: 'Messaggio',
+  icon: '/pwa-192x192.png',
+  data: { url: '/allenamento' }
+}), {})
+```
+
+### Gestione Errori
+
+```typescript
+try {
+  await subscriber.pushTextMessage(payload, {})
+  successCount++
+} catch (error) {
+  // Se subscription scaduta (410/404), rimuovila dal DB
+  if (error.status === 410 || error.status === 404) {
+    await supabase.from('push_subscriptions').delete().eq('id', sub.id)
+  }
+  failCount++
+}
+```
+
+---
+
+## Note Importanti
+
+1. **VAPID Keys**: Le chiavi esistenti (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`) sono gia configurate come secrets e funzioneranno con la nuova libreria.
+
+2. **Service Worker**: Il file `public/sw.js` non richiede modifiche - gestisce gia correttamente il parsing del payload JSON.
+
+3. **Archivio YouTube**: Non viene toccato. Le modifiche riguardano solo i video caricati dai clienti nel bucket `exercise-corrections`.
+
+4. **Compatibilita Browser**: La libreria @negrel/webpush genera payload conformi allo standard Web Push, compatibili con tutti i browser moderni (Chrome, Firefox, Safari, Edge).
