@@ -134,6 +134,8 @@ const StaffVideoFeedbackPanel = ({ clientId }: StaffVideoFeedbackPanelProps) => 
                         src={video.video_url}
                         className="w-full aspect-video object-contain"
                         controls
+                        playsInline
+                        preload="metadata"
                       />
                     </div>
 

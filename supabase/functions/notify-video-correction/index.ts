@@ -1,5 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import webpush from 'https://esm.sh/web-push@3.6.7'
+import { 
+  ApplicationServer,
+  importVapidKeys,
+  type PushSubscription 
+} from 'jsr:@negrel/webpush@0.5.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +19,50 @@ interface NotifyRequest {
   coachId?: string;
 }
 
+// Convert base64url VAPID keys to JWK format for ECDSA P-256
+function vapidKeysToJwk(publicKeyBase64: string, privateKeyBase64: string): { publicKey: JsonWebKey; privateKey: JsonWebKey } {
+  // Decode base64url to Uint8Array
+  const base64urlToUint8Array = (base64url: string): Uint8Array => {
+    const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/')
+    const padding = '='.repeat((4 - (base64.length % 4)) % 4)
+    const binary = atob(base64 + padding)
+    return new Uint8Array([...binary].map(c => c.charCodeAt(0)))
+  }
+
+  // Convert Uint8Array to base64url
+  const uint8ArrayToBase64url = (arr: Uint8Array): string => {
+    return btoa(String.fromCharCode(...arr))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '')
+  }
+
+  const publicKeyBytes = base64urlToUint8Array(publicKeyBase64)
+  const privateKeyBytes = base64urlToUint8Array(privateKeyBase64)
+
+  // For P-256, public key is 65 bytes (uncompressed: 0x04 + 32 bytes X + 32 bytes Y)
+  // Skip the first byte (0x04) and split into X and Y
+  const x = publicKeyBytes.slice(1, 33)
+  const y = publicKeyBytes.slice(33, 65)
+
+  const publicKeyJwk: JsonWebKey = {
+    kty: 'EC',
+    crv: 'P-256',
+    x: uint8ArrayToBase64url(x),
+    y: uint8ArrayToBase64url(y),
+  }
+
+  const privateKeyJwk: JsonWebKey = {
+    kty: 'EC',
+    crv: 'P-256',
+    x: uint8ArrayToBase64url(x),
+    y: uint8ArrayToBase64url(y),
+    d: uint8ArrayToBase64url(privateKeyBytes),
+  }
+
+  return { publicKey: publicKeyJwk, privateKey: privateKeyJwk }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -26,12 +74,20 @@ Deno.serve(async (req) => {
     const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')!
     const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!
 
-    // Configure web-push
-    webpush.setVapidDetails(
-      'mailto:info@362gradi.it',
-      vapidPublicKey,
-      vapidPrivateKey
-    )
+    // Convert base64url VAPID keys to JWK format
+    const { publicKey, privateKey } = vapidKeysToJwk(vapidPublicKey, vapidPrivateKey)
+
+    // Import VAPID keys from JWK format to CryptoKeyPair
+    const vapidKeys = await importVapidKeys({
+      publicKey,
+      privateKey,
+    })
+
+    // Create ApplicationServer with VAPID keys (Deno-native webpush)
+    const appServer = await ApplicationServer.new({
+      contactInformation: 'mailto:info@362gradi.it',
+      vapidKeys,
+    })
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     const { type, videoId, clientId, clientName, exerciseName, coachId } = await req.json() as NotifyRequest
@@ -45,7 +101,6 @@ Deno.serve(async (req) => {
 
     if (type === 'video_uploaded') {
       // Notify coaches assigned to this client
-      // First get the coach assignment
       const { data: assignment } = await supabase
         .from('coach_assignments')
         .select('coach_name')
@@ -69,12 +124,9 @@ Deno.serve(async (req) => {
         }
 
         const emails = coachEmailMap[assignment.coach_name] || []
-        
-        // Also add super admin
-        emails.push('info@362gradi.it')
+        emails.push('info@362gradi.it') // Always include super admin
 
         if (emails.length > 0) {
-          // Get user IDs from emails
           const { data: profiles } = await supabase
             .from('profiles')
             .select('id')
@@ -152,7 +204,7 @@ Deno.serve(async (req) => {
 
     for (const sub of subscriptions) {
       try {
-        const pushSubscription = {
+        const pushSubscription: PushSubscription = {
           endpoint: sub.endpoint,
           keys: {
             p256dh: sub.p256dh,
@@ -160,14 +212,16 @@ Deno.serve(async (req) => {
           }
         }
 
-        await webpush.sendNotification(pushSubscription, payload)
+        const subscriber = appServer.subscribe(pushSubscription)
+        await subscriber.pushTextMessage(payload, {})
         successCount++
         console.log('Push sent successfully to:', sub.endpoint.substring(0, 50))
       } catch (error: unknown) {
-        const err = error as { statusCode?: number; message?: string }
+        const err = error as { status?: number; message?: string }
         console.error('Push failed:', err.message)
         
-        if (err.statusCode === 410 || err.statusCode === 404) {
+        // If subscription expired (410/404), remove it
+        if (err.status === 410 || err.status === 404) {
           console.log('Subscription expired, removing:', sub.endpoint.substring(0, 50))
           await supabase.from('push_subscriptions').delete().eq('id', sub.id)
         }

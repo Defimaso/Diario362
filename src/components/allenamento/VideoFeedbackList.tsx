@@ -144,6 +144,8 @@ const VideoFeedbackList = () => {
                         src={video.video_url}
                         className="w-full aspect-video object-contain"
                         controls
+                        playsInline
+                        preload="metadata"
                       />
                     </div>
 
