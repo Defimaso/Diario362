@@ -1,7 +1,7 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Apple, FileText, Upload, Download, Trash2, Info, ExternalLink } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Apple, FileText, Upload, Download, Trash2, Info, ExternalLink, Settings } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDiet } from '@/hooks/useUserDiet';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,8 @@ import { it } from 'date-fns/locale';
 import BottomDock from '@/components/BottomDock';
 import Footer from '@/components/legal/Footer';
 import CookieBanner from '@/components/legal/CookieBanner';
+import { NotificationBell } from '@/components/NotificationBell';
+import { openNativeApp } from '@/lib/deepLinks';
 
 const Nutrizione = () => {
   const { user, loading: authLoading } = useAuth();
@@ -62,30 +64,9 @@ const Nutrizione = () => {
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
   };
 
-  const openNutrium = useCallback(() => {
-    const userAgent = navigator.userAgent.toLowerCase();
-    const isAndroid = /android/.test(userAgent);
-    const isIOS = /iphone|ipad|ipod/.test(userAgent);
-
-    if (isAndroid) {
-      // Intent for Android
-      window.location.href = 'intent://#Intent;package=com.nutrium.nutrium;scheme=nutrium;end';
-      // Fallback after timeout
-      setTimeout(() => {
-        window.location.href = 'https://app.nutrium.com';
-      }, 2000);
-    } else if (isIOS) {
-      // URL scheme for iOS
-      window.location.href = 'nutrium://';
-      // Fallback after timeout
-      setTimeout(() => {
-        window.location.href = 'https://apps.apple.com/app/nutrium/id1448823099';
-      }, 2000);
-    } else {
-      // Desktop - open webapp
-      window.open('https://app.nutrium.com', '_blank');
-    }
-  }, []);
+  const handleOpenNutrium = () => {
+    openNativeApp('nutrium');
+  };
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -100,16 +81,26 @@ const Nutrizione = () => {
         <motion.header
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center gap-3 mb-6 sm:mb-8"
+          className="flex items-center justify-between mb-6 sm:mb-8"
         >
-          <div className="p-2 rounded-full bg-[hsl(var(--section-purple))]/10">
-            <Apple className="w-6 h-6 text-[hsl(var(--section-purple))]" />
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-full bg-[hsl(var(--section-purple))]/10">
+              <Apple className="w-6 h-6 text-[hsl(var(--section-purple))]" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">Nutrizione</h1>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Il tuo piano alimentare personale
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold">Nutrizione</h1>
-            <p className="text-xs sm:text-sm text-muted-foreground">
-              Il tuo piano alimentare personale
-            </p>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Link to="/settings">
+              <Button variant="ghost" size="icon">
+                <Settings className="w-5 h-5" />
+              </Button>
+            </Link>
           </div>
         </motion.header>
 
@@ -236,7 +227,7 @@ const Nutrizione = () => {
             </p>
             
             <Button 
-              onClick={openNutrium} 
+              onClick={handleOpenNutrium}
               className="w-full bg-[hsl(var(--section-purple))] hover:bg-[hsl(var(--section-purple))]/90"
             >
               <ExternalLink className="w-4 h-4 mr-2" />

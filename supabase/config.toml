@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.sync-monthly-check]
 verify_jwt = false
+
+[functions.notify-video-correction]
+verify_jwt = false
