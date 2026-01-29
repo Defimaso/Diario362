@@ -10,6 +10,7 @@ import HistoryTable from '@/components/progress/HistoryTable';
 import BottomDock from '@/components/BottomDock';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const Progressi = () => {
   const { user, loading: authLoading } = useAuth();
@@ -61,14 +62,17 @@ const Progressi = () => {
                 </p>
               </div>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/settings')}
-              className="text-muted-foreground"
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate('/settings')}
+                className="text-muted-foreground"
+              >
+                <Settings className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </motion.div>
       </header>

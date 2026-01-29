@@ -16,6 +16,7 @@ import Footer from "@/components/legal/Footer";
 import CookieBanner from "@/components/legal/CookieBanner";
 import BottomDock from "@/components/BottomDock";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCheckins } from "@/hooks/useCheckins";
 import { useBadges } from "@/hooks/useBadges";
@@ -122,8 +123,9 @@ const Diario = () => {
               <p className="text-xs sm:text-sm text-muted-foreground">Il Diario del tuo 2%</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <StreakBadge streak={streak} />
+            <NotificationBell />
             {(isAdmin || isCollaborator || isSuperAdmin) && (
               <Link to="/gestionediario">
                 <Button

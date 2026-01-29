@@ -54,6 +54,35 @@ function vapidKeysToJwk(publicKeyBase64: string, privateKeyBase64: string): { pu
   return { publicKey: publicKeyJwk, privateKey: privateKeyJwk }
 }
 
+async function createInAppNotification(
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  userId: string,
+  type: string,
+  title: string,
+  message: string,
+  link: string
+) {
+  try {
+    const client = createClient(supabaseUrl, supabaseServiceKey)
+    const { error } = await client.from('notifications').insert({
+      user_id: userId,
+      type,
+      title,
+      message,
+      link,
+      is_read: false,
+    } as never) // Type cast to bypass generated types until they sync
+    if (error) {
+      console.error('Error creating in-app notification:', error)
+    } else {
+      console.log('In-app notification created for user:', userId)
+    }
+  } catch (err) {
+    console.error('Error creating in-app notification:', err)
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -85,6 +114,19 @@ Deno.serve(async (req) => {
     const { userId, title, body, data } = await req.json()
 
     console.log('Sending push notification to user:', userId)
+
+    // Create in-app notification
+    if (userId) {
+      await createInAppNotification(
+        supabaseUrl,
+        supabaseServiceKey,
+        userId,
+        'manual',
+        title || 'Check-in Giornaliero',
+        body || 'Non dimenticare di compilare il tuo check-in oggi!',
+        data?.url || '/diario'
+      )
+    }
 
     // Get user's push subscriptions
     let query = supabase.from('push_subscriptions').select('*')

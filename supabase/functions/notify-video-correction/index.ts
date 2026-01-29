@@ -63,6 +63,38 @@ function vapidKeysToJwk(publicKeyBase64: string, privateKeyBase64: string): { pu
   return { publicKey: publicKeyJwk, privateKey: privateKeyJwk }
 }
 
+async function createInAppNotification(
+  supabaseUrl: string,
+  supabaseServiceKey: string,
+  userId: string,
+  type: string,
+  title: string,
+  message: string,
+  link: string,
+  metadata?: Record<string, unknown>
+) {
+  try {
+    // Create a fresh client to avoid type issues with generated types
+    const client = createClient(supabaseUrl, supabaseServiceKey)
+    const { error } = await client.from('notifications').insert({
+      user_id: userId,
+      type,
+      title,
+      message,
+      link,
+      metadata: metadata || null,
+      is_read: false,
+    } as never) // Type cast to bypass generated types until they sync
+    if (error) {
+      console.error('Error creating in-app notification:', error)
+    } else {
+      console.log('In-app notification created for user:', userId)
+    }
+  } catch (err) {
+    console.error('Error creating in-app notification:', err)
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
@@ -170,6 +202,20 @@ Deno.serve(async (req) => {
 
     console.log('Sending notifications to users:', targetUserIds)
 
+    // Create in-app notifications for all target users
+    for (const userId of targetUserIds) {
+      await createInAppNotification(
+        supabaseUrl,
+        supabaseServiceKey,
+        userId,
+        type,
+        title,
+        body,
+        url,
+        { videoId, exerciseName }
+      )
+    }
+
     // Get subscriptions for target users
     const { data: subscriptions, error: subError } = await supabase
       .from('push_subscriptions')
@@ -184,7 +230,7 @@ Deno.serve(async (req) => {
     if (!subscriptions || subscriptions.length === 0) {
       console.log('No push subscriptions found for target users')
       return new Response(
-        JSON.stringify({ success: true, sent: 0, message: 'No subscriptions found' }),
+        JSON.stringify({ success: true, sent: 0, message: 'No subscriptions found, in-app notifications created' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }

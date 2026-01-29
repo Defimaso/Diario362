@@ -10,6 +10,7 @@ import BottomDock from '@/components/BottomDock';
 import Footer from '@/components/legal/Footer';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { NotificationBell } from '@/components/NotificationBell';
 
 const AllenamentoRedesign = () => {
   const { user, loading: authLoading } = useAuth();
@@ -48,7 +49,7 @@ const AllenamentoRedesign = () => {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {unreadCount > 0 && (
                 <Button
                   variant="ghost"
@@ -62,6 +63,7 @@ const AllenamentoRedesign = () => {
                   </Badge>
                 </Button>
               )}
+              <NotificationBell />
               <Link to="/settings">
                 <Button variant="ghost" size="icon">
                   <Settings className="w-5 h-5" />
