@@ -1,341 +1,310 @@
 
-# Piano: Fix Video Audio, Push Notifications e Nutrium Deep Link
+# Piano: Sistema Notifiche In-App, Fix Audio e Deep Linking
 
-## Analisi dei Problemi
+## Panoramica
 
-### 1. Audio Video Caricati (Staff)
-I componenti `StaffVideoFeedbackPanel.tsx` e `VideoFeedbackList.tsx` usano un player video con l'attributo `controls` ma mancano alcuni attributi critici per garantire l'audio funzionante su tutti i browser.
-
-**Linee interessate:**
-- `StaffVideoFeedbackPanel.tsx`, linea 132-136
-- `VideoFeedbackList.tsx`, linea 142-147
-
-### 2. Push Notifications Non Funzionanti
-I log mostrano un errore critico nell'edge function `notify-video-correction`:
-
-```
-TypeError: Object prototype may only be an Object or null: undefined
-at https://esm.sh/jws@4.0.1/es2022/jws.mjs
-```
-
-Il problema deriva dalla libreria `web-push` (`https://esm.sh/web-push@3.6.7`) che ha problemi di compatibilita con Deno Edge Runtime. La libreria dipende da `jws` che a sua volta usa `util.inherits` - un pattern Node.js non supportato in Deno.
-
-### 3. Nutrium Deep Link
-Attualmente manca il pulsante per aprire l'app Nutrium direttamente dalla sezione Nutrizione.
-
-### 4. Dashboard Staff - Notifiche Manuali
-Manca un tasto per inviare notifiche push manuali ai clienti.
+Questo piano implementa un sistema di notifiche centralizzato con icona "campanella", corregge i problemi audio nei video caricati, e migliora il deep linking per le app native.
 
 ---
 
-## Parte 1: Fix Audio Video Player
+## Parte 1: Sistema Notifiche "Campanella"
 
-### Modifiche ai File
+### 1.1 Nuova Tabella Database `notifications`
 
-| File | Linee | Modifica |
-|------|-------|----------|
-| `StaffVideoFeedbackPanel.tsx` | 132-136 | Aggiunta attributi audio |
-| `VideoFeedbackList.tsx` | 142-147 | Aggiunta attributi audio |
+Creare una tabella per gestire tutte le notifiche in-app.
 
-### Codice Video Player Corretto
+```text
++------------------+--------------------------------------+
+| Colonna          | Tipo                                 |
++------------------+--------------------------------------+
+| id               | uuid (PK, default gen_random_uuid()) |
+| user_id          | uuid (FK -> auth.users, NOT NULL)    |
+| type             | text (NOT NULL)                      |
+| title            | text (NOT NULL)                      |
+| message          | text (NOT NULL)                      |
+| link             | text (nullable)                      |
+| is_read          | boolean (default false)              |
+| metadata         | jsonb (nullable)                     |
+| created_at       | timestamptz (default now())          |
++------------------+--------------------------------------+
+```
+
+**Tipi di notifica supportati:**
+- `video_feedback` - Coach ha risposto a un video
+- `video_uploaded` - Cliente ha caricato un video (per Coach)
+- `diet_uploaded` - Coach ha caricato un piano alimentare
+- `checkin_reminder` - Promemoria check-in
+- `manual` - Notifica manuale dallo staff
+
+**RLS Policies:**
+- SELECT: Utenti vedono solo le proprie notifiche
+- UPDATE: Utenti possono marcare come lette solo le proprie
+- INSERT: Solo service role (Edge Functions)
+
+### 1.2 Nuovo Componente `NotificationBell.tsx`
+
+**Posizione:** Header di ogni pagina principale (Diario, Allenamento, Nutrizione, Progressi)
+
+**Funzionalita:**
+- Icona Bell con badge numerico (contatore non lette)
+- Click apre Popover con lista notifiche
+- Ogni notifica e un link cliccabile
+- Pulsante "Segna tutte come lette"
+
+```text
+Struttura UI:
++---------------------------------------------+
+| [Bell Icon] (3)                             |
++---------------------------------------------+
+| Notifiche                    [Segna lette]  |
++---------------------------------------------+
+| [Unread] Nuova correzione video       2h fa |
+|          Il coach ha risposto al...   >     |
++---------------------------------------------+
+| [Read] Piano alimentare aggiornato    1g fa |
+|        Nuovo PDF disponibile          >     |
++---------------------------------------------+
+```
+
+### 1.3 Nuovo Hook `useNotifications.ts`
+
+```typescript
+// Funzionalita:
+- fetchNotifications() - Carica notifiche utente
+- unreadCount - Contatore non lette
+- markAsRead(id) - Marca singola come letta
+- markAllAsRead() - Marca tutte come lette
+- Realtime subscription per aggiornamenti live
+```
+
+### 1.4 Aggiornamento Edge Functions per Creare Notifiche
+
+Modificare le seguenti Edge Functions per creare record nella tabella `notifications`:
+
+| Edge Function | Trigger | Notifica a |
+|---------------|---------|------------|
+| `notify-video-correction` | Video caricato | Coach assegnati |
+| `notify-video-correction` | Feedback aggiunto | Cliente |
+| (Nuovo trigger) | Diet PDF caricato | Cliente |
+
+### 1.5 Integrazione Service Worker
+
+Il Service Worker `public/sw.js` gestisce gia le push notifications. Le notifiche in-app saranno sincronizzate con le push per una esperienza unificata.
+
+---
+
+## Parte 2: Fix Definitivo Audio Video
+
+### 2.1 Analisi Attuale
+
+I video player in `StaffVideoFeedbackPanel.tsx` (linea 133-139) e `VideoFeedbackList.tsx` (linea 143-149) hanno:
+- `controls` - OK
+- `playsInline` - OK
+- `preload="metadata"` - OK
+
+**Mancante:** Nessun attributo `muted` (che e corretto), ma potrebbe esserci un problema con il formato video o il browser.
+
+### 2.2 Soluzione Aggiuntiva
+
+Aggiungere attributi espliciti per garantire l'audio:
 
 ```tsx
 <video
   src={video.video_url}
   className="w-full aspect-video object-contain"
-  controls
-  playsInline          // Safari iOS compatibility
-  preload="metadata"   // Carica solo metadata inizialmente
-  // NO autoplay, NO muted - l'utente deve cliccare play
+  controls                    // Controlli visibili
+  playsInline                 // No fullscreen automatico iOS
+  preload="metadata"          // Carica solo metadata
+  controlsList="nodownload"   // Nasconde download
+  // IMPORTANTE: NO autoplay, NO muted
 />
 ```
 
-**Attributi chiave:**
-- `controls` - Mostra i controlli del player (volume incluso)
-- `playsInline` - Impedisce fullscreen automatico su iOS Safari
-- `preload="metadata"` - Carica solo le info iniziali
-- **NON** usare `autoplay` - causa muting forzato
-- **NON** usare `muted` - rimuove l'audio
+**Nota:** Il codice attuale e gia corretto. Il problema potrebbe essere:
+1. Il video originale non ha traccia audio
+2. Il browser blocca l'audio se l'utente non ha interagito con la pagina
+3. La compressione video rimuove l'audio
+
+### 2.3 Verifica Compressione Video
+
+Controllare `src/lib/videoCompression.ts` per assicurarsi che l'audio venga preservato durante la compressione MediaRecorder.
 
 ---
 
-## Parte 2: Fix Push Notifications (Libreria Deno-Native)
+## Parte 3: Deep Linking Potenziato
 
-### Problema Identificato
+### 3.1 Funzione `openNativeApp` Centralizzata
 
-La libreria `web-push` da npm non e compatibile con Deno Edge Runtime. Dobbiamo usare una libreria nativa per Deno.
-
-### Soluzione: JSR @negrel/webpush
-
-Questa libreria e stata specificamente creata per Deno e non ha dipendenze Node.js problematiche.
-
-### Nuova Edge Function
+Creare `src/lib/deepLinks.ts`:
 
 ```typescript
-// supabase/functions/notify-video-correction/index.ts
-
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { 
-  ApplicationServer,
-  type PushSubscription 
-} from 'jsr:@negrel/webpush@0.5.0'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, ...',
+interface DeepLinkConfig {
+  android: {
+    intent: string;      // intent://...
+    fallback: string;    // Play Store URL
+  };
+  ios: {
+    scheme: string;      // appname://
+    fallback: string;    // App Store URL
+  };
+  web: string;           // Web app URL
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders })
+export const DEEP_LINKS = {
+  nutrium: {
+    android: {
+      intent: 'intent://#Intent;package=com.nutrium.nutrium;scheme=nutrium;end',
+      fallback: 'https://play.google.com/store/apps/details?id=com.nutrium.nutrium'
+    },
+    ios: {
+      scheme: 'nutrium://',
+      fallback: 'https://apps.apple.com/app/nutrium/id1448823099'
+    },
+    web: 'https://app.nutrium.com'
+  },
+  teachable: {
+    android: {
+      intent: 'intent://#Intent;package=com.teachable.teachable;scheme=teachable;end',
+      fallback: 'https://sso.teachable.com/secure/564301/identity/login/otp'
+    },
+    ios: {
+      scheme: 'teachable://',
+      fallback: 'https://sso.teachable.com/secure/564301/identity/login/otp'
+    },
+    web: 'https://sso.teachable.com/secure/564301/identity/login/otp'
   }
+};
 
-  try {
-    const vapidPublicKey = Deno.env.get('VAPID_PUBLIC_KEY')!
-    const vapidPrivateKey = Deno.env.get('VAPID_PRIVATE_KEY')!
-    
-    // Crea ApplicationServer con VAPID keys
-    const appServer = await ApplicationServer.new({
-      contactInformation: 'mailto:info@362gradi.it',
-      vapidKeys: {
-        publicKey: vapidPublicKey,
-        privateKey: vapidPrivateKey,
-      }
-    })
-    
-    // ... logica esistente per determinare destinatari
-    
-    // Per ogni subscription
-    const pushSubscription: PushSubscription = {
-      endpoint: sub.endpoint,
-      keys: {
-        p256dh: sub.p256dh,
-        auth: sub.auth
-      }
-    }
-    
-    const subscriber = appServer.subscribe(pushSubscription)
-    await subscriber.pushTextMessage(JSON.stringify(payload), {})
-    
-  } catch (error) {
-    // error handling
-  }
-})
-```
-
-### Stessa Fix per send-push-notification
-
-Applicare la stessa modifica alla funzione `send-push-notification/index.ts`.
-
----
-
-## Parte 3: Nutrium Deep Link
-
-### Logica Deep Link Cross-Platform
-
-```typescript
-const openNutrium = () => {
-  const userAgent = navigator.userAgent.toLowerCase();
-  const isAndroid = /android/.test(userAgent);
-  const isIOS = /iphone|ipad|ipod/.test(userAgent);
+export function openNativeApp(appKey: keyof typeof DEEP_LINKS): void {
+  const config = DEEP_LINKS[appKey];
+  const ua = navigator.userAgent.toLowerCase();
+  const isAndroid = /android/.test(ua);
+  const isIOS = /iphone|ipad|ipod/.test(ua);
   
   if (isAndroid) {
-    // Intent per Android
-    window.location.href = 'intent://#Intent;package=com.nutrium.nutrium;scheme=nutrium;end';
-    // Fallback dopo timeout
+    window.location.href = config.android.intent;
     setTimeout(() => {
-      window.location.href = 'https://app.nutrium.com';
-    }, 2000);
+      window.location.href = config.android.fallback;
+    }, 2500);
   } else if (isIOS) {
-    // Schema URL per iOS
-    window.location.href = 'nutrium://';
-    // Fallback dopo timeout
+    window.location.href = config.ios.scheme;
     setTimeout(() => {
-      window.location.href = 'https://apps.apple.com/app/nutrium/id1111111111';
-    }, 2000);
+      window.location.href = config.ios.fallback;
+    }, 2500);
   } else {
-    // Desktop - apri webapp
-    window.open('https://app.nutrium.com', '_blank');
+    window.open(config.web, '_blank');
   }
-};
+}
 ```
 
-### Modifica a Nutrizione.tsx
+### 3.2 Aggiornamento Pagina Nutrizione
 
-Aggiungi un nuovo pulsante sotto la sezione del piano alimentare:
+Il file `src/pages/Nutrizione.tsx` ha gia la funzione `openNutrium` (linee 46-68). Sostituire con la versione centralizzata e aggiornare l'App Store ID corretto (1448823099).
 
-```tsx
-<motion.section
-  initial={{ opacity: 0, y: 20 }}
-  animate={{ opacity: 1, y: 0 }}
-  transition={{ delay: 0.25 }}
->
-  <div className="card-elegant rounded-2xl p-4 border border-[hsl(var(--section-purple))]/30">
-    <div className="flex items-center gap-3 mb-3">
-      <ExternalLink className="w-5 h-5 text-[hsl(var(--section-purple))]" />
-      <h2 className="font-semibold">Nutrium</h2>
-    </div>
-    
-    <p className="text-sm text-muted-foreground mb-4">
-      Accedi alla versione completa della tua dieta su Nutrium.
-    </p>
-    
-    <p className="text-xs text-muted-foreground mb-4 italic">
-      Nota: Usa le stesse credenziali che utilizzi per Nutrium.
-    </p>
-    
-    <Button onClick={openNutrium} className="w-full">
-      <ExternalLink className="w-4 h-4 mr-2" />
-      Apri Dieta su Nutrium
-    </Button>
-  </div>
-</motion.section>
-```
+### 3.3 Aggiornamento Link Teachable
+
+Aggiornare `src/pages/Diario.tsx` (linea 281) per usare la funzione centralizzata invece di `window.open`.
 
 ---
 
-## Parte 4: Staff Dashboard - Notifiche Manuali
+## Parte 4: Login Persistente e Upload Dieta Coach
 
-### Nuovo Componente SendNotificationButton
+### 4.1 Verifica Configurazione Auth
 
-Crea un pulsante che permette allo staff di inviare una notifica push manuale a un cliente specifico.
+Il file `src/integrations/supabase/client.ts` gia include:
 
-```tsx
-// src/components/staff/SendNotificationButton.tsx
-
-interface SendNotificationButtonProps {
-  clientId: string;
-  clientName: string;
+```typescript
+auth: {
+  storage: localStorage,
+  persistSession: true,
+  autoRefreshToken: true,
 }
+```
 
-const SendNotificationButton = ({ clientId, clientName }: Props) => {
-  const [sending, setSending] = useState(false);
-  
-  const sendNotification = async () => {
-    setSending(true);
-    try {
-      await supabase.functions.invoke('send-push-notification', {
-        body: {
-          userId: clientId,
-          title: '📢 Promemoria dal tuo Coach',
-          body: 'Non dimenticare di compilare il tuo check-in giornaliero!',
-          data: { url: '/diario' }
-        }
-      });
-      toast.success('Notifica inviata!');
-    } catch (error) {
-      toast.error('Errore nell\'invio della notifica');
-    }
-    setSending(false);
-  };
-  
-  return (
-    <Button 
-      variant="outline" 
-      size="sm"
-      onClick={sendNotification}
-      disabled={sending}
-    >
-      <Bell className="w-4 h-4 mr-1" />
-      {sending ? 'Invio...' : 'Invia Promemoria'}
-    </Button>
-  );
+**Stato:** OK - Nessuna modifica necessaria.
+
+### 4.2 Upload Dieta da Coach
+
+Il sistema attuale permette al cliente di caricare il proprio PDF. Per permettere al Coach di caricare:
+
+**Opzione 1 (Consigliata):** Creare una funzione separata per l'upload da parte del Coach:
+
+```typescript
+// In useUserDiet.ts, aggiungere:
+const uploadDietForClient = async (clientId: string, file: File) => {
+  // Verifica che l'utente sia admin/collaborator
+  // Carica il file nel path del cliente
+  // Crea/aggiorna record in user_diet_plans
+  // Invia notifica al cliente
 };
 ```
 
-### Integrazione in ClientExpandedView
+**Aggiornare RLS:**
+- Policy INSERT per permettere a Coach assegnati di caricare per i propri clienti
 
-Aggiungi il pulsante nella vista espansa del cliente nella dashboard staff:
+### 4.3 Componente Upload Dieta per Staff
 
-```tsx
-// In ClientExpandedView.tsx, nella sezione header o actions
-<SendNotificationButton 
-  clientId={clientId} 
-  clientName={clientName} 
-/>
-```
+Aggiungere in `ClientExpandedView.tsx` un pulsante "Carica Piano Alimentare" che:
+1. Apre un file picker per PDF
+2. Carica il file nel bucket `user-diets` con path del cliente
+3. Crea/aggiorna record in `user_diet_plans`
+4. Invia notifica push al cliente
+5. Il cliente vede istantaneamente il PDF nella sua sezione Nutrizione
 
 ---
 
 ## Riepilogo File da Modificare
 
-| File | Tipo | Descrizione |
-|------|------|-------------|
-| `StaffVideoFeedbackPanel.tsx` | Edit | Fix attributi video player |
-| `VideoFeedbackList.tsx` | Edit | Fix attributi video player |
-| `notify-video-correction/index.ts` | Rewrite | Usa @negrel/webpush |
-| `send-push-notification/index.ts` | Rewrite | Usa @negrel/webpush |
-| `Nutrizione.tsx` | Edit | Aggiungi pulsante Nutrium |
-| `SendNotificationButton.tsx` | New | Componente notifica manuale |
-| `ClientExpandedView.tsx` | Edit | Integra pulsante notifica |
+| File | Azione | Descrizione |
+|------|--------|-------------|
+| `supabase/migrations/xxx.sql` | Nuovo | Tabella notifications + RLS |
+| `src/hooks/useNotifications.ts` | Nuovo | Hook per gestire notifiche |
+| `src/components/NotificationBell.tsx` | Nuovo | Componente campanella |
+| `src/lib/deepLinks.ts` | Nuovo | Utility deep linking |
+| `src/pages/Diario.tsx` | Edit | Aggiungi NotificationBell in header |
+| `src/pages/AllenamentoRedesign.tsx` | Edit | Aggiungi NotificationBell in header |
+| `src/pages/Nutrizione.tsx` | Edit | Usa deepLinks centralizzato |
+| `src/pages/Progressi.tsx` | Edit | Aggiungi NotificationBell in header |
+| `src/components/ClientExpandedView.tsx` | Edit | Aggiungi upload dieta per Coach |
+| `src/hooks/useUserDiet.ts` | Edit | Aggiungi funzione upload per Coach |
+| `supabase/functions/notify-video-correction/index.ts` | Edit | Crea record in notifications |
+| `supabase/functions/send-push-notification/index.ts` | Edit | Crea record in notifications |
 
 ---
 
-## Sezione Tecnica: Web Push con @negrel/webpush
+## Diagramma Flusso Notifiche
 
-### Import e Setup
-
-```typescript
-import { 
-  ApplicationServer,
-  type PushSubscription 
-} from 'jsr:@negrel/webpush@0.5.0'
-
-// Crea server con VAPID keys
-const appServer = await ApplicationServer.new({
-  contactInformation: 'mailto:info@362gradi.it',
-  vapidKeys: {
-    publicKey: Deno.env.get('VAPID_PUBLIC_KEY')!,
-    privateKey: Deno.env.get('VAPID_PRIVATE_KEY')!,
-  }
-})
-```
-
-### Invio Notifica
-
-```typescript
-// Converti subscription dal database
-const pushSub: PushSubscription = {
-  endpoint: dbSubscription.endpoint,
-  keys: {
-    p256dh: dbSubscription.p256dh,
-    auth: dbSubscription.auth
-  }
-}
-
-// Crea subscriber e invia
-const subscriber = appServer.subscribe(pushSub)
-await subscriber.pushTextMessage(JSON.stringify({
-  title: 'Titolo',
-  body: 'Messaggio',
-  icon: '/pwa-192x192.png',
-  data: { url: '/allenamento' }
-}), {})
-```
-
-### Gestione Errori
-
-```typescript
-try {
-  await subscriber.pushTextMessage(payload, {})
-  successCount++
-} catch (error) {
-  // Se subscription scaduta (410/404), rimuovila dal DB
-  if (error.status === 410 || error.status === 404) {
-    await supabase.from('push_subscriptions').delete().eq('id', sub.id)
-  }
-  failCount++
-}
+```text
++------------------+     +-------------------+     +------------------+
+| Azione Trigger   | --> | Edge Function     | --> | Tabella          |
+| (Video/Dieta/    |     | (notify-video-    |     | notifications    |
+|  Feedback)       |     |  correction)      |     |                  |
++------------------+     +-------------------+     +------------------+
+                                |                          |
+                                v                          v
+                         +-------------+            +-------------+
+                         | Web Push    |            | Realtime    |
+                         | (sw.js)     |            | Subscription|
+                         +-------------+            +-------------+
+                                |                          |
+                                v                          v
+                         +-------------+            +-------------+
+                         | Notifica    |            | Badge       |
+                         | Blocco      |            | Campanella  |
+                         | Schermo     |            | In-App      |
+                         +-------------+            +-------------+
 ```
 
 ---
 
-## Note Importanti
+## Note Tecniche
 
-1. **VAPID Keys**: Le chiavi esistenti (`VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`) sono gia configurate come secrets e funzioneranno con la nuova libreria.
+1. **Realtime per Notifiche:** Usare `supabase.channel('notifications').on('postgres_changes', ...)` per aggiornare il contatore in tempo reale.
 
-2. **Service Worker**: Il file `public/sw.js` non richiede modifiche - gestisce gia correttamente il parsing del payload JSON.
+2. **Migration Realtime:** Aggiungere `ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;` nella migration.
 
-3. **Archivio YouTube**: Non viene toccato. Le modifiche riguardano solo i video caricati dai clienti nel bucket `exercise-corrections`.
+3. **Popover vs Drawer:** Usare Popover da Radix per desktop e Drawer (vaul) per mobile.
 
-4. **Compatibilita Browser**: La libreria @negrel/webpush genera payload conformi allo standard Web Push, compatibili con tutti i browser moderni (Chrome, Firefox, Safari, Edge).
+4. **Performance:** Limitare le notifiche caricate a 50 piu recenti, con paginazione lazy.
+
+5. **Notifiche Duplicate:** La logica deve evitare di creare notifiche duplicate per la stessa azione.
