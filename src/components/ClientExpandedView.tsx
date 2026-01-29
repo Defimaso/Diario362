@@ -1,5 +1,5 @@
 import { useState, useEffect, forwardRef } from 'react';
-import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video } from 'lucide-react';
+import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays } from 'date-fns';
@@ -12,6 +12,7 @@ import { useAuditLog } from '@/hooks/useAuditLog';
 import { useUserDiet } from '@/hooks/useUserDiet';
 import StaffVideoFeedbackPanel from './staff/StaffVideoFeedbackPanel';
 import SendNotificationButton from './staff/SendNotificationButton';
+import StaffDietUpload from './staff/StaffDietUpload';
 
 interface UserCheck {
   id: string;
@@ -45,7 +46,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
   const [dailyCheckins, setDailyCheckins] = useState<DailyCheckin[]>([]);
   const [loading, setLoading] = useState(true);
   const { logAction } = useAuditLog();
-  const { dietPlan, loading: dietLoading, downloadDietPlan } = useUserDiet(clientId);
+  const { dietPlan, loading: dietLoading, downloadDietPlan, refetch: refetchDiet } = useUserDiet(clientId);
 
   useEffect(() => {
     const fetchChecks = async () => {
@@ -349,10 +350,17 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
 
       {/* Nutrition Section */}
       <div className="bg-card rounded-xl p-3 sm:p-4 border border-[hsl(var(--section-purple))]/30">
-        <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
-          <Apple className="w-4 h-4 text-[hsl(var(--section-purple))]" />
-          Piano Alimentare
-        </h4>
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <Apple className="w-4 h-4 text-[hsl(var(--section-purple))]" />
+            Piano Alimentare
+          </h4>
+          <StaffDietUpload 
+            clientId={clientId} 
+            clientName={clientName} 
+            onUploadComplete={refetchDiet}
+          />
+        </div>
         
         {dietLoading ? (
           <div className="h-16 bg-muted rounded-lg animate-pulse" />
@@ -376,7 +384,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
           </div>
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            Nessun piano alimentare caricato
+            Nessun piano alimentare caricato. Usa il pulsante sopra per caricare.
           </p>
         )}
       </div>

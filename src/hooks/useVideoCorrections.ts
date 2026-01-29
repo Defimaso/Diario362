@@ -17,6 +17,7 @@ export interface VideoFeedback {
   video_id: string;
   coach_id: string;
   feedback: string;
+  video_url: string | null;
   is_read: boolean;
   created_at: string;
   coach_name?: string;

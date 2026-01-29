@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, MessageSquare, ChevronDown, Send, User, Clock, Trash2 } from 'lucide-react';
+import { Video, MessageSquare, ChevronDown, Send, Clock, Trash2, Upload, Loader2, Play } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useStaffVideoCorrections, ClientVideo } from '@/hooks/useStaffVideoCorrections';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import VideoChatBubble from '@/components/allenamento/VideoChatBubble';
 
 interface StaffVideoFeedbackPanelProps {
   clientId?: string;
@@ -19,6 +20,8 @@ const StaffVideoFeedbackPanel = ({ clientId }: StaffVideoFeedbackPanelProps) => 
   const [expandedVideo, setExpandedVideo] = useState<string | null>(null);
   const [newFeedback, setNewFeedback] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState<string | null>(null);
+  const [uploadingVideo, setUploadingVideo] = useState<string | null>(null);
+  const videoInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   const { toast } = useToast();
 
   // Filter by client if clientId is provided
@@ -43,12 +46,20 @@ const StaffVideoFeedbackPanel = ({ clientId }: StaffVideoFeedbackPanelProps) => 
     );
   }
 
-  const handleSubmitFeedback = async (videoId: string) => {
-    const feedbackText = newFeedback[videoId]?.trim();
-    if (!feedbackText) return;
+  const handleSubmitFeedback = async (videoId: string, videoFile?: File) => {
+    const feedbackText = newFeedback[videoId]?.trim() || '';
+    
+    if (!feedbackText && !videoFile) {
+      toast({
+        variant: 'destructive',
+        title: 'Errore',
+        description: 'Inserisci un messaggio o carica un video',
+      });
+      return;
+    }
 
     setSubmitting(videoId);
-    const { error } = await addFeedback(videoId, feedbackText);
+    const { error } = await addFeedback(videoId, feedbackText, videoFile);
     setSubmitting(null);
 
     if (error) {
@@ -63,6 +74,40 @@ const StaffVideoFeedbackPanel = ({ clientId }: StaffVideoFeedbackPanelProps) => 
         description: 'Il cliente riceverà una notifica',
       });
       setNewFeedback(prev => ({ ...prev, [videoId]: '' }));
+    }
+  };
+
+  const handleVideoSelect = async (videoId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate video
+    if (!file.type.startsWith('video/')) {
+      toast({
+        variant: 'destructive',
+        title: 'Formato non valido',
+        description: 'Seleziona un file video',
+      });
+      return;
+    }
+
+    // Max 100MB
+    if (file.size > 100 * 1024 * 1024) {
+      toast({
+        variant: 'destructive',
+        title: 'File troppo grande',
+        description: 'Il video non può superare i 100MB',
+      });
+      return;
+    }
+
+    setUploadingVideo(videoId);
+    await handleSubmitFeedback(videoId, file);
+    setUploadingVideo(null);
+
+    // Reset input
+    if (videoInputRefs.current[videoId]) {
+      videoInputRefs.current[videoId]!.value = '';
     }
   };
 
@@ -128,7 +173,7 @@ const StaffVideoFeedbackPanel = ({ clientId }: StaffVideoFeedbackPanelProps) => 
                   className="overflow-hidden"
                 >
                   <div className="px-3 pb-3 space-y-3">
-                    {/* Video Player */}
+                    {/* Client Video Player */}
                     <div className="rounded-lg overflow-hidden bg-black">
                       <video
                         src={video.video_url}
@@ -147,37 +192,42 @@ const StaffVideoFeedbackPanel = ({ clientId }: StaffVideoFeedbackPanelProps) => 
                       </div>
                     )}
 
-                    {/* Existing Feedback */}
-                    {videoFeedback.length > 0 && (
-                      <div className="space-y-2">
-                        <h5 className="text-xs font-medium text-muted-foreground">
-                          Feedback precedenti:
-                        </h5>
-                        {videoFeedback.map((fb) => (
-                          <div
-                            key={fb.id}
-                            className="p-2 rounded-lg bg-primary/5 border border-primary/20 text-sm flex items-start gap-2"
-                          >
-                            <User className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                            <div className="flex-1 min-w-0">
-                              <p>{fb.feedback}</p>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(fb.created_at), 'dd/MM HH:mm', { locale: it })}
-                              </span>
+                    {/* Chat-style Feedback */}
+                    <div className="space-y-3 py-2">
+                      <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                        <MessageSquare className="w-3 h-3" />
+                        Chat correzione
+                      </h5>
+                      
+                      {videoFeedback.length > 0 ? (
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                          {videoFeedback.map((fb) => (
+                            <div key={fb.id} className="relative group">
+                              <VideoChatBubble
+                                isCoach={true}
+                                feedback={fb.feedback}
+                                videoUrl={fb.video_url}
+                                createdAt={fb.created_at}
+                                isRead={fb.is_read}
+                              />
+                              <button
+                                onClick={() => deleteFeedback(fb.id)}
+                                className="absolute top-1 right-1 p-1 rounded bg-destructive/10 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
                             </div>
-                            <button
-                              onClick={() => deleteFeedback(fb.id)}
-                              className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground text-center py-2">
+                          Nessun feedback ancora. Scrivi o registra un video!
+                        </p>
+                      )}
+                    </div>
 
                     {/* New Feedback Input */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 border-t pt-3">
                       <Textarea
                         placeholder="Scrivi il tuo feedback sulla tecnica..."
                         value={newFeedback[video.id] || ''}
@@ -185,23 +235,50 @@ const StaffVideoFeedbackPanel = ({ clientId }: StaffVideoFeedbackPanelProps) => 
                           ...prev,
                           [video.id]: e.target.value
                         }))}
-                        className="min-h-[80px] resize-none text-sm"
+                        className="min-h-[60px] resize-none text-sm"
                       />
-                      <Button
-                        size="sm"
-                        onClick={() => handleSubmitFeedback(video.id)}
-                        disabled={!newFeedback[video.id]?.trim() || submitting === video.id}
-                        className="w-full"
-                      >
-                        {submitting === video.id ? (
-                          'Invio...'
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-1" />
-                            Invia Feedback
-                          </>
-                        )}
-                      </Button>
+                      
+                      <div className="flex gap-2">
+                        {/* Video upload input */}
+                        <input
+                          ref={el => videoInputRefs.current[video.id] = el}
+                          type="file"
+                          accept="video/*"
+                          className="hidden"
+                          onChange={(e) => handleVideoSelect(video.id, e)}
+                        />
+                        
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => videoInputRefs.current[video.id]?.click()}
+                          disabled={submitting === video.id || uploadingVideo === video.id}
+                          className="gap-1"
+                        >
+                          {uploadingVideo === video.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Video className="w-4 h-4" />
+                          )}
+                          Video
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          onClick={() => handleSubmitFeedback(video.id)}
+                          disabled={!newFeedback[video.id]?.trim() || submitting === video.id}
+                          className="flex-1"
+                        >
+                          {submitting === video.id ? (
+                            'Invio...'
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4 mr-1" />
+                              Invia
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

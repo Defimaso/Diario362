@@ -19,6 +19,7 @@ export interface StaffVideoFeedback {
   video_id: string;
   coach_id: string;
   feedback: string;
+  video_url: string | null;
   is_read: boolean;
   created_at: string;
 }
@@ -86,16 +87,41 @@ export const useStaffVideoCorrections = () => {
     setLoading(false);
   };
 
-  const addFeedback = async (videoId: string, feedbackText: string) => {
+  const addFeedback = async (videoId: string, feedbackText: string, videoFile?: File) => {
     if (!user) return { error: new Error('Not authenticated') };
 
     try {
+      let videoUrl: string | null = null;
+
+      // Upload video if provided
+      if (videoFile) {
+        const timestamp = Date.now();
+        const fileExt = videoFile.name.split('.').pop();
+        const filePath = `coach-feedback/${user.id}/${timestamp}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('exercise-corrections')
+          .upload(filePath, videoFile);
+
+        if (uploadError) throw uploadError;
+
+        // Get signed URL
+        const { data: urlData } = await supabase.storage
+          .from('exercise-corrections')
+          .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
+
+        if (urlData?.signedUrl) {
+          videoUrl = urlData.signedUrl;
+        }
+      }
+
       const { error } = await supabase
         .from('video_correction_feedback')
         .insert({
           video_id: videoId,
           coach_id: user.id,
-          feedback: feedbackText,
+          feedback: feedbackText || '',
+          video_url: videoUrl,
         });
 
       if (error) throw error;
@@ -161,6 +187,17 @@ export const useStaffVideoCorrections = () => {
           event: '*',
           schema: 'public',
           table: 'video_corrections',
+        },
+        () => {
+          fetchClientVideos();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'video_correction_feedback',
         },
         () => {
           fetchClientVideos();
