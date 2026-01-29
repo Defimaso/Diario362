@@ -11,6 +11,7 @@ import DailyCheckinDetails from './DailyCheckinDetails';
 import { useAuditLog } from '@/hooks/useAuditLog';
 import { useUserDiet } from '@/hooks/useUserDiet';
 import StaffVideoFeedbackPanel from './staff/StaffVideoFeedbackPanel';
+import SendNotificationButton from './staff/SendNotificationButton';
 
 interface UserCheck {
   id: string;
@@ -141,18 +142,23 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
         <DailyCheckinDetails checkins={dailyCheckins} />
       </div>
 
-      {/* Client Info */}
-      <div className="flex flex-wrap gap-4 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">Coach:</span>
-          <span className="font-medium text-primary">
-            {coachNames.map(formatCoachName).join(', ') || 'Non assegnato'}
-          </span>
+      {/* Client Info & Actions */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Coach:</span>
+            <span className="font-medium text-primary">
+              {coachNames.map(formatCoachName).join(', ') || 'Non assegnato'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground">Check completati:</span>
+            <span className="font-medium">{checks.length} / 100</span>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">Check completati:</span>
-          <span className="font-medium">{checks.length} / 100</span>
-        </div>
+        
+        {/* Manual Notification Button */}
+        <SendNotificationButton clientId={clientId} clientName={clientName} />
       </div>
 
       {/* Weight Chart */}

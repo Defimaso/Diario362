@@ -1,6 +1,6 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Apple, FileText, Upload, Download, Trash2, Info } from 'lucide-react';
+import { Apple, FileText, Upload, Download, Trash2, Info, ExternalLink } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDiet } from '@/hooks/useUserDiet';
@@ -61,6 +61,31 @@ const Nutrizione = () => {
     const mb = bytes / (1024 * 1024);
     return mb >= 1 ? `${mb.toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`;
   };
+
+  const openNutrium = useCallback(() => {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isAndroid = /android/.test(userAgent);
+    const isIOS = /iphone|ipad|ipod/.test(userAgent);
+
+    if (isAndroid) {
+      // Intent for Android
+      window.location.href = 'intent://#Intent;package=com.nutrium.nutrium;scheme=nutrium;end';
+      // Fallback after timeout
+      setTimeout(() => {
+        window.location.href = 'https://app.nutrium.com';
+      }, 2000);
+    } else if (isIOS) {
+      // URL scheme for iOS
+      window.location.href = 'nutrium://';
+      // Fallback after timeout
+      setTimeout(() => {
+        window.location.href = 'https://apps.apple.com/app/nutrium/id1448823099';
+      }, 2000);
+    } else {
+      // Desktop - open webapp
+      window.open('https://app.nutrium.com', '_blank');
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -190,11 +215,41 @@ const Nutrizione = () => {
           </div>
         </motion.section>
 
-        {/* Info Card */}
+        {/* Nutrium Deep Link */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+        >
+          <div className="card-elegant rounded-2xl p-4 border border-[hsl(var(--section-purple))]/30">
+            <div className="flex items-center gap-3 mb-3">
+              <ExternalLink className="w-5 h-5 text-[hsl(var(--section-purple))]" />
+              <h2 className="font-semibold">Nutrium</h2>
+            </div>
+            
+            <p className="text-sm text-muted-foreground mb-4">
+              Accedi alla versione completa della tua dieta su Nutrium.
+            </p>
+            
+            <p className="text-xs text-muted-foreground mb-4 italic">
+              Nota: Usa le stesse credenziali che utilizzi per Nutrium.
+            </p>
+            
+            <Button 
+              onClick={openNutrium} 
+              className="w-full bg-[hsl(var(--section-purple))] hover:bg-[hsl(var(--section-purple))]/90"
+            >
+              <ExternalLink className="w-4 h-4 mr-2" />
+              Apri Dieta su Nutrium
+            </Button>
+          </div>
+        </motion.section>
+
+        {/* Info Card */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
         >
           <div className="card-elegant rounded-2xl p-4 border border-border/50">
             <div className="flex items-start gap-3">
