@@ -687,6 +687,7 @@ export type Database = {
           id: string
           is_read: boolean
           video_id: string
+          video_url: string | null
         }
         Insert: {
           coach_id: string
@@ -695,6 +696,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           video_id: string
+          video_url?: string | null
         }
         Update: {
           coach_id?: string
@@ -703,6 +705,7 @@ export type Database = {
           id?: string
           is_read?: boolean
           video_id?: string
+          video_url?: string | null
         }
         Relationships: [
           {

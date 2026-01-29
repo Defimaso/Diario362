@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Video, MessageSquare, ChevronDown, Trash2, Clock, User, CheckCheck } from 'lucide-react';
+import { Video, MessageSquare, ChevronDown, Trash2, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { useVideoCorrections, VideoCorrection, VideoFeedback } from '@/hooks/useVideoCorrections';
+import { useVideoCorrections } from '@/hooks/useVideoCorrections';
 import { cn } from '@/lib/utils';
+import VideoChatBubble from './VideoChatBubble';
 
 const VideoFeedbackList = () => {
   const { videos, feedback, loading, deleteVideo, markFeedbackAsRead } = useVideoCorrections();
@@ -158,42 +159,32 @@ const VideoFeedbackList = () => {
                       </div>
                     )}
 
-                    {/* Feedback */}
-                    {videoFeedback.length > 0 ? (
-                      <div className="space-y-3">
-                        <h4 className="text-sm font-medium flex items-center gap-2">
-                          <MessageSquare className="w-4 h-4 text-primary" />
-                          Feedback del Coach
-                        </h4>
-                        {videoFeedback.map((fb) => (
-                          <div
-                            key={fb.id}
-                            className={cn(
-                              "p-3 rounded-lg border",
-                              fb.is_read 
-                                ? "bg-muted/30 border-muted" 
-                                : "bg-primary/5 border-primary/30"
-                            )}
-                          >
-                            <div className="flex items-center gap-2 mb-2">
-                              <User className="w-4 h-4 text-primary" />
-                              <span className="text-sm font-medium">Coach</span>
-                              <span className="text-xs text-muted-foreground">
-                                {format(new Date(fb.created_at), 'dd MMM, HH:mm', { locale: it })}
-                              </span>
-                              {fb.is_read && (
-                                <CheckCheck className="w-3.5 h-3.5 text-muted-foreground ml-auto" />
-                              )}
-                            </div>
-                            <p className="text-sm">{fb.feedback}</p>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-4 text-sm text-muted-foreground">
-                        Nessun feedback ancora. Il coach esaminerà presto il tuo video.
-                      </div>
-                    )}
+                    {/* Chat-style Feedback */}
+                    <div className="space-y-3">
+                      <h4 className="text-sm font-medium flex items-center gap-2">
+                        <MessageSquare className="w-4 h-4 text-primary" />
+                        Chat con il Coach
+                      </h4>
+                      
+                      {videoFeedback.length > 0 ? (
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto p-2 bg-muted/20 rounded-lg">
+                          {videoFeedback.map((fb) => (
+                            <VideoChatBubble
+                              key={fb.id}
+                              isCoach={true}
+                              feedback={fb.feedback}
+                              videoUrl={fb.video_url}
+                              createdAt={fb.created_at}
+                              isRead={fb.is_read}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-4 text-sm text-muted-foreground bg-muted/20 rounded-lg">
+                          Nessun feedback ancora. Il coach esaminerà presto il tuo video.
+                        </div>
+                      )}
+                    </div>
 
                     {/* Delete Button */}
                     <div className="flex justify-end pt-2 border-t border-muted">
