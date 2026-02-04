@@ -193,12 +193,14 @@ const ImageCropperModal = ({
                   onClick={handleClose}
                   disabled={isProcessing}
                 >
+                  <X className="w-4 h-4 mr-2" />
                   Annulla
                 </Button>
                 <Button
-                  className="flex-1"
+                  className="flex-1 bg-primary"
                   onClick={handleConfirm}
                   disabled={isProcessing || !croppedAreaPixels}
+                  size="lg"
                 >
                   {isProcessing ? (
                     <motion.div
@@ -209,7 +211,7 @@ const ImageCropperModal = ({
                   ) : (
                     <>
                       <Check className="w-4 h-4 mr-2" />
-                      Conferma
+                      Conferma e Continua
                     </>
                   )}
                 </Button>
