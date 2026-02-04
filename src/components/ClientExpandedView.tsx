@@ -13,6 +13,7 @@ import { useUserDiet } from '@/hooks/useUserDiet';
 import StaffVideoFeedbackPanel from './staff/StaffVideoFeedbackPanel';
 import SendNotificationButton from './staff/SendNotificationButton';
 import StaffDietUpload from './staff/StaffDietUpload';
+import ClientDocumentsSection from './staff/ClientDocumentsSection';
 
 interface UserCheck {
   id: string;
@@ -388,6 +389,9 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
           </p>
         )}
       </div>
+
+      {/* Client Documents Section */}
+      <ClientDocumentsSection clientId={clientId} />
 
       {/* Empty state if no checks */}
       {!loading && checks.length === 0 && (
