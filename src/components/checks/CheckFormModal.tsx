@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Camera, Scale, Calendar, Upload, Check, AlertCircle } from 'lucide-react';
+import { X, Camera, Scale, Calendar, Upload, Check, AlertCircle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { UserCheck } from '@/hooks/useUserChecks';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { readFileAsDataURL } from '@/lib/imageCompression';
+import { useCheckDraft } from '@/hooks/useCheckDraft';
 import ImageCropperModal from './ImageCropperModal';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface CheckFormModalProps {
   isOpen: boolean;
@@ -52,6 +63,11 @@ const CheckFormModal = ({
   const [photoFrontPreview, setPhotoFrontPreview] = useState<string | null>(null);
   const [photoSidePreview, setPhotoSidePreview] = useState<string | null>(null);
   const [photoBackPreview, setPhotoBackPreview] = useState<string | null>(null);
+  const [showDraftDialog, setShowDraftDialog] = useState(false);
+  const [draftChecked, setDraftChecked] = useState(false);
+  
+  // Draft system
+  const { hasDraft, saveDraft, clearDraft, getDraft } = useCheckDraft(checkNumber);
   
   // Cropper state
   const [cropperState, setCropperState] = useState<CropperState>({
@@ -59,6 +75,83 @@ const CheckFormModal = ({
     imageSrc: null,
     photoType: null,
   });
+
+  // Check for draft when opening modal
+  useEffect(() => {
+    if (isOpen && !draftChecked && !existingData) {
+      if (hasDraft) {
+        setShowDraftDialog(true);
+      }
+      setDraftChecked(true);
+    }
+  }, [isOpen, hasDraft, draftChecked, existingData]);
+
+  // Reset draftChecked when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setDraftChecked(false);
+    }
+  }, [isOpen]);
+
+  // Auto-save draft when fields change
+  const autoSaveDraft = useCallback(() => {
+    if (!isOpen || existingData) return;
+    
+    // Only save if there's actual data
+    if (weight || notes || photoFrontPreview || photoSidePreview || photoBackPreview) {
+      saveDraft({
+        checkNumber,
+        date,
+        weight,
+        notes,
+        photoFrontPreview: photoFrontPreview || undefined,
+        photoSidePreview: photoSidePreview || undefined,
+        photoBackPreview: photoBackPreview || undefined,
+      });
+    }
+  }, [isOpen, existingData, checkNumber, date, weight, notes, photoFrontPreview, photoSidePreview, photoBackPreview, saveDraft]);
+
+  // Debounced auto-save
+  useEffect(() => {
+    const timer = setTimeout(autoSaveDraft, 1000);
+    return () => clearTimeout(timer);
+  }, [autoSaveDraft]);
+
+  // Handle restoring draft
+  const handleRestoreDraft = () => {
+    const draft = getDraft();
+    if (draft) {
+      setDate(draft.date || new Date().toISOString().split('T')[0]);
+      setWeight(draft.weight || '');
+      setNotes(draft.notes || '');
+      // Note: We can't restore actual File objects, only previews for display
+      // Photos will need to be re-uploaded
+      if (draft.photoFrontPreview) setPhotoFrontPreview(draft.photoFrontPreview);
+      if (draft.photoSidePreview) setPhotoSidePreview(draft.photoSidePreview);
+      if (draft.photoBackPreview) setPhotoBackPreview(draft.photoBackPreview);
+    }
+    setShowDraftDialog(false);
+  };
+
+  // Handle discarding draft
+  const handleDiscardDraft = () => {
+    clearDraft();
+    resetForm();
+    setShowDraftDialog(false);
+  };
+
+  // Reset form helper
+  const resetForm = () => {
+    setDate(new Date().toISOString().split('T')[0]);
+    setWeight('');
+    setNotes('');
+    setPhotoFront(null);
+    setPhotoSide(null);
+    setPhotoBack(null);
+    setPhotoFrontPreview(null);
+    setPhotoSidePreview(null);
+    setPhotoBackPreview(null);
+  };
 
   // Reset form when opening with existing data
   useEffect(() => {
@@ -70,19 +163,14 @@ const CheckFormModal = ({
         setPhotoFrontPreview(existingData.photo_front_url);
         setPhotoSidePreview(existingData.photo_side_url);
         setPhotoBackPreview(existingData.photo_back_url);
-      } else {
-        setDate(new Date().toISOString().split('T')[0]);
-        setWeight('');
-        setNotes('');
-        setPhotoFrontPreview(null);
-        setPhotoSidePreview(null);
-        setPhotoBackPreview(null);
+      } else if (!hasDraft) {
+        resetForm();
       }
       setPhotoFront(null);
       setPhotoSide(null);
       setPhotoBack(null);
     }
-  }, [isOpen, existingData]);
+  }, [isOpen, existingData, hasDraft]);
 
   // Handle file selection - open cropper
   const handleFileSelect = async (
@@ -158,8 +246,14 @@ const CheckFormModal = ({
     });
 
     if (!result.error) {
+      clearDraft(); // Clear draft on successful save
       onClose();
     }
+  };
+
+  const handleClose = () => {
+    // Draft is already auto-saved, just close
+    onClose();
   };
 
   const PhotoUploadBox = ({
@@ -202,6 +296,29 @@ const CheckFormModal = ({
 
   return (
     <>
+      {/* Draft Restore Dialog */}
+      <AlertDialog open={showDraftDialog} onOpenChange={setShowDraftDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Save className="w-5 h-5 text-primary" />
+              Bozza Trovata
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Hai una bozza salvata per questo check. Vuoi continuare da dove eri rimasto?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleDiscardDraft}>
+              Ricomincia
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleRestoreDraft}>
+              Continua Bozza
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AnimatePresence>
         {isOpen && (
           <>
@@ -210,23 +327,33 @@ const CheckFormModal = ({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
-              onClick={onClose}
+              onClick={handleClose}
             />
 
             <motion.div
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
-              className="fixed inset-x-4 bottom-4 top-auto max-h-[85vh] overflow-y-auto bg-card rounded-2xl z-50 shadow-2xl"
+              className="fixed inset-x-0 bottom-0 top-auto max-h-[90vh] bg-card rounded-t-2xl z-50 shadow-2xl flex flex-col"
             >
-              <div className="sticky top-0 bg-card/95 backdrop-blur-sm p-4 border-b border-border flex items-center justify-between">
+              {/* Sticky Header */}
+              <div className="sticky top-0 bg-card/95 backdrop-blur-sm p-4 border-b border-border flex items-center justify-between shrink-0 rounded-t-2xl">
                 <h2 className="text-lg font-bold">Check #{checkNumber}</h2>
-                <Button variant="ghost" size="icon" onClick={onClose}>
-                  <X className="w-5 h-5" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {hasDraft && !existingData && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Save className="w-3 h-3" />
+                      Bozza salvata
+                    </span>
+                  )}
+                  <Button variant="ghost" size="icon" onClick={handleClose}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
               </div>
 
-              <div className="p-4 space-y-5">
+              {/* Scrollable Content */}
+              <div className="flex-1 overflow-y-auto p-4 pb-32 space-y-5">
                 {/* Reminder Alert */}
                 <Alert className="bg-amber-500/10 border-amber-500/30">
                   <AlertCircle className="h-4 w-4 text-amber-500" />
@@ -311,12 +438,15 @@ const CheckFormModal = ({
                     rows={3}
                   />
                 </div>
+              </div>
 
-                {/* Submit Button */}
+              {/* Sticky Submit Button - Fixed at bottom */}
+              <div className="sticky bottom-0 left-0 right-0 p-4 bg-card/95 backdrop-blur-sm border-t border-border shrink-0 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
                 <Button
                   className="w-full"
                   onClick={handleSubmit}
                   disabled={uploading || !hasAnyData}
+                  size="lg"
                 >
                   {uploading ? (
                     <span className="flex items-center gap-2">
