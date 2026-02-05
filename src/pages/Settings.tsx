@@ -1,11 +1,11 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Shield, Bell, Trash2, Lock } from 'lucide-react';
+import { ArrowLeft, User, Shield, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import DeleteAccountDialog from '@/components/account/DeleteAccountDialog';
 import ChangePasswordDialog from '@/components/account/ChangePasswordDialog';
+import EditProfileDialog from '@/components/account/EditProfileDialog';
 import Footer from '@/components/legal/Footer';
 import BottomDock from '@/components/BottomDock';
 
@@ -69,8 +69,9 @@ const Settings = () => {
                   </span>
                 </div>
                 
-                {/* Change Password Section */}
-                <div className="pt-2">
+                {/* Edit Profile & Change Password */}
+                <div className="pt-2 space-y-2">
+                  <EditProfileDialog />
                   <ChangePasswordDialog />
                 </div>
               </div>
