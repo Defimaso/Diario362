@@ -14,6 +14,7 @@ import StaffVideoFeedbackPanel from './staff/StaffVideoFeedbackPanel';
 import SendNotificationButton from './staff/SendNotificationButton';
 import StaffDietUpload from './staff/StaffDietUpload';
 import ClientDocumentsSection from './staff/ClientDocumentsSection';
+import StoricoDiario from './staff/StoricoDiario';
 
 interface UserCheck {
   id: string;
@@ -343,6 +344,9 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
           </div>
         )}
       </div>
+
+      {/* Storico Diario Pensieri */}
+      <StoricoDiario clientId={clientId} />
 
       {/* Video Corrections Section */}
       <div className="bg-card rounded-xl p-3 sm:p-4 border border-primary/30">
