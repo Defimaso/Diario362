@@ -13,6 +13,7 @@ import BadgeProgress from "@/components/BadgeProgress";
 import BadgeGallery from "@/components/BadgeGallery";
 import BadgeUnlockAnimation from "@/components/BadgeUnlockAnimation";
 import ProgressWidget from "@/components/checks/ProgressWidget";
+import DiarioPensieri from "@/components/DiarioPensieri";
 import Footer from "@/components/legal/Footer";
 import CookieBanner from "@/components/legal/CookieBanner";
 import BottomDock from "@/components/BottomDock";
@@ -245,6 +246,16 @@ const Diario = () => {
           className="mb-6 sm:mb-8"
         >
           <WeeklyChart data={chartData} />
+        </motion.section>
+
+        {/* Diario Pensieri */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.32 }}
+          className="mb-6 sm:mb-8"
+        >
+          <DiarioPensieri checkins={checkins} />
         </motion.section>
 
         {/* Progress Widget - Weight & Photos from User Checks */}
