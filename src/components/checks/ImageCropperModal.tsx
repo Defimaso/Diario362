@@ -5,6 +5,7 @@ import { X, Check, ZoomIn, ZoomOut, Ghost } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 import { getCroppedImg, compressImage } from '@/lib/imageCompression';
+import { toast } from 'sonner';
 
 interface ImageCropperModalProps {
   isOpen: boolean;
@@ -54,14 +55,15 @@ const ImageCropperModal = ({
     try {
       // Crop the image
       const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
-      
+
       // Compress the cropped image
       const compressedBlob = await compressImage(croppedBlob);
-      
+
       onCropComplete(compressedBlob);
       onClose();
     } catch (error) {
       console.error('Error processing image:', error);
+      toast.error('Errore nel ritaglio della foto. Riprova con un\'altra immagine.');
     } finally {
       setIsProcessing(false);
     }

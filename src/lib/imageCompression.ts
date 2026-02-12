@@ -24,8 +24,18 @@ export const getCroppedImg = async (
     throw new Error('Could not get canvas context');
   }
 
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  // Limit canvas size to prevent OOM on mobile devices
+  const MAX_CANVAS_DIM = 2048;
+  let outWidth = pixelCrop.width;
+  let outHeight = pixelCrop.height;
+  if (outWidth > MAX_CANVAS_DIM || outHeight > MAX_CANVAS_DIM) {
+    const scale = Math.min(MAX_CANVAS_DIM / outWidth, MAX_CANVAS_DIM / outHeight);
+    outWidth = Math.round(outWidth * scale);
+    outHeight = Math.round(outHeight * scale);
+  }
+
+  canvas.width = outWidth;
+  canvas.height = outHeight;
 
   ctx.drawImage(
     image,
@@ -35,8 +45,8 @@ export const getCroppedImg = async (
     pixelCrop.height,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    outWidth,
+    outHeight
   );
 
   return new Promise((resolve, reject) => {
@@ -63,49 +73,56 @@ export const compressImage = async (
   maxHeight: number = 1600,
   quality: number = 0.85
 ): Promise<Blob> => {
-  const image = await createImage(URL.createObjectURL(blob));
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  const objectUrl = URL.createObjectURL(blob);
+  try {
+    const image = await createImage(objectUrl);
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-  if (!ctx) {
-    throw new Error('Could not get canvas context');
+    if (!ctx) {
+      // Fallback: return original blob if canvas not supported
+      return blob;
+    }
+
+    // Calculate new dimensions maintaining aspect ratio
+    let { width, height } = image;
+
+    if (width > maxWidth) {
+      height = (height * maxWidth) / width;
+      width = maxWidth;
+    }
+
+    if (height > maxHeight) {
+      width = (width * maxHeight) / height;
+      height = maxHeight;
+    }
+
+    canvas.width = width;
+    canvas.height = height;
+
+    // Use high-quality image smoothing
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    ctx.drawImage(image, 0, 0, width, height);
+
+    return new Promise((resolve) => {
+      canvas.toBlob(
+        (compressedBlob) => {
+          // Fallback to original if toBlob fails (can happen on some mobile browsers)
+          resolve(compressedBlob || blob);
+        },
+        'image/jpeg',
+        quality
+      );
+    });
+  } catch {
+    // If compression fails (memory, unsupported format), return original
+    console.warn('Image compression failed, using original');
+    return blob;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
   }
-
-  // Calculate new dimensions maintaining aspect ratio
-  let { width, height } = image;
-
-  if (width > maxWidth) {
-    height = (height * maxWidth) / width;
-    width = maxWidth;
-  }
-
-  if (height > maxHeight) {
-    width = (width * maxHeight) / height;
-    height = maxHeight;
-  }
-
-  canvas.width = width;
-  canvas.height = height;
-
-  // Use high-quality image smoothing
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-
-  ctx.drawImage(image, 0, 0, width, height);
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (compressedBlob) => {
-        if (compressedBlob) {
-          resolve(compressedBlob);
-        } else {
-          reject(new Error('Failed to compress image'));
-        }
-      },
-      'image/jpeg',
-      quality
-    );
-  });
 };
 
 /**

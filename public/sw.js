@@ -28,8 +28,8 @@ self.addEventListener('push', function(event) {
       { action: 'open', title: 'Apri App' },
       { action: 'close', title: 'Chiudi' }
     ],
-    requireInteraction: true,
-    tag: 'daily-checkin'
+    requireInteraction: false,
+    tag: data.tag || data.data?.tag || 'general'
   };
 
   event.waitUntil(

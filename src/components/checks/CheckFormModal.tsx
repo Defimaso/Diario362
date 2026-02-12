@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { UserCheck } from '@/hooks/useUserChecks';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { readFileAsDataURL } from '@/lib/imageCompression';
+import { toast } from 'sonner';
 import { useCheckDraft } from '@/hooks/useCheckDraft';
 import ImageCropperModal from './ImageCropperModal';
 import {
@@ -180,6 +181,12 @@ const CheckFormModal = ({
     if (!file) return;
 
     try {
+      // Validate file size (max 25MB for mobile photos)
+      if (file.size > 25 * 1024 * 1024) {
+        toast.error('Foto troppo grande. Massimo 25MB.');
+        return;
+      }
+
       const dataUrl = await readFileAsDataURL(file);
       setCropperState({
         isOpen: true,
@@ -188,6 +195,7 @@ const CheckFormModal = ({
       });
     } catch (error) {
       console.error('Error reading file:', error);
+      toast.error('Impossibile leggere la foto. Prova con un\'altra immagine.');
     }
   };
 

@@ -93,6 +93,16 @@ export const useCoachNotes = () => {
         return false;
       }
 
+      // Notify other coaches about the new note (fire and forget)
+      supabase.functions.invoke('notify-interaction', {
+        body: {
+          type: 'coach_note',
+          clientId,
+          authorId: user.id,
+          authorName: user.user_metadata?.full_name || user.email,
+        }
+      }).catch(err => console.error('Notify error:', err));
+
       await fetchNotes();
       return true;
     } catch (err) {

@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Shield, Trash2 } from 'lucide-react';
+import { ArrowLeft, User, Shield, Trash2, Bell } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import DeleteAccountDialog from '@/components/account/DeleteAccountDialog';
 import ChangePasswordDialog from '@/components/account/ChangePasswordDialog';
 import EditProfileDialog from '@/components/account/EditProfileDialog';
+import { PushNotificationToggle } from '@/components/PushNotificationToggle';
 import Footer from '@/components/legal/Footer';
 import BottomDock from '@/components/BottomDock';
 
@@ -75,6 +76,23 @@ const Settings = () => {
                   <ChangePasswordDialog />
                 </div>
               </div>
+            </div>
+          </motion.section>
+
+          {/* Notifications Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <div className="card-elegant p-6 rounded-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-full bg-amber-500/10">
+                  <Bell className="w-5 h-5 text-amber-500" />
+                </div>
+                <h2 className="font-semibold">Notifiche</h2>
+              </div>
+              <PushNotificationToggle variant="card" />
             </div>
           </motion.section>
 

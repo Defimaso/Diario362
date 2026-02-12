@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { compressImage } from '@/lib/imageCompression';
+import { toast } from 'sonner';
 
 export interface ProgressCheck {
   id: string;
@@ -136,24 +137,31 @@ export const useProgressChecks = (clientId?: string) => {
   const uploadPhoto = async (file: File, type: 'front' | 'side' | 'back'): Promise<string | null> => {
     if (!targetUserId) return null;
 
-    // Compress image before upload
-    const compressed = await compressImage(file);
-    const fileName = `${targetUserId}/${Date.now()}_${type}.jpg`;
+    try {
+      // Compress image before upload (fallback to original if compression fails)
+      const compressed = await compressImage(file);
+      const fileName = `${targetUserId}/${Date.now()}_${type}.jpg`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('progress-photos')
-      .upload(fileName, compressed, { contentType: 'image/jpeg' });
+      const { error: uploadError } = await supabase.storage
+        .from('progress-photos')
+        .upload(fileName, compressed, { contentType: 'image/jpeg' });
 
-    if (uploadError) {
-      console.error('Error uploading photo:', uploadError);
+      if (uploadError) {
+        console.error('Error uploading photo:', uploadError);
+        toast.error(`Errore upload foto ${type}`);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('progress-photos')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (err) {
+      console.error('Upload photo failed:', err);
+      toast.error(`Errore upload foto ${type}`);
       return null;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('progress-photos')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
   };
 
   // Save progress check

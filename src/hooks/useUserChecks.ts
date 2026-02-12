@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { compressImage } from '@/lib/imageCompression';
+import { toast } from 'sonner';
 
 export interface UserCheck {
   id: string;
@@ -99,28 +99,33 @@ export const useUserChecks = (clientId?: string) => {
       }));
   }, [checks]);
 
-  // Upload photo to storage (with compression)
+  // Upload photo to storage (file is already compressed by ImageCropperModal)
   const uploadPhoto = async (file: File, checkNumber: number, type: 'front' | 'side' | 'back'): Promise<string | null> => {
     if (!targetUserId) return null;
 
-    // Compress image before upload
-    const compressed = await compressImage(file);
-    const fileName = `${targetUserId}/check_${checkNumber}_${type}_${Date.now()}.jpg`;
+    try {
+      const fileName = `${targetUserId}/check_${checkNumber}_${type}_${Date.now()}.jpg`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('progress-photos')
-      .upload(fileName, compressed, { contentType: 'image/jpeg' });
+      const { error: uploadError } = await supabase.storage
+        .from('progress-photos')
+        .upload(fileName, file, { contentType: file.type || 'image/jpeg' });
 
-    if (uploadError) {
-      console.error('Error uploading photo:', uploadError);
+      if (uploadError) {
+        console.error('Error uploading photo:', uploadError);
+        toast.error(`Errore upload foto ${type}`);
+        return null;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('progress-photos')
+        .getPublicUrl(fileName);
+
+      return publicUrl;
+    } catch (err) {
+      console.error('Upload photo failed:', err);
+      toast.error(`Errore upload foto ${type}`);
       return null;
     }
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('progress-photos')
-      .getPublicUrl(fileName);
-
-    return publicUrl;
   };
 
   // Save or update a check
@@ -164,7 +169,11 @@ export const useUserChecks = (clientId?: string) => {
           .update(checkData)
           .eq('id', existing.id);
 
-        if (!error) await fetchChecks();
+        if (error) {
+          toast.error('Errore nel salvataggio del check');
+        } else {
+          await fetchChecks();
+        }
         return { error };
       } else {
         const { error } = await supabase
@@ -175,9 +184,27 @@ export const useUserChecks = (clientId?: string) => {
             ...checkData,
           });
 
-        if (!error) await fetchChecks();
+        if (error) {
+          toast.error('Errore nel salvataggio del check');
+        } else {
+          // Notify coaches about new check submission (fire and forget)
+          supabase.functions.invoke('notify-interaction', {
+            body: {
+              type: 'check_submitted',
+              clientId: targetUserId,
+              authorId: targetUserId,
+              metadata: { checkNumber: data.checkNumber },
+            }
+          }).catch(err => console.error('Notify error:', err));
+
+          await fetchChecks();
+        }
         return { error };
       }
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Errore sconosciuto');
+      toast.error('Errore nel salvataggio del check');
+      return { error };
     } finally {
       setUploading(false);
     }

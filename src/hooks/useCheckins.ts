@@ -141,6 +141,15 @@ export const useCheckins = () => {
         });
 
       if (!error) {
+        // Notify coaches about new daily check-in (fire and forget)
+        supabase.functions.invoke('notify-interaction', {
+          body: {
+            type: 'daily_checkin',
+            clientId: user.id,
+            authorId: user.id,
+          }
+        }).catch(err => console.error('Notify error:', err));
+
         await fetchCheckins();
       }
       return { error };
