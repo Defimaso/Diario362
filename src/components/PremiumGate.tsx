@@ -109,10 +109,13 @@ export function PremiumGate() {
         transition={{ delay: 0.3 }}
         className="card-elegant p-5 rounded-2xl"
       >
-        <h3 className="font-semibold mb-3 flex items-center gap-2">
+        <h3 className="font-semibold mb-2 flex items-center gap-2">
           <Lock className="w-4 h-4 text-muted-foreground" />
           Hai gia' un codice di attivazione?
         </h3>
+        <p className="text-xs text-muted-foreground mb-3">
+          Se sei gia' iscritto al percorso 362gradi, il tuo coach ti fornira' un codice per sbloccare tutte le funzionalita' dell'app.
+        </p>
         <div className="flex gap-2">
           <Input
             placeholder="Es. 362-ABCDE"

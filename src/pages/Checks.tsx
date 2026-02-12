@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Camera, Check } from 'lucide-react';
-import { Link, Navigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useUserChecks, UserCheck } from '@/hooks/useUserChecks';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PremiumGate } from '@/components/PremiumGate';
+import Footer from '@/components/legal/Footer';
 import CheckSlotCard from '@/components/checks/CheckSlotCard';
 import CheckFormModal from '@/components/checks/CheckFormModal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -34,7 +36,18 @@ const Checks = () => {
   const firstCheck = getFirstCheckWithPhotos();
 
   if (!subLoading && !isPremium) {
-    return <Navigate to="/upgrade" replace />;
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
+          <PremiumGate />
+        </div>
+        <BottomDock />
+        <Footer />
+      </div>
+    );
   }
 
   if (loading || subLoading) {

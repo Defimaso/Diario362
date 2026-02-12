@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
 import { useVideoCorrections } from '@/hooks/useVideoCorrections';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PremiumGate } from '@/components/PremiumGate';
 import VideoUploadCard from '@/components/allenamento/VideoUploadCard';
 import VideoFeedbackList from '@/components/allenamento/VideoFeedbackList';
 import BottomDock from '@/components/BottomDock';
@@ -31,7 +32,18 @@ const AllenamentoRedesign = () => {
   }
 
   if (!isPremium) {
-    return <Navigate to="/upgrade" replace />;
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
+          <PremiumGate />
+        </div>
+        <BottomDock />
+        <Footer />
+      </div>
+    );
   }
 
   return (

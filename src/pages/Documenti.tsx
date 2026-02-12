@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Download, Settings } from 'lucide-react';
-import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PremiumGate } from '@/components/PremiumGate';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -31,7 +32,18 @@ const Documenti = () => {
   }, [user, authLoading, navigate]);
 
   if (!subLoading && !isPremium) {
-    return <Navigate to="/upgrade" replace />;
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
+          <PremiumGate />
+        </div>
+        <BottomDock />
+        <Footer />
+      </div>
+    );
   }
 
   if (authLoading || loading || subLoading) {

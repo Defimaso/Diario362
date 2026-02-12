@@ -4,6 +4,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useProgressChecks } from '@/hooks/useProgressChecks';
 import { useSubscription } from '@/hooks/useSubscription';
+import { PremiumGate } from '@/components/PremiumGate';
+import Footer from '@/components/legal/Footer';
 import WeightChart from '@/components/progress/WeightChart';
 import PhotoComparison from '@/components/progress/PhotoComparison';
 import HistoryTable from '@/components/progress/HistoryTable';
@@ -42,7 +44,18 @@ const Progressi = () => {
   }
 
   if (!isPremium) {
-    return <Navigate to="/upgrade" replace />;
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
+        </div>
+        <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
+          <PremiumGate />
+        </div>
+        <BottomDock />
+        <Footer />
+      </div>
+    );
   }
 
   const datesWithPhotos = getDatesWithPhotos();
