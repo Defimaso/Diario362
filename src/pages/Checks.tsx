@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Camera, Check } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useUserChecks, UserCheck } from '@/hooks/useUserChecks';
+import { useSubscription } from '@/hooks/useSubscription';
 import CheckSlotCard from '@/components/checks/CheckSlotCard';
 import CheckFormModal from '@/components/checks/CheckFormModal';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -10,14 +11,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BottomDock from '@/components/BottomDock';
 
 const Checks = () => {
-  const { 
-    loading, 
-    uploading, 
-    getCheckSlots, 
-    saveCheck, 
-    completedChecksCount, 
+  const { isPremium, isLoading: subLoading } = useSubscription();
+  const {
+    loading,
+    uploading,
+    getCheckSlots,
+    saveCheck,
+    completedChecksCount,
     totalChecks,
-    getFirstCheckWithPhotos 
+    getFirstCheckWithPhotos
   } = useUserChecks();
   const [selectedCheck, setSelectedCheck] = useState<{
     checkNumber: number;
@@ -31,7 +33,11 @@ const Checks = () => {
   // Get first check data for ghost overlay
   const firstCheck = getFirstCheckWithPhotos();
 
-  if (loading) {
+  if (!subLoading && !isPremium) {
+    return <Navigate to="/upgrade" replace />;
+  }
+
+  if (loading || subLoading) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="space-y-4">

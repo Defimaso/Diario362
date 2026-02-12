@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCheckins, DailyCheckin } from "@/hooks/useCheckins";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useSubscription } from "@/hooks/useSubscription";
 
 interface CheckinModalRedesignProps {
   isOpen: boolean;
@@ -15,60 +16,66 @@ interface CheckinModalRedesignProps {
   existingCheckin?: DailyCheckin | null;
 }
 
-const steps = [
-  { 
-    id: 'recovery', 
-    title: '💤 Recupero', 
+const allSteps = [
+  {
+    id: 'recovery',
+    title: '💤 Recupero',
     subtitle: 'Qualità del sonno e riposo',
     description: 'Valuta la qualità del tuo sonno (quanto profondamente hai dormito) e la sensazione di riposo al risveglio.',
     icon: Battery,
     lowLabel: 'Sonno pessimo',
-    highLabel: 'Super riposato'
+    highLabel: 'Super riposato',
+    premium: false,
   },
-  { 
-    id: 'nutrition', 
-    title: '🍎 Alimentazione', 
+  {
+    id: 'nutrition',
+    title: '🍎 Alimentazione',
     subtitle: 'Aderenza al piano nutrizionale',
     description: 'Quanto hai seguito il tuo piano alimentare oggi? Aggiungi note per dettagli.',
     icon: Utensils,
     lowLabel: 'Fuori piano',
-    highLabel: 'Perfetto'
+    highLabel: 'Perfetto',
+    premium: true,
   },
-  { 
-    id: 'training', 
-    title: '💪 Allenamento', 
+  {
+    id: 'training',
+    title: '💪 Allenamento',
     subtitle: 'Intensità e qualità dell\'esecuzione',
     description: 'Valuta l\'intensità e la qualità del tuo allenamento. Se è giorno di riposo, seleziona "X".',
     icon: Dumbbell,
     lowLabel: 'Scarso',
-    highLabel: 'Eccellente'
+    highLabel: 'Eccellente',
+    premium: true,
   },
-  { 
-    id: 'energy', 
-    title: '⚡ Energia Fisica', 
+  {
+    id: 'energy',
+    title: '⚡ Energia Fisica',
     subtitle: 'Forza e vitalità percepita',
     description: 'La tua forza fisica percepita e la reale voglia/capacità di affrontare la giornata.',
     icon: Zap,
     lowLabel: 'Esaurito',
-    highLabel: 'Pieno di energia'
+    highLabel: 'Pieno di energia',
+    premium: false,
   },
-  { 
-    id: 'mindset', 
-    title: '🧠 Mindset', 
+  {
+    id: 'mindset',
+    title: '🧠 Mindset',
     subtitle: 'Stato mentale e focus',
     description: 'Il tuo stato mentale: quanto sei carico e focalizzato (10) vs stressato, scarico o demotivato (1).',
     icon: Brain,
     lowLabel: 'Sopraffatto',
-    highLabel: 'Super focalizzato'
+    highLabel: 'Super focalizzato',
+    premium: false,
   },
-  { 
-    id: 'diary', 
-    title: '📝 Diario Giornaliero', 
+  {
+    id: 'diary',
+    title: '📝 Diario Giornaliero',
     subtitle: "Racconta la tua giornata",
     description: 'Condividi le tue sensazioni, fatiche o vittorie di oggi.',
     icon: Sparkles,
     lowLabel: '',
-    highLabel: ''
+    highLabel: '',
+    premium: false,
   },
 ];
 
@@ -87,6 +94,10 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
 
   const { saveCheckin } = useCheckins();
   const { toast } = useToast();
+  const { isPremium } = useSubscription();
+
+  // Filter steps based on subscription: free users skip nutrition & training
+  const steps = isPremium ? allSteps : allSteps.filter(s => !s.premium);
 
   // Load existing data if editing
   useEffect(() => {
@@ -115,11 +126,13 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
     }
   }, [existingCheckin]);
 
+  const currentStepId = steps[currentStep]?.id;
+
   const handleNext = () => {
-    if (currentStep === 4 && mindset < 5) {
+    if (currentStepId === 'mindset' && mindset < 5) {
       setShowLowMindsetAlert(true);
     }
-    
+
     if (currentStep < steps.length - 1) {
       setCurrentStep(prev => prev + 1);
     } else {
@@ -234,8 +247,8 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.2 }}
               >
-                {/* Recovery - Step 0 */}
-                {currentStep === 0 && (
+                {/* Recovery */}
+                {currentStepId === 'recovery' && (
                   <div className="space-y-6">
                     <Slider
                       value={[recovery]}
@@ -246,15 +259,15 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{steps[0].lowLabel}</span>
+                      <span>{steps[currentStep].lowLabel}</span>
                       <span className="text-3xl font-bold gradient-text">{recovery}</span>
-                      <span>{steps[0].highLabel}</span>
+                      <span>{steps[currentStep].highLabel}</span>
                     </div>
                   </div>
                 )}
 
-                {/* Nutrition - Step 1 */}
-                {currentStep === 1 && (
+                {/* Nutrition */}
+                {currentStepId === 'nutrition' && (
                   <div className="space-y-6">
                     <Slider
                       value={[nutritionScore]}
@@ -265,9 +278,9 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{steps[1].lowLabel}</span>
+                      <span>{steps[currentStep].lowLabel}</span>
                       <span className="text-3xl font-bold gradient-text">{nutritionScore}</span>
-                      <span>{steps[1].highLabel}</span>
+                      <span>{steps[currentStep].highLabel}</span>
                     </div>
                     <Textarea
                       placeholder="Note: sgarro, evento speciale, osservazioni..."
@@ -278,8 +291,8 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                   </div>
                 )}
 
-                {/* Training - Step 2 */}
-                {currentStep === 2 && (
+                {/* Training */}
+                {currentStepId === 'training' && (
                   <div className="space-y-6">
                     {/* Rest Day Toggle */}
                     <div className="flex justify-center mb-4">
@@ -287,8 +300,8 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                         onClick={() => setIsRestDay(!isRestDay)}
                         className={cn(
                           "px-6 py-3 rounded-xl border-2 transition-all duration-300 font-medium",
-                          isRestDay 
-                            ? "border-primary bg-primary/10 text-primary" 
+                          isRestDay
+                            ? "border-primary bg-primary/10 text-primary"
                             : "border-muted hover:border-muted-foreground/30 text-muted-foreground"
                         )}
                       >
@@ -308,9 +321,9 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                           className="w-full"
                         />
                         <div className="flex justify-between text-sm text-muted-foreground">
-                          <span>{steps[2].lowLabel}</span>
+                          <span>{steps[currentStep].lowLabel}</span>
                           <span className="text-3xl font-bold gradient-text">{trainingScore}</span>
-                          <span>{steps[2].highLabel}</span>
+                          <span>{steps[currentStep].highLabel}</span>
                         </div>
                       </>
                     )}
@@ -325,8 +338,8 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                   </div>
                 )}
 
-                {/* Energy - Step 3 */}
-                {currentStep === 3 && (
+                {/* Energy */}
+                {currentStepId === 'energy' && (
                   <div className="space-y-6">
                     <Slider
                       value={[energy]}
@@ -337,15 +350,15 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{steps[3].lowLabel}</span>
+                      <span>{steps[currentStep].lowLabel}</span>
                       <span className="text-3xl font-bold gradient-text">{energy}</span>
-                      <span>{steps[3].highLabel}</span>
+                      <span>{steps[currentStep].highLabel}</span>
                     </div>
                   </div>
                 )}
 
-                {/* Mindset - Step 4 */}
-                {currentStep === 4 && (
+                {/* Mindset */}
+                {currentStepId === 'mindset' && (
                   <div className="space-y-6">
                     <Slider
                       value={[mindset]}
@@ -356,15 +369,15 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{steps[4].lowLabel}</span>
+                      <span>{steps[currentStep].lowLabel}</span>
                       <span className="text-3xl font-bold gradient-text">{mindset}</span>
-                      <span>{steps[4].highLabel}</span>
+                      <span>{steps[currentStep].highLabel}</span>
                     </div>
                   </div>
                 )}
 
-                {/* Diary - Step 5 */}
-                {currentStep === 5 && (
+                {/* Diary */}
+                {currentStepId === 'diary' && (
                   <div className="space-y-4">
                     {showLowMindsetAlert && (
                       <motion.div

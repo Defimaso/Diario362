@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, BookOpen } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, BookOpen, Lock, Crown } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -21,6 +21,7 @@ import { NotificationBell } from "@/components/NotificationBell";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCheckins } from "@/hooks/useCheckins";
 import { useBadges } from "@/hooks/useBadges";
+import { useSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -46,6 +47,8 @@ const Diario = () => {
     closeUnlockAnimation,
   } = useBadges(streak, totalCheckins);
   
+  const { isPremium } = useSubscription();
+
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
   const [isBadgeSheetOpen, setIsBadgeSheetOpen] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
@@ -218,52 +221,82 @@ const Diario = () => {
           </Sheet>
         </motion.section>
 
-        {/* Stats Overview */}
-        {todayCheckin && (
+        {/* Stats Overview - Premium */}
+        {isPremium ? (
+          todayCheckin && (
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="mb-6 sm:mb-8"
+            >
+              <StatsOverview
+                recovery={todayCheckin.recovery || 0}
+                nutritionHit={todayCheckin.nutrition_adherence || false}
+                energy={todayCheckin.energy || 0}
+                mindset={todayCheckin.mindset || 0}
+              />
+            </motion.section>
+          )
+        ) : (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
             className="mb-6 sm:mb-8"
           >
-            <StatsOverview 
-              recovery={todayCheckin.recovery || 0}
-              nutritionHit={todayCheckin.nutrition_adherence || false}
-              energy={todayCheckin.energy || 0}
-              mindset={todayCheckin.mindset || 0}
-            />
+            <div
+              onClick={() => navigate('/upgrade')}
+              className="card-elegant p-5 rounded-2xl cursor-pointer hover:opacity-90 transition-opacity border border-dashed border-primary/30"
+            >
+              <div className="flex items-center gap-3 text-muted-foreground">
+                <div className="p-2 rounded-full bg-primary/10">
+                  <Crown className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="font-medium text-foreground">Statistiche e Grafici</p>
+                  <p className="text-sm">Sblocca con Premium per vedere statistiche, grafici e il diario pensieri</p>
+                </div>
+              </div>
+            </div>
           </motion.section>
         )}
 
-        {/* Weekly Chart */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-6 sm:mb-8"
-        >
-          <WeeklyChart data={chartData} />
-        </motion.section>
+        {/* Weekly Chart - Premium */}
+        {isPremium && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="mb-6 sm:mb-8"
+          >
+            <WeeklyChart data={chartData} />
+          </motion.section>
+        )}
 
-        {/* Diario Pensieri */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.32 }}
-          className="mb-6 sm:mb-8"
-        >
-          <DiarioPensieri checkins={checkins} />
-        </motion.section>
+        {/* Diario Pensieri - Premium */}
+        {isPremium && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.32 }}
+            className="mb-6 sm:mb-8"
+          >
+            <DiarioPensieri checkins={checkins} />
+          </motion.section>
+        )}
 
-        {/* Progress Widget - Weight & Photos from User Checks */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.35 }}
-          className="mb-6 sm:mb-8"
-        >
-          <ProgressWidget />
-        </motion.section>
+        {/* Progress Widget - Premium */}
+        {isPremium && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="mb-6 sm:mb-8"
+          >
+            <ProgressWidget />
+          </motion.section>
+        )}
 
         {/* Quick Actions */}
         <div className="space-y-3 sm:space-y-4">
@@ -274,10 +307,10 @@ const Diario = () => {
           >
             <QuickActionCard
               title="I Tuoi Check"
-              description="Registra peso e foto mensili"
-              icon={Camera}
+              description={isPremium ? "Registra peso e foto mensili" : "Premium - Sblocca per accedere"}
+              icon={isPremium ? Camera : Lock}
               variant="blue"
-              onClick={() => navigate('/checks')}
+              onClick={() => navigate(isPremium ? '/checks' : '/upgrade')}
             />
           </motion.div>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target, Key, Crown, Copy, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +26,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import {
   Accordion,
   AccordionContent,
@@ -69,7 +77,15 @@ const GestioneDiario = () => {
   // Coach notes state
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [notesClient, setNotesClient] = useState<ClientData | null>(null);
-  
+
+  // Activation codes state
+  const [codesDialogOpen, setCodesDialogOpen] = useState(false);
+  const [codeCount, setCodeCount] = useState(5);
+  const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
+  const [isGeneratingCodes, setIsGeneratingCodes] = useState(false);
+  const [existingCodes, setExistingCodes] = useState<Array<{ code: string; is_used: boolean; used_by: string | null; created_at: string }>>([]);
+  const [showExistingCodes, setShowExistingCodes] = useState(false);
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -292,6 +308,73 @@ const GestioneDiario = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Generate random activation codes
+  const generateCodes = async () => {
+    if (!user) return;
+    setIsGeneratingCodes(true);
+
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const codes: string[] = [];
+    for (let i = 0; i < codeCount; i++) {
+      let code = '362-';
+      for (let j = 0; j < 5; j++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+      codes.push(code);
+    }
+
+    const { error } = await supabase
+      .from('activation_codes' as any)
+      .insert(codes.map(code => ({
+        code,
+        created_by: user.id,
+      })) as any);
+
+    setIsGeneratingCodes(false);
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Errore', description: 'Impossibile generare i codici' });
+    } else {
+      setGeneratedCodes(codes);
+      toast({ title: 'Codici generati!', description: `${codes.length} codici creati con successo` });
+    }
+  };
+
+  const fetchExistingCodes = async () => {
+    const { data } = await supabase
+      .from('activation_codes' as any)
+      .select('code, is_used, used_by, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    setExistingCodes((data as any[]) || []);
+    setShowExistingCodes(true);
+  };
+
+  const copyAllCodes = () => {
+    const text = generatedCodes.join('\n');
+    navigator.clipboard.writeText(text);
+    toast({ title: 'Copiato!', description: 'Codici copiati negli appunti' });
+  };
+
+  // Admin grant premium to a specific client
+  const grantPremium = async (clientId: string, clientName: string) => {
+    const { error } = await supabase
+      .from('user_subscriptions' as any)
+      .upsert({
+        user_id: clientId,
+        plan: 'premium',
+        activated_at: new Date().toISOString(),
+        activation_code: 'ADMIN_GRANT',
+      } as any, { onConflict: 'user_id' });
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Errore', description: 'Impossibile attivare premium' });
+    } else {
+      toast({ title: 'Premium attivato!', description: `${clientName} ora ha accesso premium` });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Background Effects */}
@@ -322,6 +405,15 @@ const GestioneDiario = () => {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => { setGeneratedCodes([]); setShowExistingCodes(false); setCodesDialogOpen(true); }}
+              className="text-muted-foreground hover:text-foreground"
+              title="Codici Attivazione"
+            >
+              <Key className="w-5 h-5" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -627,6 +719,17 @@ const GestioneDiario = () => {
                             )}
                           </Button>
 
+                          {/* Grant Premium Button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+                            onClick={() => grantPremium(client.id, client.full_name)}
+                          >
+                            <Crown className="w-4 h-4 mr-1.5" />
+                            Premium
+                          </Button>
+
                           {/* Delete User Button - Super Admin Only */}
                           {isSuperAdmin && (
                             <Button
@@ -729,6 +832,91 @@ const GestioneDiario = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Activation Codes Dialog */}
+      <Dialog open={codesDialogOpen} onOpenChange={setCodesDialogOpen}>
+        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="w-5 h-5 text-primary" />
+              Codici di Attivazione
+            </DialogTitle>
+            <DialogDescription>
+              Genera codici per utenti che hanno acquistato il percorso
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Generate New Codes */}
+            <div className="space-y-3">
+              <h4 className="text-sm font-medium">Genera nuovi codici</h4>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={codeCount}
+                  onChange={(e) => setCodeCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                  className="w-20"
+                />
+                <Button onClick={generateCodes} disabled={isGeneratingCodes} className="flex-1">
+                  {isGeneratingCodes ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generazione...</>
+                  ) : (
+                    'Genera Codici'
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Generated Codes */}
+            {generatedCodes.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-sm font-medium text-green-500">Codici generati</h4>
+                  <Button size="sm" variant="outline" onClick={copyAllCodes}>
+                    <Copy className="w-3 h-3 mr-1" />
+                    Copia tutti
+                  </Button>
+                </div>
+                <div className="bg-muted rounded-lg p-3 space-y-1 max-h-40 overflow-y-auto">
+                  {generatedCodes.map((code) => (
+                    <div key={code} className="font-mono text-sm">{code}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* View Existing Codes */}
+            <div className="border-t pt-4">
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={fetchExistingCodes}
+              >
+                Vedi codici esistenti
+              </Button>
+
+              {showExistingCodes && (
+                <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
+                  {existingCodes.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-2">Nessun codice trovato</p>
+                  ) : (
+                    existingCodes.map((c) => (
+                      <div key={c.code} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
+                        <span className="font-mono">{c.code}</span>
+                        <span className={c.is_used ? "text-muted-foreground" : "text-green-500 font-medium"}>
+                          {c.is_used ? 'Usato' : 'Disponibile'}
+                        </span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

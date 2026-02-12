@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, Download, Settings } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientDocuments } from '@/hooks/useClientDocuments';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -14,8 +15,9 @@ import { NotificationBell } from '@/components/NotificationBell';
 
 const Documenti = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isPremium, isLoading: subLoading } = useSubscription();
   const navigate = useNavigate();
-  
+
   const {
     documents,
     loading,
@@ -28,7 +30,11 @@ const Documenti = () => {
     }
   }, [user, authLoading, navigate]);
 
-  if (authLoading || loading) {
+  if (!subLoading && !isPremium) {
+    return <Navigate to="/upgrade" replace />;
+  }
+
+  if (authLoading || loading || subLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-primary text-xl">Caricamento...</div>

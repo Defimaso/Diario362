@@ -4,6 +4,7 @@ import { Video, Settings, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, Link } from 'react-router-dom';
 import { useVideoCorrections } from '@/hooks/useVideoCorrections';
+import { useSubscription } from '@/hooks/useSubscription';
 import VideoUploadCard from '@/components/allenamento/VideoUploadCard';
 import VideoFeedbackList from '@/components/allenamento/VideoFeedbackList';
 import BottomDock from '@/components/BottomDock';
@@ -14,9 +15,10 @@ import { NotificationBell } from '@/components/NotificationBell';
 
 const AllenamentoRedesign = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isPremium, isLoading: subLoading } = useSubscription();
   const { unreadCount, markAllFeedbackAsRead } = useVideoCorrections();
 
-  if (authLoading) {
+  if (authLoading || subLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -26,6 +28,10 @@ const AllenamentoRedesign = () => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (!isPremium) {
+    return <Navigate to="/upgrade" replace />;
   }
 
   return (

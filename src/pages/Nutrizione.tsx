@@ -1,9 +1,10 @@
 import { useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Apple, FileText, Upload, Download, Trash2, Info, ExternalLink, Settings } from 'lucide-react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserDiet } from '@/hooks/useUserDiet';
+import { useSubscription } from '@/hooks/useSubscription';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -15,9 +16,10 @@ import { openNativeApp } from '@/lib/deepLinks';
 
 const Nutrizione = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isPremium, isLoading: subLoading } = useSubscription();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const {
     dietPlan,
     loading,
@@ -33,7 +35,11 @@ const Nutrizione = () => {
     }
   }, [user, authLoading, navigate]);
 
-  if (authLoading || loading) {
+  if (!subLoading && !isPremium) {
+    return <Navigate to="/upgrade" replace />;
+  }
+
+  if (authLoading || loading || subLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-pulse text-primary text-xl">Caricamento...</div>

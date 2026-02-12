@@ -3,6 +3,7 @@ import { TrendingUp, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useProgressChecks } from '@/hooks/useProgressChecks';
+import { useSubscription } from '@/hooks/useSubscription';
 import WeightChart from '@/components/progress/WeightChart';
 import PhotoComparison from '@/components/progress/PhotoComparison';
 import HistoryTable from '@/components/progress/HistoryTable';
@@ -13,6 +14,7 @@ import { NotificationBell } from '@/components/NotificationBell';
 
 const Progressi = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isPremium, isLoading: subLoading } = useSubscription();
   const navigate = useNavigate();
   const {
     progressChecks,
@@ -27,7 +29,7 @@ const Progressi = () => {
   const monthlyChecks = progressChecks.filter(c => c.source === 'external');
   const monthlyLoading = false;
 
-  if (authLoading) {
+  if (authLoading || subLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -37,6 +39,10 @@ const Progressi = () => {
 
   if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  if (!isPremium) {
+    return <Navigate to="/upgrade" replace />;
   }
 
   const datesWithPhotos = getDatesWithPhotos();
