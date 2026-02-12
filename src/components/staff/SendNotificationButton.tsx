@@ -16,7 +16,7 @@ const SendNotificationButton = ({ clientId, clientName }: SendNotificationButton
   const sendNotification = async () => {
     setSending(true);
     try {
-      const { data, error } = await supabase.functions.invoke('send-push-notification', {
+      const { data, error } = await supabase.functions.invoke('clever-responder', {
         body: {
           userId: clientId,
           title: '📢 Promemoria dal tuo Coach',

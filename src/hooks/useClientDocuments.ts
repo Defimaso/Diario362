@@ -133,7 +133,7 @@ export const useClientDocuments = (clientId: string) => {
 
       // Send notification to client
       try {
-        await supabase.functions.invoke('send-push-notification', {
+        await supabase.functions.invoke('clever-responder', {
           body: {
             userId: clientId,
             title: '📄 Nuovo Documento',
