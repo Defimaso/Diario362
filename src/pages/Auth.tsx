@@ -42,13 +42,14 @@ const loginSchema = z.object({
 const signupSchema = loginSchema.extend({
   fullName: z.string().min(2, 'Il nome deve avere almeno 2 caratteri'),
   phoneNumber: z.string().min(8, 'Inserisci un numero di telefono valido'),
-  coachName: z.string().min(1, 'Seleziona il tuo coach'),
+  coachName: z.string().optional(),
   termsAccepted: z.literal(true, { errorMap: () => ({ message: 'Devi accettare i Termini e Condizioni' }) }),
   privacyAccepted: z.literal(true, { errorMap: () => ({ message: 'Devi accettare l\'Informativa sulla Privacy' }) }),
   biometricConsent: z.literal(true, { errorMap: () => ({ message: 'Il consenso al trattamento dati biometrici è obbligatorio' }) }),
 });
 
 const coaches = [
+  'Non ho ancora un coach',
   'Ilaria',
   'Ilaria / Marco',
   'Ilaria / Marco / Michela',
@@ -218,7 +219,8 @@ const Auth = () => {
           });
         }
       } else {
-        const { error } = await signUp(email, password, fullName, phoneNumber, coachName);
+        const actualCoach = coachName && coachName !== 'Non ho ancora un coach' ? coachName : undefined;
+        const { error } = await signUp(email, password, fullName, phoneNumber, actualCoach);
         if (error) {
           toast({
             variant: 'destructive',
@@ -415,7 +417,7 @@ const Auth = () => {
             {!isCollaborator && !isLogin && (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="coach">Il tuo Coach</Label>
+                  <Label htmlFor="coach">Il tuo Coach <span className="text-muted-foreground font-normal">(opzionale)</span></Label>
                   <Select value={coachName} onValueChange={setCoachName}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Seleziona il tuo coach" />
