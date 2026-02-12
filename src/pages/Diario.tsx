@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, Play, BookOpen } from "lucide-react";
-import { TutorialVideoModal, TutorialButton, useTutorialFirstVisit } from "@/components/TutorialVideoModal";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, BookOpen } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -50,7 +49,6 @@ const Diario = () => {
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
   const [isBadgeSheetOpen, setIsBadgeSheetOpen] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
-  const { showTutorial, closeTutorial } = useTutorialFirstVisit();
   const navigate = useNavigate();
 
   // Check if app is already installed (standalone mode)
@@ -128,7 +126,6 @@ const Diario = () => {
           </div>
           <div className="flex items-center gap-1">
             <StreakBadge streak={streak} />
-            <TutorialButton />
             <NotificationBell />
             {(isAdmin || isCollaborator || isSuperAdmin) && (
               <Link to="/gestionediario">
@@ -380,8 +377,6 @@ const Diario = () => {
       {/* PWA Install Prompt */}
       <PWAInstallPrompt />
       
-      {/* Tutorial Video Modal - First Visit */}
-      <TutorialVideoModal isOpen={showTutorial} onClose={closeTutorial} />
     </div>
   );
 };
