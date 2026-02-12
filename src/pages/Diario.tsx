@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, Play } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, Play, BookOpen } from "lucide-react";
 import { TutorialVideoModal, TutorialButton, useTutorialFirstVisit } from "@/components/TutorialVideoModal";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
@@ -320,12 +320,26 @@ const Diario = () => {
             </p>
           </motion.div>
 
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.55 }}
+          >
+            <QuickActionCard
+              title="Guida all'App"
+              description="Scopri tutte le funzionalita'"
+              icon={BookOpen}
+              variant="green"
+              onClick={() => navigate('/guida')}
+            />
+          </motion.div>
+
           {/* Install App - only show if not in standalone mode */}
           {!isStandalone && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.55 }}
+              transition={{ delay: 0.6 }}
             >
               <QuickActionCard
                 title="Installa App"
