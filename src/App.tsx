@@ -16,17 +16,19 @@ import InstallApp from "./pages/InstallApp";
 import Settings from "./pages/Settings";
 import Inizia from "./pages/Inizia";
 import NotFound from "./pages/NotFound";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+  <ErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={<Navigate to="/diario" replace />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/diario" element={<Diario />} />
@@ -40,11 +42,12 @@ const App = () => (
             <Route path="/settings" element={<Settings />} />
             <Route path="/inizia" element={<Inizia />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </ErrorBoundary>
 );
 
 export default App;

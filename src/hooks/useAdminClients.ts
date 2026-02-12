@@ -68,22 +68,20 @@ export const useAdminClients = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const sortedDates = checkins
-      .map(c => c.date)
-      .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+    const dateSet = new Set(checkins.map(c => c.date));
 
     for (let i = 0; i < 365; i++) {
       const checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - i);
       const dateStr = checkDate.toISOString().split('T')[0];
-      
-      if (sortedDates.includes(dateStr)) {
+
+      if (dateSet.has(dateStr)) {
         currentStreak++;
       } else if (i > 0) {
         break;
       }
     }
-    
+
     return currentStreak;
   };
 
@@ -127,10 +125,15 @@ export const useAdminClients = () => {
 
       if (assignmentsError) throw assignmentsError;
 
-      // Fetch all checkins
+      // Fetch checkins (last 365 days only for performance)
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - 365);
+      const cutoffStr = cutoffDate.toISOString().split('T')[0];
+
       const { data: checkinsData, error: checkinsError } = await supabase
         .from('daily_checkins')
-        .select('*')
+        .select('id, user_id, date, recovery, nutrition_adherence, energy, mindset, two_percent_edge')
+        .gte('date', cutoffStr)
         .order('date', { ascending: false });
 
       if (checkinsError) throw checkinsError;
@@ -230,6 +233,29 @@ export const useAdminClients = () => {
 
   useEffect(() => {
     fetchClients();
+  }, [user, isAdmin, isCollaborator, isSuperAdmin]);
+
+  // Real-time subscription for daily_checkins updates
+  useEffect(() => {
+    if (!user || (!isAdmin && !isCollaborator && !isSuperAdmin)) return;
+
+    let debounceTimer: ReturnType<typeof setTimeout>;
+    const channel = supabase
+      .channel('admin-checkins-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'daily_checkins' },
+        () => {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => fetchClients(), 2000);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      clearTimeout(debounceTimer);
+      supabase.removeChannel(channel);
+    };
   }, [user, isAdmin, isCollaborator, isSuperAdmin]);
 
   return {

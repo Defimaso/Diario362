@@ -49,7 +49,7 @@ export const getCroppedImg = async (
         }
       },
       'image/jpeg',
-      0.95
+      0.85
     );
   });
 };

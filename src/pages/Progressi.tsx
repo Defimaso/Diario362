@@ -3,7 +3,6 @@ import { TrendingUp, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useProgressChecks } from '@/hooks/useProgressChecks';
-import { useMonthlyChecks } from '@/hooks/useMonthlyChecks';
 import WeightChart from '@/components/progress/WeightChart';
 import PhotoComparison from '@/components/progress/PhotoComparison';
 import HistoryTable from '@/components/progress/HistoryTable';
@@ -24,7 +23,9 @@ const Progressi = () => {
     getSignedPhotoUrl,
   } = useProgressChecks();
 
-  const { monthlyChecks, loading: monthlyLoading } = useMonthlyChecks();
+  // Monthly checks are already merged inside useProgressChecks - no separate fetch needed
+  const monthlyChecks = progressChecks.filter(c => c.source === 'external');
+  const monthlyLoading = false;
 
   if (authLoading) {
     return (

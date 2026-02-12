@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -222,28 +222,75 @@ const GestioneDiario = () => {
     setNotesDialogOpen(true);
   };
 
-  // Helper to calculate days since last checkin
-  const getDaysSinceLastCheckin = (client: ClientData): number => {
-    if (!client.last_checkin?.date) return 999;
-    const lastDate = new Date(client.last_checkin.date);
+  // Analytics: compute team-wide metrics
+  const analytics = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const checkedInToday = clients.filter(c => c.last_checkin?.date === today).length;
+    const completionRate = clients.length > 0 ? Math.round((checkedInToday / clients.length) * 100) : 0;
+
+    const clientsWithCheckin = clients.filter(c => c.last_checkin);
+    const avgRecovery = clientsWithCheckin.length > 0
+      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.recovery || 0), 0) / clientsWithCheckin.length).toFixed(1)
+      : '-';
+    const avgEnergy = clientsWithCheckin.length > 0
+      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.energy || 0), 0) / clientsWithCheckin.length).toFixed(1)
+      : '-';
+    const avgMindset = clientsWithCheckin.length > 0
+      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.mindset || 0), 0) / clientsWithCheckin.length).toFixed(1)
+      : '-';
+    const avgStreak = clients.length > 0
+      ? (clients.reduce((sum, c) => sum + c.streak, 0) / clients.length).toFixed(1)
+      : '-';
+
+    return { checkedInToday, completionRate, avgRecovery, avgEnergy, avgMindset, avgStreak };
+  }, [clients]);
+
+  // CSV Export function
+  const exportCSV = () => {
+    const headers = ['Nome', 'Email', 'Telefono', 'Coach', 'Status', 'Streak', 'Ultimo Check-in', 'Recovery', 'Energy', 'Mindset'];
+    const rows = filteredClients.map(c => [
+      c.full_name,
+      c.email,
+      c.phone_number || '',
+      c.coach_names.join(' / ').replace(/_/g, ' / '),
+      c.status,
+      c.streak.toString(),
+      c.last_checkin?.date || '',
+      c.last_checkin?.recovery?.toString() || '',
+      c.last_checkin?.energy?.toString() || '',
+      c.last_checkin?.mindset?.toString() || '',
+    ]);
+
+    const csvContent = [headers, ...rows].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `clienti_362gradi_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Pre-compute badge, risk, and daysSince for all clients (memoized)
+  const clientMetrics = useMemo(() => {
+    const metrics = new Map<string, { badge: ReturnType<typeof getCurrentBadge>; isAtRisk: boolean; daysSince: number }>();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    lastDate.setHours(0, 0, 0, 0);
-    return Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-  };
 
-  // Get client badge
-  const getClientBadge = (client: ClientData) => {
-    const totalCheckins = client.streak || 0;
-    return getCurrentBadge(client.streak, totalCheckins);
-  };
-
-  // Check if client is at risk
-  const checkClientRisk = (client: ClientData): boolean => {
-    const daysSince = getDaysSinceLastCheckin(client);
-    const badge = getClientBadge(client);
-    return isClientAtRisk(badge, daysSince);
-  };
+    for (const client of clients) {
+      let daysSince = 999;
+      if (client.last_checkin?.date) {
+        const lastDate = new Date(client.last_checkin.date);
+        lastDate.setHours(0, 0, 0, 0);
+        daysSince = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      const totalCheckins = client.streak || 0;
+      const badge = getCurrentBadge(client.streak, totalCheckins);
+      const atRisk = isClientAtRisk(badge, daysSince);
+      metrics.set(client.id, { badge, isAtRisk: atRisk, daysSince });
+    }
+    return metrics;
+  }, [clients]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -274,14 +321,25 @@ const GestioneDiario = () => {
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleSignOut}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="w-5 h-5" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={exportCSV}
+              className="text-muted-foreground hover:text-foreground"
+              title="Esporta CSV"
+            >
+              <Download className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSignOut}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="w-5 h-5" />
+            </Button>
+          </div>
         </motion.header>
 
         {/* Stats Overview */}
@@ -310,6 +368,35 @@ const GestioneDiario = () => {
             <XCircle className="w-5 h-5 mx-auto mb-1 text-destructive" />
             <div className="text-xl sm:text-2xl font-bold tabular-nums text-destructive">{statusCounts.red}</div>
             <div className="text-xs text-muted-foreground">Red</div>
+          </div>
+        </motion.div>
+
+        {/* Analytics Summary */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-6"
+        >
+          <div className="card-elegant rounded-xl p-3 text-center">
+            <Target className="w-4 h-4 mx-auto mb-1 text-primary" />
+            <div className="text-lg font-bold tabular-nums text-primary">{analytics.completionRate}%</div>
+            <div className="text-[10px] text-muted-foreground">Completamento oggi</div>
+          </div>
+          <div className="card-elegant rounded-xl p-3 text-center">
+            <Activity className="w-4 h-4 mx-auto mb-1 text-blue-400" />
+            <div className="text-lg font-bold tabular-nums">{analytics.avgRecovery}</div>
+            <div className="text-[10px] text-muted-foreground">Recovery medio</div>
+          </div>
+          <div className="card-elegant rounded-xl p-3 text-center">
+            <TrendingUp className="w-4 h-4 mx-auto mb-1 text-green-400" />
+            <div className="text-lg font-bold tabular-nums">{analytics.avgEnergy}</div>
+            <div className="text-[10px] text-muted-foreground">Energy media</div>
+          </div>
+          <div className="card-elegant rounded-xl p-3 text-center">
+            <Activity className="w-4 h-4 mx-auto mb-1 text-purple-400" />
+            <div className="text-lg font-bold tabular-nums">{analytics.avgStreak}</div>
+            <div className="text-[10px] text-muted-foreground">Streak medio</div>
           </div>
         </motion.div>
 
@@ -375,9 +462,10 @@ const GestioneDiario = () => {
             <Accordion type="single" collapsible className="space-y-3">
               <TooltipProvider>
                 {filteredClients.map((client, index) => {
-                  const clientBadge = getClientBadge(client);
-                  const isAtRisk = checkClientRisk(client);
-                  const daysSince = getDaysSinceLastCheckin(client);
+                  const metrics = clientMetrics.get(client.id) || { badge: getCurrentBadge(0, 0), isAtRisk: false, daysSince: 999 };
+                  const clientBadge = metrics.badge;
+                  const isAtRisk = metrics.isAtRisk;
+                  const daysSince = metrics.daysSince;
                   
                   return (
                     <AccordionItem 

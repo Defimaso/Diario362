@@ -55,6 +55,26 @@ export const useCoachNotes = () => {
     fetchNotes();
   }, [fetchNotes]);
 
+  // Real-time subscription for coach notes
+  useEffect(() => {
+    if (!user || (!isSuperAdmin && !isCollaborator)) return;
+
+    const channel = supabase
+      .channel('coach-notes-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'coach_notes' },
+        () => {
+          fetchNotes();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isSuperAdmin, isCollaborator, fetchNotes]);
+
   const addNote = async (clientId: string, content: string): Promise<boolean> => {
     if (!user || !isSuperAdmin) return false;
 

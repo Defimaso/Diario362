@@ -217,10 +217,11 @@ const PhotoComparison = ({
               {loadingPhotos ? (
                 <Skeleton className="w-full h-full" />
               ) : startPhotoUrl ? (
-                <img 
-                  src={startPhotoUrl} 
-                  alt="Foto inizio" 
+                <img
+                  src={startPhotoUrl}
+                  alt="Foto inizio"
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               ) : (
                 <div className="text-muted-foreground text-xs text-center p-2">
@@ -244,10 +245,11 @@ const PhotoComparison = ({
               {loadingPhotos ? (
                 <Skeleton className="w-full h-full" />
               ) : endPhotoUrl ? (
-                <img 
-                  src={endPhotoUrl} 
-                  alt="Foto fine" 
+                <img
+                  src={endPhotoUrl}
+                  alt="Foto fine"
                   className="w-full h-full object-cover"
+                  loading="lazy"
                 />
               ) : (
                 <div className="text-muted-foreground text-xs text-center p-2">

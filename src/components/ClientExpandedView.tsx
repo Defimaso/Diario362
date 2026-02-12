@@ -1,5 +1,5 @@
-import { useState, useEffect, forwardRef } from 'react';
-import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video, Upload } from 'lucide-react';
+import { useState, useEffect, forwardRef, memo } from 'react';
+import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video, Upload, User, Target, Brain, Activity } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays } from 'date-fns';
@@ -15,6 +15,7 @@ import SendNotificationButton from './staff/SendNotificationButton';
 import StaffDietUpload from './staff/StaffDietUpload';
 import ClientDocumentsSection from './staff/ClientDocumentsSection';
 import StoricoDiario from './staff/StoricoDiario';
+import { useOnboardingData } from '@/hooks/useOnboardingData';
 
 interface UserCheck {
   id: string;
@@ -35,6 +36,9 @@ interface DailyCheckin {
   energy: number | null;
   mindset: number | null;
   two_percent_edge: string | null;
+  nutrition_score: number | null;
+  training_score: number | null;
+  training_rest_day: boolean | null;
 }
 
 interface ClientExpandedViewProps {
@@ -49,6 +53,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
   const [loading, setLoading] = useState(true);
   const { logAction } = useAuditLog();
   const { dietPlan, loading: dietLoading, downloadDietPlan, refetch: refetchDiet } = useUserDiet(clientId);
+  const { profile: onboardingProfile, loading: onboardingLoading } = useOnboardingData(clientId);
 
   useEffect(() => {
     const fetchChecks = async () => {
@@ -73,7 +78,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
         const thirtyDaysAgo = subDays(new Date(), 30);
         const { data: dailyData, error: dailyError } = await supabase
           .from('daily_checkins')
-          .select('id, date, recovery, nutrition_adherence, energy, mindset, two_percent_edge')
+          .select('id, date, recovery, nutrition_adherence, energy, mindset, two_percent_edge, nutrition_score, training_score, training_rest_day')
           .eq('user_id', clientId)
           .gte('date', thirtyDaysAgo.toISOString().split('T')[0])
           .order('date', { ascending: false });
@@ -144,6 +149,42 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
       <div className="bg-card rounded-xl p-3 sm:p-4 border border-section-red/30">
         <DailyCheckinDetails checkins={dailyCheckins} />
       </div>
+
+      {/* Extra Metrics (nutrition_score, training_score) */}
+      {dailyCheckins.some(c => c.nutrition_score !== null || c.training_score !== null) && (
+        <div className="bg-card rounded-xl p-3 sm:p-4 border border-border">
+          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
+            <Apple className="w-4 h-4 text-purple-400" />
+            Metriche Extra (ultimi 30gg)
+          </h4>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-2 rounded-lg bg-muted/50">
+              <div className="text-lg font-bold tabular-nums">
+                {(() => {
+                  const scores = dailyCheckins.filter(c => c.nutrition_score !== null).map(c => c.nutrition_score!);
+                  return scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '-';
+                })()}
+              </div>
+              <div className="text-[10px] text-muted-foreground">Nutrizione</div>
+            </div>
+            <div className="p-2 rounded-lg bg-muted/50">
+              <div className="text-lg font-bold tabular-nums">
+                {(() => {
+                  const scores = dailyCheckins.filter(c => c.training_score !== null).map(c => c.training_score!);
+                  return scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '-';
+                })()}
+              </div>
+              <div className="text-[10px] text-muted-foreground">Allenamento</div>
+            </div>
+            <div className="p-2 rounded-lg bg-muted/50">
+              <div className="text-lg font-bold tabular-nums">
+                {dailyCheckins.filter(c => c.training_rest_day === true).length}
+              </div>
+              <div className="text-[10px] text-muted-foreground">Giorni riposo</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Client Info & Actions */}
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -397,6 +438,83 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
       {/* Client Documents Section */}
       <ClientDocumentsSection clientId={clientId} />
 
+      {/* Onboarding Profile */}
+      {!onboardingLoading && onboardingProfile && (
+        <div className="bg-card rounded-xl p-3 sm:p-4 border border-primary/20">
+          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+            <User className="w-4 h-4 text-primary" />
+            Profilo Onboarding
+            {onboardingProfile.profile_badge && (
+              <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+                {onboardingProfile.profile_badge}
+              </span>
+            )}
+          </h4>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            {onboardingProfile.target_weight && onboardingProfile.current_weight && (
+              <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                <Target className="w-3.5 h-3.5 text-green-400 shrink-0" />
+                <div>
+                  <span className="text-muted-foreground">Obiettivo: </span>
+                  <span className="font-medium">{onboardingProfile.current_weight}kg → {onboardingProfile.target_weight}kg</span>
+                </div>
+              </div>
+            )}
+            {onboardingProfile.metabolism && (
+              <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                <Activity className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <div>
+                  <span className="text-muted-foreground">Metabolismo: </span>
+                  <span className="font-medium">{onboardingProfile.metabolism}</span>
+                </div>
+              </div>
+            )}
+            {onboardingProfile.experience_level && (
+              <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                <TrendingUp className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                <div>
+                  <span className="text-muted-foreground">Esperienza: </span>
+                  <span className="font-medium">{onboardingProfile.experience_level}</span>
+                </div>
+              </div>
+            )}
+            {onboardingProfile.weekly_sessions && (
+              <div className="flex items-center gap-1.5 p-2 rounded-lg bg-muted/50">
+                <Camera className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                <div>
+                  <span className="text-muted-foreground">Sessioni/sett: </span>
+                  <span className="font-medium">{onboardingProfile.weekly_sessions}</span>
+                </div>
+              </div>
+            )}
+            {onboardingProfile.stress_eating && (
+              <div className="flex items-center gap-1.5 p-2 rounded-lg bg-warning/10">
+                <Brain className="w-3.5 h-3.5 text-warning shrink-0" />
+                <span className="font-medium text-warning">Stress eating</span>
+              </div>
+            )}
+            {onboardingProfile.biggest_fear && (
+              <div className="col-span-2 p-2 rounded-lg bg-muted/50">
+                <span className="text-muted-foreground">Paura principale: </span>
+                <span className="font-medium">{onboardingProfile.biggest_fear}</span>
+              </div>
+            )}
+            {onboardingProfile.motivation_source && (
+              <div className="col-span-2 p-2 rounded-lg bg-muted/50">
+                <span className="text-muted-foreground">Motivazione: </span>
+                <span className="font-medium">{onboardingProfile.motivation_source}</span>
+              </div>
+            )}
+            {onboardingProfile.health_conditions && onboardingProfile.health_conditions.length > 0 && (
+              <div className="col-span-2 p-2 rounded-lg bg-destructive/10">
+                <span className="text-muted-foreground">Condizioni: </span>
+                <span className="font-medium text-destructive">{onboardingProfile.health_conditions.join(', ')}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Empty state if no checks */}
       {!loading && checks.length === 0 && (
         <div className="text-center py-8">
@@ -429,7 +547,7 @@ const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
       <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
         <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-muted">
           {first ? (
-            <img src={first} alt={`${label} - Check #${firstNum}`} className="w-full h-full object-cover" />
+            <img src={first} alt={`${label} - Check #${firstNum}`} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
@@ -441,7 +559,7 @@ const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
         </div>
         <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-muted">
           {last ? (
-            <img src={last} alt={`${label} - Check #${lastNum}`} className="w-full h-full object-cover" />
+            <img src={last} alt={`${label} - Check #${lastNum}`} className="w-full h-full object-cover" loading="lazy" />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
               <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
@@ -458,4 +576,4 @@ const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
 
 PhotoRow.displayName = 'PhotoRow';
 
-export default ClientExpandedView;
+export default memo(ClientExpandedView);

@@ -1,7 +1,8 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardCheck, Apple, Dumbbell, TrendingUp, FileText } from 'lucide-react';
+import { ClipboardCheck, Apple, Dumbbell, TrendingUp, FileText, WifiOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVideoCorrections } from '@/hooks/useVideoCorrections';
+import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 
 interface NavItem {
   path: string;
@@ -21,10 +22,17 @@ const BottomDock = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { unreadCount } = useVideoCorrections();
+  const isOnline = useOnlineStatus();
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50">
       <div className="mx-auto max-w-lg px-4 pb-[env(safe-area-inset-bottom,8px)]">
+        {!isOnline && (
+          <div className="flex items-center justify-center gap-2 py-1.5 px-3 mb-1 rounded-lg bg-warning/20 text-warning text-xs font-medium">
+            <WifiOff className="w-3 h-3" />
+            Sei offline
+          </div>
+        )}
         <div
           className={cn(
             "flex justify-around items-center py-3 px-4 rounded-2xl mb-2",

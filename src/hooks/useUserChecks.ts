@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { compressImage } from '@/lib/imageCompression';
 
 export interface UserCheck {
   id: string;
@@ -98,16 +99,17 @@ export const useUserChecks = (clientId?: string) => {
       }));
   }, [checks]);
 
-  // Upload photo to storage
+  // Upload photo to storage (with compression)
   const uploadPhoto = async (file: File, checkNumber: number, type: 'front' | 'side' | 'back'): Promise<string | null> => {
     if (!targetUserId) return null;
 
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${targetUserId}/check_${checkNumber}_${type}_${Date.now()}.${fileExt}`;
+    // Compress image before upload
+    const compressed = await compressImage(file);
+    const fileName = `${targetUserId}/check_${checkNumber}_${type}_${Date.now()}.jpg`;
 
     const { error: uploadError } = await supabase.storage
       .from('progress-photos')
-      .upload(fileName, file);
+      .upload(fileName, compressed, { contentType: 'image/jpeg' });
 
     if (uploadError) {
       console.error('Error uploading photo:', uploadError);

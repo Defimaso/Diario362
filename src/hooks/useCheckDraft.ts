@@ -11,33 +11,58 @@ interface CheckDraft {
   lastUpdated: number;
 }
 
-const DRAFT_KEY = 'check_draft';
+const DRAFT_PREFIX = 'check_draft_';
 const DRAFT_EXPIRY_HOURS = 24;
+
+const getDraftKey = (checkNumber: number) => `${DRAFT_PREFIX}${checkNumber}`;
+
+// Cleanup all expired drafts on module load
+const cleanupExpiredDrafts = () => {
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(DRAFT_PREFIX)) {
+        const stored = localStorage.getItem(key);
+        if (stored) {
+          const draft: CheckDraft = JSON.parse(stored);
+          const hoursSince = (Date.now() - draft.lastUpdated) / (1000 * 60 * 60);
+          if (hoursSince >= DRAFT_EXPIRY_HOURS) {
+            localStorage.removeItem(key);
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore cleanup errors
+  }
+};
+
+cleanupExpiredDrafts();
 
 export const useCheckDraft = (checkNumber: number) => {
   const [hasDraft, setHasDraft] = useState(false);
   const [draftData, setDraftData] = useState<CheckDraft | null>(null);
 
+  const draftKey = getDraftKey(checkNumber);
+
   // Check for existing draft on mount
   useEffect(() => {
-    const stored = localStorage.getItem(DRAFT_KEY);
+    const stored = localStorage.getItem(draftKey);
     if (stored) {
       try {
         const draft: CheckDraft = JSON.parse(stored);
-        // Check if draft is for same check and not expired
         const hoursSinceUpdate = (Date.now() - draft.lastUpdated) / (1000 * 60 * 60);
-        if (draft.checkNumber === checkNumber && hoursSinceUpdate < DRAFT_EXPIRY_HOURS) {
+        if (hoursSinceUpdate < DRAFT_EXPIRY_HOURS) {
           setHasDraft(true);
           setDraftData(draft);
-        } else if (hoursSinceUpdate >= DRAFT_EXPIRY_HOURS) {
-          // Clear expired draft
-          localStorage.removeItem(DRAFT_KEY);
+        } else {
+          localStorage.removeItem(draftKey);
         }
       } catch {
-        localStorage.removeItem(DRAFT_KEY);
+        localStorage.removeItem(draftKey);
       }
     }
-  }, [checkNumber]);
+  }, [checkNumber, draftKey]);
 
   // Save draft
   const saveDraft = useCallback((data: Omit<CheckDraft, 'lastUpdated'>) => {
@@ -45,17 +70,17 @@ export const useCheckDraft = (checkNumber: number) => {
       ...data,
       lastUpdated: Date.now(),
     };
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    localStorage.setItem(draftKey, JSON.stringify(draft));
     setDraftData(draft);
     setHasDraft(true);
-  }, []);
+  }, [draftKey]);
 
   // Clear draft
   const clearDraft = useCallback(() => {
-    localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(draftKey);
     setHasDraft(false);
     setDraftData(null);
-  }, []);
+  }, [draftKey]);
 
   // Get draft
   const getDraft = useCallback((): CheckDraft | null => {

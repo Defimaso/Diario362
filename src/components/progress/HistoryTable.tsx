@@ -18,7 +18,7 @@ import MonthlyCheckDetails from './MonthlyCheckDetails';
 
 interface HistoryTableProps {
   data: ProgressCheck[];
-  monthlyChecks?: MonthlyCheck[];
+  monthlyChecks?: MonthlyCheck[] | ProgressCheck[];
   onSelectCheck?: (check: ProgressCheck) => void;
 }
 
@@ -41,15 +41,23 @@ const HistoryTable = ({ data, monthlyChecks = [], onSelectCheck }: HistoryTableP
     return count;
   };
 
-  // Find matching monthly check for a progress check by date
-  const getMonthlyCheckForDate = (date: string): MonthlyCheck | undefined => {
-    return monthlyChecks.find(mc => mc.check_date === date);
-  };
+  // Convert a ProgressCheck (external) to MonthlyCheck format for the details modal
+  const toMonthlyCheck = (check: ProgressCheck): MonthlyCheck => ({
+    id: check.id,
+    user_id: check.user_id,
+    email: '',
+    current_weight: check.weight,
+    photo_front_url: check.photo_front_url,
+    photo_side_url: check.photo_side_url,
+    photo_back_url: check.photo_back_url,
+    check_date: check.date,
+    created_at: check.created_at,
+    updated_at: check.updated_at,
+  });
 
   const handleRowClick = (check: ProgressCheck) => {
-    const monthlyCheck = getMonthlyCheckForDate(check.date);
-    if (monthlyCheck) {
-      setSelectedMonthlyCheck(monthlyCheck);
+    if (check.source === 'external') {
+      setSelectedMonthlyCheck(toMonthlyCheck(check));
     } else if (onSelectCheck) {
       onSelectCheck(check);
     }
@@ -102,11 +110,10 @@ const HistoryTable = ({ data, monthlyChecks = [], onSelectCheck }: HistoryTableP
               </TableHeader>
               <TableBody>
                 {data.map((check) => {
-                  const hasMonthlyData = !!getMonthlyCheckForDate(check.date);
                   const isExternal = check.source === 'external';
-                  
+
                   return (
-                    <TableRow 
+                    <TableRow
                       key={check.id}
                       className="cursor-pointer hover:bg-muted/50"
                       onClick={() => handleRowClick(check)}
@@ -149,7 +156,7 @@ const HistoryTable = ({ data, monthlyChecks = [], onSelectCheck }: HistoryTableP
                         </Tooltip>
                       </TableCell>
                       <TableCell>
-                        {(hasMonthlyData || onSelectCheck) && (
+                        {(isExternal || onSelectCheck) && (
                           <ChevronRight className="w-4 h-4 text-muted-foreground" />
                         )}
                       </TableCell>
