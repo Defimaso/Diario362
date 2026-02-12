@@ -81,6 +81,50 @@ const GestioneDiario = () => {
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
 
+  // Analytics: compute team-wide metrics (must be before early returns)
+  const analytics = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    const checkedInToday = clients.filter(c => c.last_checkin?.date === today).length;
+    const completionRate = clients.length > 0 ? Math.round((checkedInToday / clients.length) * 100) : 0;
+
+    const clientsWithCheckin = clients.filter(c => c.last_checkin);
+    const avgRecovery = clientsWithCheckin.length > 0
+      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.recovery || 0), 0) / clientsWithCheckin.length).toFixed(1)
+      : '-';
+    const avgEnergy = clientsWithCheckin.length > 0
+      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.energy || 0), 0) / clientsWithCheckin.length).toFixed(1)
+      : '-';
+    const avgMindset = clientsWithCheckin.length > 0
+      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.mindset || 0), 0) / clientsWithCheckin.length).toFixed(1)
+      : '-';
+    const avgStreak = clients.length > 0
+      ? (clients.reduce((sum, c) => sum + c.streak, 0) / clients.length).toFixed(1)
+      : '-';
+
+    return { checkedInToday, completionRate, avgRecovery, avgEnergy, avgMindset, avgStreak };
+  }, [clients]);
+
+  // Pre-compute badge, risk, and daysSince for all clients (must be before early returns)
+  const clientMetrics = useMemo(() => {
+    const metrics = new Map<string, { badge: ReturnType<typeof getCurrentBadge>; isAtRisk: boolean; daysSince: number }>();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (const client of clients) {
+      let daysSince = 999;
+      if (client.last_checkin?.date) {
+        const lastDate = new Date(client.last_checkin.date);
+        lastDate.setHours(0, 0, 0, 0);
+        daysSince = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+      }
+      const totalCheckins = client.streak || 0;
+      const badge = getCurrentBadge(client.streak, totalCheckins);
+      const atRisk = isClientAtRisk(badge, daysSince);
+      metrics.set(client.id, { badge, isAtRisk: atRisk, daysSince });
+    }
+    return metrics;
+  }, [clients]);
+
   if (authLoading || clientsLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -222,29 +266,6 @@ const GestioneDiario = () => {
     setNotesDialogOpen(true);
   };
 
-  // Analytics: compute team-wide metrics
-  const analytics = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    const checkedInToday = clients.filter(c => c.last_checkin?.date === today).length;
-    const completionRate = clients.length > 0 ? Math.round((checkedInToday / clients.length) * 100) : 0;
-
-    const clientsWithCheckin = clients.filter(c => c.last_checkin);
-    const avgRecovery = clientsWithCheckin.length > 0
-      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.recovery || 0), 0) / clientsWithCheckin.length).toFixed(1)
-      : '-';
-    const avgEnergy = clientsWithCheckin.length > 0
-      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.energy || 0), 0) / clientsWithCheckin.length).toFixed(1)
-      : '-';
-    const avgMindset = clientsWithCheckin.length > 0
-      ? (clientsWithCheckin.reduce((sum, c) => sum + (c.last_checkin?.mindset || 0), 0) / clientsWithCheckin.length).toFixed(1)
-      : '-';
-    const avgStreak = clients.length > 0
-      ? (clients.reduce((sum, c) => sum + c.streak, 0) / clients.length).toFixed(1)
-      : '-';
-
-    return { checkedInToday, completionRate, avgRecovery, avgEnergy, avgMindset, avgStreak };
-  }, [clients]);
-
   // CSV Export function
   const exportCSV = () => {
     const headers = ['Nome', 'Email', 'Telefono', 'Coach', 'Status', 'Streak', 'Ultimo Check-in', 'Recovery', 'Energy', 'Mindset'];
@@ -270,27 +291,6 @@ const GestioneDiario = () => {
     link.click();
     URL.revokeObjectURL(url);
   };
-
-  // Pre-compute badge, risk, and daysSince for all clients (memoized)
-  const clientMetrics = useMemo(() => {
-    const metrics = new Map<string, { badge: ReturnType<typeof getCurrentBadge>; isAtRisk: boolean; daysSince: number }>();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (const client of clients) {
-      let daysSince = 999;
-      if (client.last_checkin?.date) {
-        const lastDate = new Date(client.last_checkin.date);
-        lastDate.setHours(0, 0, 0, 0);
-        daysSince = Math.floor((today.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-      }
-      const totalCheckins = client.streak || 0;
-      const badge = getCurrentBadge(client.streak, totalCheckins);
-      const atRisk = isClientAtRisk(badge, daysSince);
-      metrics.set(client.id, { badge, isAtRisk: atRisk, daysSince });
-    }
-    return metrics;
-  }, [clients]);
 
   return (
     <div className="min-h-screen bg-background">
