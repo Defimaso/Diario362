@@ -6,6 +6,7 @@ interface Subscription {
   plan: 'free' | 'premium';
   activated_at: string | null;
   activation_code: string | null;
+  trial_ends_at: string | null;
 }
 
 export function useSubscription() {
@@ -16,6 +17,20 @@ export function useSubscription() {
   // Admin/collaborator/superAdmin are always premium
   const isStaff = isAdmin || isCollaborator || isSuperAdmin;
 
+  // Trial logic
+  const isTrialActive = useCallback(() => {
+    if (!subscription?.trial_ends_at) return false;
+    if (subscription.plan === 'premium') return false;
+    return new Date(subscription.trial_ends_at) > new Date();
+  }, [subscription]);
+
+  const trialDaysLeft = useCallback(() => {
+    if (!subscription?.trial_ends_at) return 0;
+    if (subscription.plan === 'premium') return 0;
+    const diff = new Date(subscription.trial_ends_at).getTime() - new Date().getTime();
+    return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+  }, [subscription]);
+
   useEffect(() => {
     if (!user) {
       setSubscription(null);
@@ -24,7 +39,7 @@ export function useSubscription() {
     }
 
     if (isStaff) {
-      setSubscription({ plan: 'premium', activated_at: null, activation_code: 'STAFF' });
+      setSubscription({ plan: 'premium', activated_at: null, activation_code: 'STAFF', trial_ends_at: null });
       setIsLoading(false);
       return;
     }
@@ -32,18 +47,18 @@ export function useSubscription() {
     const fetchSubscription = async () => {
       const { data, error } = await supabase
         .from('user_subscriptions' as any)
-        .select('plan, activated_at, activation_code')
+        .select('plan, activated_at, activation_code, trial_ends_at')
         .eq('user_id', user.id)
         .single();
 
       if (error || !data) {
-        // No subscription found -> treat as free
-        setSubscription({ plan: 'free', activated_at: null, activation_code: null });
+        setSubscription({ plan: 'free', activated_at: null, activation_code: null, trial_ends_at: null });
       } else {
         setSubscription({
           plan: (data as any).plan || 'free',
           activated_at: (data as any).activated_at,
           activation_code: (data as any).activation_code,
+          trial_ends_at: (data as any).trial_ends_at || null,
         });
       }
       setIsLoading(false);
@@ -87,6 +102,7 @@ export function useSubscription() {
         plan: 'premium',
         activated_at: new Date().toISOString(),
         activation_code: trimmedCode,
+        trial_ends_at: null,
       } as any, { onConflict: 'user_id' });
 
     if (subError) {
@@ -98,13 +114,18 @@ export function useSubscription() {
       plan: 'premium',
       activated_at: new Date().toISOString(),
       activation_code: trimmedCode,
+      trial_ends_at: null,
     });
 
     return { success: true };
   }, [user]);
 
+  const isTrial = isTrialActive();
+
   return {
-    isPremium: isStaff || subscription?.plan === 'premium',
+    isPremium: isStaff || subscription?.plan === 'premium' || isTrial,
+    isTrial,
+    trialDaysLeft: trialDaysLeft(),
     plan: isStaff ? 'premium' as const : (subscription?.plan || 'free' as const),
     isLoading,
     subscription,

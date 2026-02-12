@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, BookOpen, Lock, Crown } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, BookOpen, Lock, Crown, MessageCircle, Timer } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -22,6 +22,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useCheckins } from "@/hooks/useCheckins";
 import { useBadges } from "@/hooks/useBadges";
 import { useSubscription } from "@/hooks/useSubscription";
+import { useMessages } from "@/hooks/useMessages";
+import WeeklyRecapCard from "@/components/WeeklyRecapCard";
+import ChallengeCard from "@/components/ChallengeCard";
+import JourneyTimeline from "@/components/JourneyTimeline";
+import LeaderboardView from "@/components/LeaderboardView";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -47,7 +52,8 @@ const Diario = () => {
     closeUnlockAnimation,
   } = useBadges(streak, totalCheckins);
   
-  const { isPremium } = useSubscription();
+  const { isPremium, isTrial, trialDaysLeft } = useSubscription();
+  const { unreadTotal } = useMessages();
 
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
   const [isBadgeSheetOpen, setIsBadgeSheetOpen] = useState(false);
@@ -161,6 +167,49 @@ const Diario = () => {
           </div>
         </motion.header>
 
+        {/* Trial Banner */}
+        {isTrial && trialDaysLeft > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 to-primary/10 border border-amber-500/20"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Timer className="w-4 h-4 text-amber-500" />
+                <p className="text-sm font-medium">
+                  Prova Premium: <span className="text-amber-500">{trialDaysLeft} giorni rimasti</span>
+                </p>
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs border-amber-500/30 text-amber-500 hover:bg-amber-500/10"
+                onClick={() => navigate('/upgrade')}
+              >
+                Attiva
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Messages notification */}
+        {unreadTotal > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            onClick={() => navigate('/messaggi')}
+            className="mb-4 p-3 rounded-2xl bg-primary/5 border border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-primary" />
+              <p className="text-sm">
+                Hai <span className="font-semibold text-primary">{unreadTotal}</span> messaggi non letti
+              </p>
+            </div>
+          </motion.div>
+        )}
+
         {/* PRIORITY: Check-in Giornaliero - TOP OF PAGE (RED) */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -221,60 +270,84 @@ const Diario = () => {
           </Sheet>
         </motion.section>
 
-        {/* Stats Overview - Premium */}
-        {isPremium ? (
-          todayCheckin && (
-            <motion.section
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mb-6 sm:mb-8"
-            >
+        {/* Weekly Recap - visible to all */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-6 sm:mb-8"
+        >
+          <WeeklyRecapCard />
+        </motion.section>
+
+        {/* Stats Overview - Soft Gating */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.22 }}
+          className="mb-6 sm:mb-8"
+        >
+          {isPremium ? (
+            todayCheckin && (
               <StatsOverview
                 recovery={todayCheckin.recovery || 0}
                 nutritionHit={todayCheckin.nutrition_adherence || false}
                 energy={todayCheckin.energy || 0}
                 mindset={todayCheckin.mindset || 0}
               />
-            </motion.section>
-          )
-        ) : (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="mb-6 sm:mb-8"
-          >
-            <div
-              onClick={() => navigate('/upgrade')}
-              className="card-elegant p-5 rounded-2xl cursor-pointer hover:opacity-90 transition-opacity border border-dashed border-primary/30"
-            >
-              <div className="flex items-center gap-3 text-muted-foreground">
-                <div className="p-2 rounded-full bg-primary/10">
-                  <Crown className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground">Statistiche e Grafici</p>
-                  <p className="text-sm">Sblocca con Premium per vedere statistiche, grafici e il diario pensieri</p>
+            )
+          ) : (
+            <div className="relative cursor-pointer" onClick={() => navigate('/upgrade')}>
+              {/* Blurred preview */}
+              <div className="filter blur-sm pointer-events-none select-none">
+                <StatsOverview
+                  recovery={7}
+                  nutritionHit={true}
+                  energy={8}
+                  mindset={6}
+                />
+              </div>
+              {/* Overlay */}
+              <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-2xl backdrop-blur-[1px]">
+                <div className="text-center">
+                  <Crown className="w-6 h-6 text-primary mx-auto mb-1" />
+                  <p className="text-sm font-medium">Sblocca Statistiche</p>
+                  <p className="text-xs text-muted-foreground">Attiva Premium</p>
                 </div>
               </div>
             </div>
-          </motion.section>
-        )}
+          )}
+        </motion.section>
 
-        {/* Weekly Chart - Premium */}
-        {isPremium && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="mb-6 sm:mb-8"
-          >
+        {/* Weekly Chart - Soft Gating */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-6 sm:mb-8"
+        >
+          {isPremium ? (
             <WeeklyChart data={chartData} />
-          </motion.section>
-        )}
+          ) : (
+            <div className="relative cursor-pointer" onClick={() => navigate('/upgrade')}>
+              <div className="filter blur-sm pointer-events-none select-none">
+                <WeeklyChart data={[
+                  { date: '2025-01-06', recovery: 7, nutritionHit: true, energy: 8, mindset: 6, twoPercentEdge: '' },
+                  { date: '2025-01-07', recovery: 6, nutritionHit: false, energy: 7, mindset: 7, twoPercentEdge: '' },
+                  { date: '2025-01-08', recovery: 8, nutritionHit: true, energy: 9, mindset: 8, twoPercentEdge: '' },
+                ]} />
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-2xl backdrop-blur-[1px]">
+                <div className="text-center">
+                  <Lock className="w-5 h-5 text-primary mx-auto mb-1" />
+                  <p className="text-xs font-medium">Grafico Settimanale Premium</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </motion.section>
 
-        {/* Diario Pensieri - Premium */}
+        {/* Diario Pensieri - Premium only */}
         {isPremium && (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
@@ -286,7 +359,7 @@ const Diario = () => {
           </motion.section>
         )}
 
-        {/* Progress Widget - Premium */}
+        {/* Progress Widget - Premium only */}
         {isPremium && (
           <motion.section
             initial={{ opacity: 0, y: 20 }}
@@ -297,6 +370,36 @@ const Diario = () => {
             <ProgressWidget />
           </motion.section>
         )}
+
+        {/* Challenge Card - visible to all */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.37 }}
+          className="mb-6 sm:mb-8"
+        >
+          <ChallengeCard />
+        </motion.section>
+
+        {/* Journey Timeline */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.38 }}
+          className="mb-6 sm:mb-8"
+        >
+          <JourneyTimeline streak={streak} totalCheckins={totalCheckins} />
+        </motion.section>
+
+        {/* Leaderboard */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.39 }}
+          className="mb-6 sm:mb-8"
+        >
+          <LeaderboardView />
+        </motion.section>
 
         {/* Quick Actions */}
         <div className="space-y-3 sm:space-y-4">
@@ -311,6 +414,20 @@ const Diario = () => {
               icon={isPremium ? Camera : Lock}
               variant="blue"
               onClick={() => navigate(isPremium ? '/checks' : '/upgrade')}
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.42 }}
+          >
+            <QuickActionCard
+              title="Messaggi"
+              description={unreadTotal > 0 ? `${unreadTotal} messaggi non letti` : "Parla con il tuo coach"}
+              icon={MessageCircle}
+              variant="green"
+              onClick={() => navigate('/messaggi')}
             />
           </motion.div>
 

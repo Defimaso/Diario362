@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, User, Shield, Trash2, Bell, Crown, Loader2 } from 'lucide-react';
+import { ArrowLeft, User, Shield, Trash2, Bell, Crown, Loader2, Timer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ import BottomDock from '@/components/BottomDock';
 
 const Settings = () => {
   const { user } = useAuth();
-  const { isPremium, plan, subscription, activateCode, isLoading: subLoading } = useSubscription();
+  const { isPremium, isTrial, trialDaysLeft, plan, subscription, activateCode, isLoading: subLoading } = useSubscription();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [code, setCode] = useState('');
@@ -131,7 +131,19 @@ const Settings = () => {
                   )}
                 </div>
 
-                {isPremium && subscription?.activated_at && (
+                {isTrial && (
+                  <div className="flex items-center justify-between py-2 text-sm border-t border-border">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Timer className="w-3.5 h-3.5" />
+                      Prova gratuita
+                    </span>
+                    <span className="text-amber-500 font-medium">
+                      {trialDaysLeft} giorni rimasti
+                    </span>
+                  </div>
+                )}
+
+                {isPremium && !isTrial && subscription?.activated_at && (
                   <div className="flex justify-between py-2 text-sm border-t border-border">
                     <span className="text-muted-foreground">Attivato il</span>
                     <span className="text-muted-foreground">

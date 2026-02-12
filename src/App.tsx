@@ -17,6 +17,7 @@ import Settings from "./pages/Settings";
 import Inizia from "./pages/Inizia";
 import Guida from "./pages/Guida";
 import Upgrade from "./pages/Upgrade";
+import Messaggi from "./pages/Messaggi";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 
@@ -45,6 +46,7 @@ const App = () => (
             <Route path="/inizia" element={<Inizia />} />
             <Route path="/guida" element={<Guida />} />
             <Route path="/upgrade" element={<Upgrade />} />
+            <Route path="/messaggi" element={<Messaggi />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>

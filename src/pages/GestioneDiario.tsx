@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target, Key, Crown, Copy, Loader2 } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target, Key, Crown, Copy, Loader2, BarChart3, Trophy, Send } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -44,6 +44,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCoachNotes } from "@/hooks/useCoachNotes";
 import CoachNotesDialog from "@/components/CoachNotesDialog";
 import ClientExpandedView from "@/components/ClientExpandedView";
+import CoachAnalytics from "@/components/CoachAnalytics";
+import { useChallenges } from "@/hooks/useChallenges";
+import { Textarea } from "@/components/ui/textarea";
 
 // WhatsApp SVG Icon Component
 const WhatsAppIcon = ({ className }: { className?: string }) => (
@@ -85,6 +88,25 @@ const GestioneDiario = () => {
   const [isGeneratingCodes, setIsGeneratingCodes] = useState(false);
   const [existingCodes, setExistingCodes] = useState<Array<{ code: string; is_used: boolean; used_by: string | null; created_at: string }>>([]);
   const [showExistingCodes, setShowExistingCodes] = useState(false);
+
+  // Analytics view state
+  const [showAnalytics, setShowAnalytics] = useState(false);
+
+  // Challenge creation state
+  const [challengeDialogOpen, setChallengeDialogOpen] = useState(false);
+  const [challengeTitle, setChallengeTitle] = useState('');
+  const [challengeDesc, setChallengeDesc] = useState('');
+  const [challengeTarget, setChallengeTarget] = useState(7);
+  const [challengeDays, setChallengeDays] = useState(7);
+  const [challengeEmoji, setChallengeEmoji] = useState('🏆');
+  const [isCreatingChallenge, setIsCreatingChallenge] = useState(false);
+  const { createChallenge } = useChallenges();
+
+  // Quick message state
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
+  const [messageClient, setMessageClient] = useState<ClientData | null>(null);
+  const [messageContent, setMessageContent] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -357,6 +379,62 @@ const GestioneDiario = () => {
     toast({ title: 'Copiato!', description: 'Codici copiati negli appunti' });
   };
 
+  // Create a new challenge
+  const handleCreateChallenge = async () => {
+    if (!challengeTitle.trim()) return;
+    setIsCreatingChallenge(true);
+
+    const endsAt = new Date();
+    endsAt.setDate(endsAt.getDate() + challengeDays);
+
+    const { error } = await createChallenge({
+      title: challengeTitle,
+      description: challengeDesc || undefined,
+      type: challengeDays <= 7 ? 'weekly' : challengeDays <= 31 ? 'monthly' : 'custom',
+      target_value: challengeTarget,
+      target_metric: 'checkin_streak',
+      ends_at: endsAt.toISOString(),
+      badge_emoji: challengeEmoji,
+      badge_name: challengeTitle,
+    });
+
+    setIsCreatingChallenge(false);
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Errore', description: error });
+    } else {
+      toast({ title: 'Sfida creata!', description: `"${challengeTitle}" e' ora attiva` });
+      setChallengeDialogOpen(false);
+      setChallengeTitle('');
+      setChallengeDesc('');
+    }
+  };
+
+  // Send quick message to a client
+  const handleSendMessage = async () => {
+    if (!user || !messageClient || !messageContent.trim()) return;
+    setIsSendingMessage(true);
+
+    const { error } = await supabase
+      .from('messages' as any)
+      .insert({
+        sender_id: user.id,
+        receiver_id: messageClient.id,
+        content: messageContent.trim(),
+      } as any);
+
+    setIsSendingMessage(false);
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Errore', description: 'Impossibile inviare il messaggio' });
+    } else {
+      toast({ title: 'Messaggio inviato!', description: `Messaggio inviato a ${messageClient.full_name}` });
+      setMessageDialogOpen(false);
+      setMessageContent('');
+      setMessageClient(null);
+    }
+  };
+
   // Admin grant premium to a specific client
   const grantPremium = async (clientId: string, clientName: string) => {
     const { error } = await supabase
@@ -405,6 +483,24 @@ const GestioneDiario = () => {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setShowAnalytics(!showAnalytics)}
+              className={cn("text-muted-foreground hover:text-foreground", showAnalytics && "text-primary")}
+              title="Analytics"
+            >
+              <BarChart3 className="w-5 h-5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setChallengeDialogOpen(true)}
+              className="text-muted-foreground hover:text-foreground"
+              title="Crea Sfida"
+            >
+              <Trophy className="w-5 h-5" />
+            </Button>
             <Button
               variant="ghost"
               size="icon"
@@ -491,6 +587,18 @@ const GestioneDiario = () => {
             <div className="text-[10px] text-muted-foreground">Streak medio</div>
           </div>
         </motion.div>
+
+        {/* Advanced Analytics Panel */}
+        {showAnalytics && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="mb-6"
+          >
+            <CoachAnalytics clients={clients} coachFilter={coachFilter} />
+          </motion.div>
+        )}
 
         {/* Filters */}
         <motion.div
@@ -735,6 +843,17 @@ const GestioneDiario = () => {
                             Task Academy
                           </Button>
 
+                          {/* Send Message Button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-blue-500/40 text-blue-500 hover:bg-blue-500/10"
+                            onClick={() => { setMessageClient(client); setMessageContent(''); setMessageDialogOpen(true); }}
+                          >
+                            <Send className="w-4 h-4 mr-1.5" />
+                            Messaggio
+                          </Button>
+
                           {/* Coach Notes Button */}
                           <Button
                             size="sm"
@@ -943,6 +1062,123 @@ const GestioneDiario = () => {
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Challenge Creation Dialog */}
+      <Dialog open={challengeDialogOpen} onOpenChange={setChallengeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              Crea Nuova Sfida
+            </DialogTitle>
+            <DialogDescription>
+              Crea una sfida per motivare i tuoi clienti
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Titolo</label>
+              <Input
+                placeholder="Es. 7 giorni di check-in consecutivi"
+                value={challengeTitle}
+                onChange={(e) => setChallengeTitle(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Descrizione (opzionale)</label>
+              <Textarea
+                placeholder="Descrivi la sfida..."
+                value={challengeDesc}
+                onChange={(e) => setChallengeDesc(e.target.value)}
+                className="min-h-[60px]"
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-sm font-medium">Target</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={challengeTarget}
+                  onChange={(e) => setChallengeTarget(parseInt(e.target.value) || 7)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Giorni</label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={90}
+                  value={challengeDays}
+                  onChange={(e) => setChallengeDays(parseInt(e.target.value) || 7)}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Emoji</label>
+                <Input
+                  value={challengeEmoji}
+                  onChange={(e) => setChallengeEmoji(e.target.value)}
+                  className="text-center text-xl"
+                />
+              </div>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleCreateChallenge}
+              disabled={isCreatingChallenge || !challengeTitle.trim()}
+            >
+              {isCreatingChallenge ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creazione...</>
+              ) : (
+                'Crea Sfida'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Quick Message Dialog */}
+      <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Send className="w-5 h-5 text-blue-500" />
+              Messaggio a {messageClient?.full_name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Textarea
+              placeholder="Scrivi il tuo messaggio..."
+              value={messageContent}
+              onChange={(e) => setMessageContent(e.target.value)}
+              className="min-h-[100px]"
+            />
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setMessageDialogOpen(false)}
+              >
+                Annulla
+              </Button>
+              <Button
+                className="flex-1"
+                onClick={handleSendMessage}
+                disabled={isSendingMessage || !messageContent.trim()}
+              >
+                {isSendingMessage ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Invio...</>
+                ) : (
+                  <><Send className="w-4 h-4 mr-2" />Invia</>
+                )}
+              </Button>
             </div>
           </div>
         </DialogContent>
