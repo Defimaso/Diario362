@@ -612,6 +612,36 @@ const GestioneDiario = () => {
                                       🔥 {client.streak}
                                     </span>
                                   )}
+                                  {client.need_profile && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="text-xs bg-accent/10 text-accent-foreground px-2 py-0.5 rounded-full shrink-0 cursor-help">
+                                          {client.need_profile === 'significance' && '⭐'}
+                                          {client.need_profile === 'intelligence' && '🧠'}
+                                          {client.need_profile === 'acceptance' && '🤝'}
+                                          {client.need_profile === 'approval' && '🏆'}
+                                          {client.need_profile === 'power' && '💪'}
+                                          {client.need_profile === 'pity' && '🔥'}
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p className="font-semibold">Profilo: {
+                                          client.need_profile === 'significance' ? 'Il Protagonista' :
+                                          client.need_profile === 'intelligence' ? 'Lo Stratega' :
+                                          client.need_profile === 'acceptance' ? 'Il Connettore' :
+                                          client.need_profile === 'approval' ? "L'Eccellente" :
+                                          client.need_profile === 'power' ? 'Il Leader' :
+                                          client.need_profile === 'pity' ? 'Il Resiliente' : ''
+                                        }</p>
+                                        <p className="text-muted-foreground text-xs">Provenienza: quiz 362gradi.ae</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
+                                  {client.referral_source && (
+                                    <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
+                                      via {client.referral_source}
+                                    </span>
+                                  )}
                                 </div>
                                 {isSuperAdmin && client.coach_names.length > 0 && (
                                   <p className="text-xs text-primary">

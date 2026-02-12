@@ -9,6 +9,8 @@ export interface ClientData {
   phone_number: string | null;
   coach_names: string[];
   streak: number;
+  need_profile: string | null;
+  referral_source: string | null;
   last_checkin: {
     date: string;
     recovery: number | null;
@@ -154,6 +156,8 @@ export const useAdminClients = () => {
           email: profile.email,
           full_name: profile.full_name || profile.email,
           phone_number: profile.phone_number || null,
+          need_profile: (profile as any).need_profile || null,
+          referral_source: (profile as any).referral_source || null,
           coach_names: coachNames,
           streak: calculateStreak(userCheckins),
           last_checkin: lastCheckin ? {

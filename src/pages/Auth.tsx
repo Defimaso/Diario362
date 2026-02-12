@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Smartphone } from 'lucide-react';
+import { Mail, Lock, User, Eye, EyeOff, AlertCircle, Smartphone, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -61,12 +61,29 @@ const coaches = [
   'Cristina'
 ];
 
+// Nomi profilo 6-needs per il banner di benvenuto
+const needProfileNames: Record<string, string> = {
+  significance: 'Il Protagonista',
+  intelligence: 'Lo Stratega',
+  acceptance: 'Il Connettore',
+  approval: "L'Eccellente",
+  power: 'Il Leader',
+  pity: 'Il Resiliente',
+};
+
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [searchParams] = useSearchParams();
+  const refSource = searchParams.get('ref');
+  const needProfile = searchParams.get('profile');
+  const prefillName = searchParams.get('name');
+  const prefillEmail = searchParams.get('email');
+  const isFromQuiz = refSource === 'quiz';
+
+  const [isLogin, setIsLogin] = useState(!isFromQuiz);
   const [isCollaborator, setIsCollaborator] = useState(false);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(prefillEmail || '');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [fullName, setFullName] = useState(prefillName || '');
   const [phoneNumber, setPhoneNumber] = useState('+39');
   const [coachName, setCoachName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -211,6 +228,17 @@ const Auth = () => {
               : error.message,
           });
         } else {
+          // Salva il profilo 6-needs e referral source se proviene dal quiz
+          if (needProfile || refSource) {
+            const { data: { user: newUser } } = await supabase.auth.getUser();
+            if (newUser) {
+              await supabase.from('profiles').update({
+                need_profile: needProfile || null,
+                referral_source: refSource || null,
+              } as any).eq('id', newUser.id);
+            }
+          }
+
           toast({
             title: 'Registrazione completata!',
             description: 'Benvenuto nel Diario 362gradi',
@@ -241,6 +269,25 @@ const Auth = () => {
           </h1>
           <p className="text-muted-foreground mt-2">Il Diario del tuo 2% Extra</p>
         </div>
+
+        {/* Welcome banner for quiz referrals */}
+        {isFromQuiz && needProfile && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-4 p-4 rounded-2xl bg-primary/10 border border-primary/20"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <p className="text-sm font-semibold text-foreground">
+                Benvenuto, {needProfileNames[needProfile] || 'profilo'}!
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Registrati per iniziare a tracciare i tuoi progressi con il Diario 362gradi. E' gratuito!
+            </p>
+          </motion.div>
+        )}
 
         {/* Card */}
         <div className="card-elegant p-6 rounded-2xl">
