@@ -240,6 +240,40 @@ Deno.serve(async (req) => {
       console.error('[send-quiz-email] DB error:', dbError)
     }
 
+    // ─── 4. Aggiungi lead a MailerLite (per nurturing sequence) ───
+    const MAILERLITE_API_KEY = Deno.env.get('MAILERLITE_API_KEY')
+    if (MAILERLITE_API_KEY) {
+      try {
+        const mlResponse = await fetch('https://connect.mailerlite.com/api/subscribers', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${MAILERLITE_API_KEY}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            fields: {
+              name: name || '',
+              last_name: '',
+              need_profile: needProfile,
+              profile_name: profileName || profile.subject,
+            },
+            groups: ['179312799620531759'], // Quiz Leads group
+            status: 'active',
+          }),
+        })
+        const mlData = await mlResponse.json()
+        if (mlResponse.ok) {
+          console.log('[send-quiz-email] MailerLite: subscriber added', mlData?.data?.id)
+        } else {
+          console.error('[send-quiz-email] MailerLite error:', mlData)
+        }
+      } catch (mlErr) {
+        console.error('[send-quiz-email] MailerLite network error:', mlErr)
+      }
+    }
+
     if (!emailSent) {
       return new Response(
         JSON.stringify({ error: 'Email send failed', details: resendData, leadSaved: !dbError }),
