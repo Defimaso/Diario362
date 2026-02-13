@@ -8,9 +8,10 @@ import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 
 const benefits = [
-  'Piano alimentare personalizzato (Nutrizione)',
-  'Documenti e materiali del coach',
-  'Video allenamenti con correzioni',
+  'Un coach dedicato: trainer e nutrizionista',
+  'Allenamento personalizzato',
+  'Piano alimentare su misura',
+  'Assistenza continua e correzioni video',
   'Tracking progressi con foto e peso',
   'Statistiche avanzate e grafici settimanali',
 ];
