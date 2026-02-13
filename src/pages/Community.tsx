@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCommunityPosts } from '@/hooks/useCommunityPosts';
 import BottomDock from '@/components/BottomDock';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -27,6 +28,7 @@ function timeAgo(dateStr: string): string {
 export default function Community() {
   const { user } = useAuth();
   const { posts, loading, isStaff, createPost, deletePost } = useCommunityPosts();
+  const { toast } = useToast();
   const [content, setContent] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,7 +46,14 @@ export default function Community() {
     if (!content.trim() || isSubmitting) return;
     setIsSubmitting(true);
     const result = await createPost(content, isAnonymous);
-    if (!result.error) {
+    if (result.error) {
+      console.error('Community post error:', result.error);
+      toast({
+        title: 'Errore',
+        description: result.error,
+        variant: 'destructive',
+      });
+    } else {
       setContent('');
     }
     setIsSubmitting(false);

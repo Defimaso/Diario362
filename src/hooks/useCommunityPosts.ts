@@ -105,7 +105,10 @@ export function useCommunityPosts() {
         anonymous_nickname: nickname,
       } as any);
 
-    if (error) return { error: error.message };
+    if (error) {
+      console.error('Supabase community_posts insert error:', error);
+      return { error: error.message };
+    }
 
     // Refresh will happen via realtime, but also fetch to be safe
     await fetchPosts();
