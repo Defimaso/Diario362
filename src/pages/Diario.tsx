@@ -26,7 +26,7 @@ import { useMessages } from "@/hooks/useMessages";
 import WeeklyRecapCard from "@/components/WeeklyRecapCard";
 import ChallengeCard from "@/components/ChallengeCard";
 import JourneyTimeline from "@/components/JourneyTimeline";
-import LeaderboardView from "@/components/LeaderboardView";
+import CommunityFeed from "@/components/CommunityFeed";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -450,14 +450,14 @@ const Diario = () => {
           <JourneyTimeline streak={streak} totalCheckins={totalCheckins} />
         </motion.section>
 
-        {/* Leaderboard */}
+        {/* Community */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.39 }}
           className="mb-6 sm:mb-8"
         >
-          <LeaderboardView />
+          <CommunityFeed />
         </motion.section>
 
         {/* Quick Actions */}

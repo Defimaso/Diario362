@@ -20,6 +20,7 @@ import Upgrade from "./pages/Upgrade";
 import Messaggi from "./pages/Messaggi";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ScrollToTop from "./components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
             <Route path="/" element={<Navigate to="/diario" replace />} />
             <Route path="/auth" element={<Auth />} />
