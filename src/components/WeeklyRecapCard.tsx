@@ -4,9 +4,30 @@ import { useWeeklyRecap } from '@/hooks/useWeeklyRecap';
 
 const DeltaIndicator = ({ value }: { value: number | null }) => {
   if (value === null) return null;
-  if (value > 0) return <span className="text-green-500 text-xs font-medium flex items-center gap-0.5"><TrendingUp className="w-3 h-3" />+{value}</span>;
-  if (value < 0) return <span className="text-red-500 text-xs font-medium flex items-center gap-0.5"><TrendingDown className="w-3 h-3" />{value}</span>;
-  return <span className="text-muted-foreground text-xs flex items-center gap-0.5"><Minus className="w-3 h-3" />0</span>;
+  if (value > 0) return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-green-400">
+      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-green-500/15 shadow-[0_0_6px_rgba(34,197,94,0.3)]">
+        <TrendingUp className="w-3 h-3" />
+      </span>
+      +{value}
+    </span>
+  );
+  if (value < 0) return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-red-400">
+      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-red-500/15 shadow-[0_0_6px_rgba(239,68,68,0.3)]">
+        <TrendingDown className="w-3 h-3" />
+      </span>
+      {value}
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+      <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted/50">
+        <Minus className="w-3 h-3" />
+      </span>
+      0
+    </span>
+  );
 };
 
 export default function WeeklyRecapCard() {

@@ -412,7 +412,7 @@ const Diario = () => {
             transition={{ delay: 0.32 }}
             className="mb-6 sm:mb-8"
           >
-            <DiarioPensieri checkins={checkins} />
+            <DiarioPensieri checkins={checkins} onDelete={refetch} />
           </motion.section>
         )}
 

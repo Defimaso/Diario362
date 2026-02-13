@@ -1,17 +1,37 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, ChevronDown, ChevronUp, Calendar, Sparkles } from 'lucide-react';
+import { BookOpen, ChevronDown, ChevronUp, Calendar, Sparkles, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { DailyCheckin } from '@/hooks/useCheckins';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 interface DiarioPensieriProps {
   checkins: DailyCheckin[];
+  onDelete?: () => void;
 }
 
-const DiarioPensieri = ({ checkins }: DiarioPensieriProps) => {
+const DiarioPensieri = ({ checkins, onDelete }: DiarioPensieriProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  const handleDelete = async (checkinId: string) => {
+    setDeletingId(checkinId);
+    const { error } = await supabase
+      .from('daily_checkins')
+      .update({ two_percent_edge: null })
+      .eq('id', checkinId);
+
+    if (error) {
+      toast({ title: 'Errore', description: 'Impossibile eliminare il pensiero', variant: 'destructive' });
+    } else {
+      onDelete?.();
+    }
+    setDeletingId(null);
+  };
 
   // Filter only checkins that have a two_percent_edge text (non-empty)
   const diaryEntries = checkins.filter(
@@ -53,13 +73,22 @@ const DiarioPensieri = ({ checkins }: DiarioPensieriProps) => {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ delay: index * 0.05 }}
-                  className="relative pl-4 border-l-2 border-primary/30"
+                  className="group relative pl-4 border-l-2 border-primary/30"
                 >
-                  <div className="flex items-center gap-2 mb-1">
-                    <Calendar className="w-3 h-3 text-muted-foreground" />
-                    <span className="text-xs font-medium text-muted-foreground">
-                      {format(new Date(entry.date), "EEEE d MMMM yyyy", { locale: it })}
-                    </span>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-3 h-3 text-muted-foreground" />
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {format(new Date(entry.date), "EEEE d MMMM yyyy", { locale: it })}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleDelete(entry.id)}
+                      disabled={deletingId === entry.id}
+                      className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive"
+                    >
+                      <Trash2 className={cn("w-3.5 h-3.5", deletingId === entry.id && "animate-pulse")} />
+                    </button>
                   </div>
                   <p className="text-sm text-foreground leading-relaxed">
                     {entry.two_percent_edge}
