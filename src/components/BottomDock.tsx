@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardCheck, Apple, Dumbbell, TrendingUp, FileText, WifiOff, Lock, Users } from 'lucide-react';
+import { ClipboardCheck, FolderOpen, TrendingUp, WifiOff, Lock, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVideoCorrections } from '@/hooks/useVideoCorrections';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -15,8 +15,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { path: '/diario', icon: ClipboardCheck, label: 'Diario' },
   { path: '/community', icon: Users, label: 'Community' },
-  { path: '/nutrizione', icon: Apple, label: 'Nutrizione', premium: true },
-  { path: '/allenamento', icon: Dumbbell, label: 'Allenamento', premium: true },
+  { path: '/area-personale', icon: FolderOpen, label: 'Materiali', premium: true },
   { path: '/progressi', icon: TrendingUp, label: 'Progressi', premium: true },
 ];
 
@@ -47,7 +46,7 @@ const BottomDock = () => {
             const isLocked = item.premium && !isPremium;
             const isActive = !isLocked && location.pathname === item.path;
             const Icon = item.icon;
-            const showBadge = item.path === '/allenamento' && unreadCount > 0 && !isLocked;
+            const showBadge = item.path === '/area-personale' && unreadCount > 0 && !isLocked;
 
             return (
               <button

@@ -8,9 +8,7 @@ import Auth from "./pages/Auth";
 import Diario from "./pages/Diario";
 import GestioneDiario from "./pages/GestioneDiario";
 import Checks from "./pages/Checks";
-import Nutrizione from "./pages/Nutrizione";
-import Documenti from "./pages/Documenti";
-import AllenamentoRedesign from "./pages/AllenamentoRedesign";
+import AreaPersonale from "./pages/AreaPersonale";
 import Progressi from "./pages/Progressi";
 import InstallApp from "./pages/InstallApp";
 import Settings from "./pages/Settings";
@@ -40,9 +38,10 @@ const App = () => (
             <Route path="/diario" element={<Diario />} />
             <Route path="/gestionediario" element={<GestioneDiario />} />
             <Route path="/checks" element={<Checks />} />
-            <Route path="/nutrizione" element={<Nutrizione />} />
-            <Route path="/documenti" element={<Documenti />} />
-            <Route path="/allenamento" element={<AllenamentoRedesign />} />
+            <Route path="/area-personale" element={<AreaPersonale />} />
+            <Route path="/nutrizione" element={<Navigate to="/area-personale" replace />} />
+            <Route path="/documenti" element={<Navigate to="/area-personale" replace />} />
+            <Route path="/allenamento" element={<Navigate to="/area-personale" replace />} />
             <Route path="/progressi" element={<Progressi />} />
             <Route path="/install" element={<InstallApp />} />
             <Route path="/settings" element={<Settings />} />
