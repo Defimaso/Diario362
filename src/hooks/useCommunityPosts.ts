@@ -74,19 +74,16 @@ export function useCommunityPosts() {
   }, []);
 
   const fetchPosts = useCallback(async () => {
-    const { data, error } = await supabase
-      .from('community_posts' as any)
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
+    const { data, error } = await (supabase.rpc as any)('get_community_posts', { lim: 50 });
 
     if (error || !data) {
+      console.error('get_community_posts RPC error:', error);
       setPosts([]);
       setLoading(false);
       return;
     }
 
-    const resolved = await resolvePosts(data as any[]);
+    const resolved = await resolvePosts(data as unknown as any[]);
     setPosts(resolved);
     setLoading(false);
   }, [resolvePosts]);
@@ -96,21 +93,17 @@ export function useCommunityPosts() {
 
     const nickname = isAnonymous ? generateNickname(user.id) : null;
 
-    const { error } = await supabase
-      .from('community_posts' as any)
-      .insert({
-        user_id: user.id,
-        content: content.trim(),
-        is_anonymous: isAnonymous,
-        anonymous_nickname: nickname,
-      } as any);
+    const { error } = await (supabase.rpc as any)('create_community_post', {
+      p_content: content.trim(),
+      p_is_anonymous: isAnonymous,
+      p_anonymous_nickname: nickname,
+    });
 
     if (error) {
-      console.error('Supabase community_posts insert error:', error);
+      console.error('create_community_post RPC error:', error);
       return { error: error.message };
     }
 
-    // Refresh will happen via realtime, but also fetch to be safe
     await fetchPosts();
     return { error: null };
   }, [user, fetchPosts]);
@@ -118,10 +111,10 @@ export function useCommunityPosts() {
   const deletePost = useCallback(async (postId: string) => {
     if (!user) return;
 
-    await supabase
-      .from('community_posts' as any)
-      .delete()
-      .eq('id', postId);
+    const { error } = await (supabase.rpc as any)('delete_community_post', { p_id: postId });
+    if (error) {
+      console.error('delete_community_post RPC error:', error);
+    }
 
     setPosts(prev => prev.filter(p => p.id !== postId));
   }, [user]);
@@ -141,7 +134,6 @@ export function useCommunityPosts() {
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'community_posts' },
         () => {
-          // Re-fetch to get resolved names and premium status
           fetchPosts();
         }
       )
