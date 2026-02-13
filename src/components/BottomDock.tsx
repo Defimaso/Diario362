@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ClipboardCheck, Apple, Dumbbell, TrendingUp, FileText, WifiOff, Lock } from 'lucide-react';
+import { ClipboardCheck, Apple, Dumbbell, TrendingUp, FileText, WifiOff, Lock, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useVideoCorrections } from '@/hooks/useVideoCorrections';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -14,8 +14,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { path: '/diario', icon: ClipboardCheck, label: 'Diario' },
+  { path: '/community', icon: Users, label: 'Community' },
   { path: '/nutrizione', icon: Apple, label: 'Nutrizione', premium: true },
-  { path: '/documenti', icon: FileText, label: 'Documenti', premium: true },
   { path: '/allenamento', icon: Dumbbell, label: 'Allenamento', premium: true },
   { path: '/progressi', icon: TrendingUp, label: 'Progressi', premium: true },
 ];

@@ -26,7 +26,6 @@ import { useMessages } from "@/hooks/useMessages";
 import WeeklyRecapCard from "@/components/WeeklyRecapCard";
 import ChallengeCard from "@/components/ChallengeCard";
 import JourneyTimeline from "@/components/JourneyTimeline";
-import CommunityFeed from "@/components/CommunityFeed";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -450,14 +449,26 @@ const Diario = () => {
           <JourneyTimeline streak={streak} totalCheckins={totalCheckins} />
         </motion.section>
 
-        {/* Community */}
+        {/* Community Link */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.39 }}
           className="mb-6 sm:mb-8"
         >
-          <CommunityFeed />
+          <button
+            onClick={() => navigate('/community')}
+            className="w-full card-elegant p-4 rounded-2xl flex items-center gap-3 hover:bg-muted/30 transition-colors"
+          >
+            <div className="p-2 rounded-lg bg-primary/10">
+              <Users className="w-5 h-5 text-primary" />
+            </div>
+            <div className="text-left flex-1">
+              <h3 className="font-semibold text-sm">Community</h3>
+              <p className="text-xs text-muted-foreground">Entra nella chat di gruppo</p>
+            </div>
+            <ChevronDown className="w-4 h-4 text-muted-foreground -rotate-90" />
+          </button>
         </motion.section>
 
         {/* Quick Actions */}
