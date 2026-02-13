@@ -142,7 +142,7 @@ const BadgeProgress = ({ streak, totalCheckins, className, compact = false }: Ba
               <span className="text-muted-foreground">{nextBadge.name}</span>
             </div>
             <span className="font-medium">
-              Mancano <span style={{ color: currentSolid }}>{checkinsToNext}</span> check-in
+              Mancano <span style={{ color: currentSolid }}>{checkinsToNext}</span> diari
             </span>
           </div>
           <Progress value={progress} className="h-2" />

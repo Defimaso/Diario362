@@ -49,7 +49,7 @@ const WeeklyChart = ({ data = [] }: WeeklyChartProps) => {
       >
         <h3 className="font-semibold mb-4">Progresso Settimanale</h3>
         <div className="h-[120px] flex items-center justify-center text-muted-foreground text-sm">
-          Completa i check-in per vedere il tuo progresso
+          Completa i diari per vedere il tuo progresso
         </div>
       </motion.div>
     );

@@ -91,7 +91,7 @@ export function PushNotificationToggle({ variant = 'card' }: PushNotificationTog
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-muted-foreground" />
           <Label htmlFor="push-notifications" className="text-sm">
-            Promemoria check-in
+            Promemoria diario
           </Label>
         </div>
         {isLoading ? (
@@ -116,7 +116,7 @@ export function PushNotificationToggle({ variant = 'card' }: PushNotificationTog
         </CardTitle>
         <CardDescription>
           {isSubscribed 
-            ? 'Riceverai un promemoria se non hai compilato il check-in' 
+            ? 'Riceverai un promemoria se non hai compilato il diario' 
             : 'Attiva le notifiche per ricevere promemoria giornalieri'}
         </CardDescription>
       </CardHeader>

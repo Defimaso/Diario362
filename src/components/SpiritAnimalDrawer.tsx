@@ -203,7 +203,7 @@ const SpiritAnimalDrawer = ({
               <div className="bg-background/50 rounded-lg p-3">
                 <p className="text-lg font-bold text-foreground">
                   {checkinsRemaining > 0 
-                    ? `Mancano ancora ${checkinsRemaining} check-in`
+                    ? `Mancano ancora ${checkinsRemaining} diari`
                     : 'Quasi sbloccato!'
                   }
                 </p>

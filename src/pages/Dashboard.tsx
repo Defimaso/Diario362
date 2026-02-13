@@ -90,7 +90,7 @@ const Dashboard = () => {
             transition={{ delay: 0.4 }}
           >
             <QuickActionCard
-              title="Check-in Giornaliero"
+              title="Diario Giornaliero"
               description={hasCheckedInToday ? "Completato oggi ✓" : "Registra il tuo progresso"}
               icon={ClipboardCheck}
               variant={hasCheckedInToday ? "default" : "primary"}

@@ -306,7 +306,7 @@ const GestioneDiario = () => {
 
   // CSV Export function
   const exportCSV = () => {
-    const headers = ['Nome', 'Email', 'Telefono', 'Coach', 'Status', 'Streak', 'Ultimo Check-in', 'Recovery', 'Energy', 'Mindset'];
+    const headers = ['Nome', 'Email', 'Telefono', 'Coach', 'Status', 'Streak', 'Ultimo Diario', 'Recovery', 'Energy', 'Mindset'];
     const rows = filteredClients.map(c => [
       c.full_name,
       c.email,
@@ -683,7 +683,7 @@ const GestioneDiario = () => {
                           {isAtRisk && (
                             <div className="flex items-center gap-2 mb-3 p-2 rounded-lg bg-warning/10 text-warning text-xs">
                               <AlertCircle className="w-4 h-4 shrink-0" />
-                              <span>Rischio abbandono: {daysSince} giorni senza check-in</span>
+                              <span>Rischio abbandono: {daysSince} giorni senza diario</span>
                             </div>
                           )}
                           
@@ -959,7 +959,7 @@ const GestioneDiario = () => {
                   <strong className="text-destructive">ATTENZIONE:</strong> Questa azione eliminerà definitivamente:
                   <ul className="list-disc ml-5 mt-2 space-y-1">
                     <li>Il profilo utente</li>
-                    <li>Tutti i check-in</li>
+                    <li>Tutti i diari</li>
                     <li>Lo storico dei dati</li>
                     <li>Le note coach</li>
                   </ul>
@@ -1084,7 +1084,7 @@ const GestioneDiario = () => {
             <div>
               <label className="text-sm font-medium">Titolo</label>
               <Input
-                placeholder="Es. 7 giorni di check-in consecutivi"
+                placeholder="Es. 7 giorni di diario consecutivi"
                 value={challengeTitle}
                 onChange={(e) => setChallengeTitle(e.target.value)}
               />

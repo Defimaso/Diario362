@@ -166,7 +166,7 @@ export default function CoachAnalytics({ clients, coachFilter }: CoachAnalyticsP
                 <div key={c.id} className="flex items-center justify-between text-sm">
                   <span className="truncate">{c.full_name}</span>
                   <span className="text-xs text-red-500 font-medium shrink-0 ml-2">
-                    {days === 999 ? 'Mai' : `${days}gg`} senza check-in
+                    {days === 999 ? 'Mai' : `${days}gg`} senza diario
                   </span>
                 </div>
               );

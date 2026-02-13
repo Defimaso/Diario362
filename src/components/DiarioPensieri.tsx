@@ -39,7 +39,7 @@ const DiarioPensieri = ({ checkins }: DiarioPensieriProps) => {
           <Sparkles className="w-10 h-10 mx-auto text-muted-foreground/30 mb-2" />
           <p className="text-sm text-muted-foreground">Nessun pensiero ancora</p>
           <p className="text-xs text-muted-foreground/70 mt-1">
-            Scrivi qualcosa nel tuo check-in giornaliero per vederlo qui
+            Scrivi qualcosa nel tuo diario giornaliero per vederlo qui
           </p>
         </div>
       ) : (

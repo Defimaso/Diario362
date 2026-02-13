@@ -61,7 +61,7 @@ const Guida = () => {
 
               <p className="text-sm text-muted-foreground mb-4">
                 Ricevi notifiche in tempo reale quando il tuo coach ti scrive, carica un piano alimentare,
-                o risponde ai tuoi video. I coach ricevono notifiche quando un cliente compila il check-in o invia foto.
+                o risponde ai tuoi video. I coach ricevono notifiche quando un cliente compila il diario o invia foto.
               </p>
 
               <div className="space-y-3 mb-5">
@@ -130,7 +130,7 @@ const Guida = () => {
                   <AccordionTrigger className="hover:no-underline">
                     <div className="flex items-center gap-3">
                       <ClipboardCheck className="w-5 h-5 text-[hsl(var(--section-red))]" />
-                      <span>Diario & Check-in Giornaliero</span>
+                      <span>Diario Giornaliero</span>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
@@ -141,7 +141,7 @@ const Guida = () => {
                         <ul className="space-y-1.5 pl-4">
                           <li className="flex items-start gap-2">
                             <span className="text-primary mt-1">•</span>
-                            <span><strong>Check-in giornaliero:</strong> Ogni giorno compila il tuo check-in per registrare recupero, energia, mindset, aderenza nutrizionale e il tuo "2% Edge" (la cosa in piu' che hai fatto oggi).</span>
+                            <span><strong>Diario giornaliero:</strong> Ogni giorno compila il tuo diario per registrare recupero, energia, mindset, aderenza nutrizionale e il tuo "2% Edge" (la cosa in piu' che hai fatto oggi).</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary mt-1">•</span>
@@ -149,7 +149,7 @@ const Guida = () => {
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary mt-1">•</span>
-                            <span><strong>Streak:</strong> I giorni consecutivi di check-in. Piu' lunga e' la streak, piu' badges sblocchi!</span>
+                            <span><strong>Streak:</strong> I giorni consecutivi di diario. Piu' lunga e' la streak, piu' badges sblocchi!</span>
                           </li>
                           <li className="flex items-start gap-2">
                             <span className="text-primary mt-1">•</span>
@@ -353,7 +353,7 @@ const Guida = () => {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="space-y-3 text-muted-foreground">
-                      <p>Ogni giorno che compili il check-in la tua streak cresce. Piu' giorni consecutivi = badges migliori!</p>
+                      <p>Ogni giorno che compili il diario la tua streak cresce. Piu' giorni consecutivi = badges migliori!</p>
                       <div className="space-y-2">
                         <p className="font-medium text-foreground">I livelli:</p>
                         <div className="grid grid-cols-2 gap-2">

@@ -483,10 +483,10 @@ const Diario = () => {
           >
             <QuickActionCard
               title="Messaggi"
-              description={unreadTotal > 0 ? `${unreadTotal} messaggi non letti` : "Parla con il tuo coach"}
-              icon={MessageCircle}
+              description={isPremium ? (unreadTotal > 0 ? `${unreadTotal} messaggi non letti` : "Parla con il tuo coach") : "Premium - Sblocca per accedere"}
+              icon={isPremium ? MessageCircle : Lock}
               variant="green"
-              onClick={() => navigate('/messaggi')}
+              onClick={() => navigate(isPremium ? '/messaggi' : '/upgrade')}
             />
           </motion.div>
 
@@ -497,15 +497,17 @@ const Diario = () => {
           >
             <QuickActionCard
               title="Area Privata Teachable"
-              description="Accedi alla tua libreria di formazione"
-              icon={GraduationCap}
+              description={isPremium ? "Accedi alla tua libreria di formazione" : "Premium - Sblocca per accedere"}
+              icon={isPremium ? GraduationCap : Lock}
               variant="orange"
-              onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
+              onClick={() => isPremium ? window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank') : navigate('/upgrade')}
             />
-            <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">
-              <Info className="w-3 h-3" />
-              Usa le stesse credenziali di Teachable
-            </p>
+            {isPremium && (
+              <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                Usa le stesse credenziali di Teachable
+              </p>
+            )}
           </motion.div>
 
           <motion.div
@@ -515,15 +517,17 @@ const Diario = () => {
           >
             <QuickActionCard
               title="Nutrium"
-              description="Accedi al tuo piano alimentare"
-              icon={Apple}
+              description={isPremium ? "Accedi al tuo piano alimentare" : "Premium - Sblocca per accedere"}
+              icon={isPremium ? Apple : Lock}
               variant="purple"
-              onClick={() => window.open('https://app.nutrium.com/', '_blank')}
+              onClick={() => isPremium ? window.open('https://app.nutrium.com/', '_blank') : navigate('/upgrade')}
             />
-            <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">
-              <Info className="w-3 h-3" />
-              Usa le stesse credenziali di Nutrium
-            </p>
+            {isPremium && (
+              <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                Usa le stesse credenziali di Nutrium
+              </p>
+            )}
           </motion.div>
 
           <motion.div

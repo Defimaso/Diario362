@@ -42,7 +42,7 @@ export default function WeeklyRecapCard() {
         {/* Check-ins */}
         <div className="text-center">
           <div className="text-2xl font-bold text-primary tabular-nums">{currentRecap.total_checkins}</div>
-          <div className="text-[10px] text-muted-foreground mt-1">Check-in</div>
+          <div className="text-[10px] text-muted-foreground mt-1">Diari</div>
           <div className="text-[10px] text-muted-foreground">/7 giorni</div>
         </div>
 
@@ -79,7 +79,7 @@ export default function WeeklyRecapCard() {
 
       {previousRecap && (
         <div className="mt-3 pt-3 border-t border-border text-xs text-muted-foreground text-center">
-          Settimana scorsa: {previousRecap.total_checkins} check-in | R:{previousRecap.avg_recovery} E:{previousRecap.avg_energy} M:{previousRecap.avg_mindset}
+          Settimana scorsa: {previousRecap.total_checkins} diari | R:{previousRecap.avg_recovery} E:{previousRecap.avg_energy} M:{previousRecap.avg_mindset}
         </div>
       )}
     </motion.div>

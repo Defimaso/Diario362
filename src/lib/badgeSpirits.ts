@@ -11,7 +11,7 @@ export const SPIRIT_CONTENTS: Record<number, SpiritContent> = {
   1: {
     traits: ['Coraggio', 'Leadership', 'Protezione', 'Nobiltà'],
     description: 'Il Leone è il re della savana. Con la sua criniera maestosa, simboleggia il coraggio di iniziare un nuovo percorso. Ogni grande viaggio inizia con un singolo passo coraggioso.',
-    unlockMessage: 'Completa il tuo primo check-in per risvegliare lo spirito del Leone',
+    unlockMessage: 'Completa il tuo primo diario per risvegliare lo spirito del Leone',
   },
   2: {
     traits: ['Costanza', 'Pazienza', 'Saggezza', 'Longevità'],
@@ -106,7 +106,7 @@ export const SPIRIT_CONTENTS: Record<number, SpiritContent> = {
   20: {
     traits: ['Maestria', 'Potenza', 'Determinazione', 'Immortalità'],
     description: 'Il Toro 362° è lo stato supremo di maestria. Hai trasceso i limiti ordinari e raggiunto ciò che pochi osano sognare. Sei diventato il Toro.',
-    unlockMessage: 'Solo 300 check-in totali sbloccano il leggendario Toro 362°',
+    unlockMessage: 'Solo 300 diari totali sbloccano il leggendario Toro 362°',
   },
 };
 

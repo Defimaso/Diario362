@@ -107,7 +107,7 @@ export default function LeaderboardView() {
                     {entry.user_id === user?.id && ' (tu)'}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {entry.total_checkins} check-in totali
+                    {entry.total_checkins} diari totali
                   </p>
                 </div>
               </div>

@@ -20,7 +20,7 @@ const SendNotificationButton = ({ clientId, clientName }: SendNotificationButton
         body: {
           userId: clientId,
           title: '📢 Promemoria dal tuo Coach',
-          body: 'Non dimenticare di compilare il tuo check-in giornaliero!',
+          body: 'Non dimenticare di compilare il tuo diario giornaliero!',
           data: { url: '/diario' }
         }
       });
