@@ -104,8 +104,8 @@ const Dashboard = () => {
             transition={{ delay: 0.5 }}
           >
             <QuickActionCard
-              title="Area Privata"
-              description="Accedi alla tua libreria di formazione"
+              title="Allenamento Personalizzato"
+              description="Accedi al tuo programma di allenamento"
               icon={GraduationCap}
               variant="gold"
               onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}

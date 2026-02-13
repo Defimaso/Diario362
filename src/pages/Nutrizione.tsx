@@ -224,7 +224,7 @@ const Nutrizione = () => {
           </div>
         </motion.section>
 
-        {/* Nutrium Deep Link */}
+        {/* Dieta Personalizzata Link */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -233,15 +233,15 @@ const Nutrizione = () => {
           <div className="card-elegant rounded-2xl p-4 border border-[hsl(var(--section-purple))]/30">
             <div className="flex items-center gap-3 mb-3">
               <ExternalLink className="w-5 h-5 text-[hsl(var(--section-purple))]" />
-              <h2 className="font-semibold">Nutrium</h2>
+              <h2 className="font-semibold">Dieta Personalizzata</h2>
             </div>
             
             <p className="text-sm text-muted-foreground mb-4">
-              Accedi alla versione completa della tua dieta su Nutrium.
+              Accedi alla versione completa della tua dieta personalizzata.
             </p>
             
             <p className="text-xs text-muted-foreground mb-4 italic">
-              Nota: Usa le stesse credenziali che utilizzi per Nutrium.
+              Nota: Usa le stesse credenziali di 362gradi.
             </p>
             
             <Button 
@@ -249,7 +249,7 @@ const Nutrizione = () => {
               className="w-full bg-[hsl(var(--section-purple))] hover:bg-[hsl(var(--section-purple))]/90"
             >
               <ExternalLink className="w-4 h-4 mr-2" />
-              Apri Dieta su Nutrium
+              Apri Dieta Personalizzata
             </Button>
           </div>
         </motion.section>

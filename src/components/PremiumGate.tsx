@@ -99,7 +99,7 @@ export function PremiumGate() {
           Acquista il Percorso
         </Button>
         <p className="text-xs text-muted-foreground text-center mt-2">
-          Verrai reindirizzato alla piattaforma Teachable
+          Verrai reindirizzato alla piattaforma di allenamento
         </p>
       </motion.div>
 

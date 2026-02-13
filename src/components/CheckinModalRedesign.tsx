@@ -393,11 +393,11 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
                             rel="noopener noreferrer"
                             className="text-primary underline hover:no-underline"
                           >
-                            Ti senti giù? Guarda il video sul mindset nell'Area Privata
+                            Ti senti giù? Guarda il video sul mindset nella sezione Allenamento Personalizzato
                           </a>
                           <br />
                           <span className="text-xs text-muted-foreground">
-                            Nota: Usa le stesse credenziali di Teachable
+                            Nota: Usa le stesse credenziali di 362gradi
                           </span>
                         </p>
                       </motion.div>

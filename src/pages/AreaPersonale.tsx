@@ -182,13 +182,13 @@ const AreaPersonale = () => {
               </div>
             )}
 
-            {/* Nutrium Link */}
+            {/* Dieta Personalizzata Link */}
             <button
               onClick={() => openNativeApp('nutrium')}
               className="w-full mt-3 flex items-center gap-2 p-2.5 rounded-lg bg-[hsl(var(--section-purple))]/5 hover:bg-[hsl(var(--section-purple))]/10 transition-colors text-left"
             >
               <ExternalLink className="w-4 h-4 text-[hsl(var(--section-purple))] shrink-0" />
-              <span className="text-xs text-[hsl(var(--section-purple))] font-medium">Apri Dieta su Nutrium</span>
+              <span className="text-xs text-[hsl(var(--section-purple))] font-medium">Apri Dieta Personalizzata</span>
             </button>
 
             <input ref={fileInputRef} type="file" accept=".pdf,application/pdf" onChange={handleFileSelect} className="hidden" />

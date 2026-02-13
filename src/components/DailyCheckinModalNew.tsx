@@ -271,7 +271,7 @@ const DailyCheckinModalNew = ({ isOpen, onClose, onComplete, existingCheckin }: 
                             rel="noopener noreferrer"
                             className="text-primary underline hover:no-underline"
                           >
-                            Ti senti giù? Guarda questo video sul mindset nell'Area Privata
+                            Ti senti giù? Guarda questo video sul mindset nella sezione Allenamento Personalizzato
                           </a>
                         </p>
                       </motion.div>

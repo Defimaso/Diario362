@@ -480,8 +480,8 @@ const Diario = () => {
             transition={{ delay: 0.45 }}
           >
             <QuickActionCard
-              title="Area Privata Teachable"
-              description={isPremium ? "Accedi alla tua libreria di formazione" : "Premium - Sblocca per accedere"}
+              title="Allenamento Personalizzato"
+              description={isPremium ? "Accedi al tuo programma di allenamento" : "Premium - Sblocca per accedere"}
               icon={isPremium ? GraduationCap : Lock}
               variant="orange"
               onClick={() => isPremium ? window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank') : navigate('/upgrade')}
@@ -489,7 +489,7 @@ const Diario = () => {
             {isPremium && (
               <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">
                 <Info className="w-3 h-3" />
-                Usa le stesse credenziali di Teachable
+                Usa le stesse credenziali di 362gradi
               </p>
             )}
           </motion.div>
@@ -500,7 +500,7 @@ const Diario = () => {
             transition={{ delay: 0.5 }}
           >
             <QuickActionCard
-              title="Nutrium"
+              title="Dieta Personalizzata"
               description={isPremium ? "Accedi al tuo piano alimentare" : "Premium - Sblocca per accedere"}
               icon={isPremium ? Apple : Lock}
               variant="purple"
@@ -509,7 +509,7 @@ const Diario = () => {
             {isPremium && (
               <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">
                 <Info className="w-3 h-3" />
-                Usa le stesse credenziali di Nutrium
+                Usa le stesse credenziali di 362gradi
               </p>
             )}
           </motion.div>

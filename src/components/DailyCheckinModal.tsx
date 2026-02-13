@@ -234,12 +234,12 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                         <AlertTriangle className="w-5 h-5 text-warning" />
                         <p className="text-sm">
                           <a 
-                            href="https://teachable.com" 
-                            target="_blank" 
+                            href="https://sso.teachable.com/secure/564301/identity/login/otp"
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary underline hover:no-underline"
                           >
-                            Ti senti giù? Guarda questo video sul mindset in Academy
+                            Ti senti giù? Guarda questo video sul mindset nella sezione Allenamento Personalizzato
                           </a>
                         </p>
                       </motion.div>
