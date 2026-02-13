@@ -16,6 +16,7 @@ import Guida from "./pages/Guida";
 import Upgrade from "./pages/Upgrade";
 import Messaggi from "./pages/Messaggi";
 import Community from "./pages/Community";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ScrollToTop from "./components/ScrollToTop";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/upgrade" element={<Upgrade />} />
             <Route path="/messaggi" element={<Messaggi />} />
             <Route path="/community" element={<Community />} />
+            <Route path="/landing" element={<Landing />} />
             <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
