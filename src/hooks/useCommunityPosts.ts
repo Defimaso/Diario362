@@ -74,16 +74,19 @@ export function useCommunityPosts() {
   }, []);
 
   const fetchPosts = useCallback(async () => {
-    const { data, error } = await (supabase.rpc as any)('get_community_posts', { lim: 50 });
+    const { data, error } = await (supabase.from as any)('community_posts')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error || !data) {
-      console.error('get_community_posts RPC error:', error);
+      console.error('community_posts fetch error:', error);
       setPosts([]);
       setLoading(false);
       return;
     }
 
-    const resolved = await resolvePosts(data as unknown as any[]);
+    const resolved = await resolvePosts(data as any[]);
     setPosts(resolved);
     setLoading(false);
   }, [resolvePosts]);
@@ -93,14 +96,16 @@ export function useCommunityPosts() {
 
     const nickname = isAnonymous ? generateNickname(user.id) : null;
 
-    const { error } = await (supabase.rpc as any)('create_community_post', {
-      p_content: content.trim(),
-      p_is_anonymous: isAnonymous,
-      p_anonymous_nickname: nickname,
-    });
+    const { error } = await (supabase.from as any)('community_posts')
+      .insert({
+        user_id: user.id,
+        content: content.trim(),
+        is_anonymous: isAnonymous,
+        anonymous_nickname: nickname,
+      });
 
     if (error) {
-      console.error('create_community_post RPC error:', error);
+      console.error('community_posts insert error:', error);
       return { error: error.message };
     }
 
@@ -111,9 +116,11 @@ export function useCommunityPosts() {
   const deletePost = useCallback(async (postId: string) => {
     if (!user) return;
 
-    const { error } = await (supabase.rpc as any)('delete_community_post', { p_id: postId });
+    const { error } = await (supabase.from as any)('community_posts')
+      .delete()
+      .eq('id', postId);
     if (error) {
-      console.error('delete_community_post RPC error:', error);
+      console.error('community_posts delete error:', error);
     }
 
     setPosts(prev => prev.filter(p => p.id !== postId));
