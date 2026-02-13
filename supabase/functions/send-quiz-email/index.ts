@@ -24,42 +24,50 @@ interface QuizEmailRequest {
 }
 
 // Contenuto email per ogni profilo
-const profileEmails: Record<string, { subject: string; emoji: string; intro: string; guideHook: string }> = {
+// Tono: "ti abbiamo capito", non "ti abbiamo profilato"
+// Call = valutazione reciproca, non consulenza gratuita
+const profileEmails: Record<string, { subject: string; emoji: string; intro: string; guideHook: string; callHook: string }> = {
   significance: {
     subject: 'La tua guida personalizzata — Il Protagonista',
     emoji: '⭐',
     intro: 'Vuoi risultati che contano davvero — visibili, concreti, che ti rendano orgoglioso/a. Meriti un percorso all\'altezza della trasformazione che immagini.',
     guideHook: 'La guida include strategie specifiche per chi, come te, punta a una trasformazione che si vede e si sente.',
+    callHook: 'Nella videocall valutiamo insieme se il nostro percorso è quello giusto per la trasformazione che hai in mente.',
   },
   intelligence: {
     subject: 'La tua guida personalizzata — Lo Stratega',
     emoji: '🧠',
     intro: 'Non ti accontenti di "fai così e basta". Vuoi capire il perché dietro ogni scelta. È l\'approccio più intelligente al benessere.',
     guideHook: 'La guida spiega la scienza dietro ogni errore — dati, meccanismi, e soluzioni basate su evidenze.',
+    callHook: 'Nella videocall ti spieghiamo il metodo nel dettaglio e valutiamo insieme se è l\'approccio giusto per te.',
   },
   acceptance: {
     subject: 'La tua guida personalizzata — Il Connettore',
     emoji: '🤝',
     intro: 'Il percorso più efficace è quello che si fa insieme. Cerchi un team che ti capisca e una community che ti sostenga.',
     guideHook: 'La guida ti mostra come le persone con i migliori risultati lo hanno fatto sentendosi parte di qualcosa di più grande.',
+    callHook: 'Nella videocall ci conosciamo e vediamo se il nostro team è quello giusto per accompagnarti.',
   },
   approval: {
     subject: 'La tua guida personalizzata — L\'Eccellente',
     emoji: '🏆',
     intro: 'Dai il massimo in tutto quello che fai e vuoi qualcuno che riconosca i tuoi sforzi. Con la giusta guida, ogni passo viene visto e valorizzato.',
     guideHook: 'La guida ti dà un framework chiaro per ogni fase — così saprai sempre che stai facendo la cosa giusta.',
+    callHook: 'Nella videocall capiamo dove sei e valutiamo insieme se il percorso è il passo giusto per te.',
   },
   power: {
     subject: 'La tua guida personalizzata — Il Leader',
     emoji: '💪',
     intro: 'Vuoi riprendere il controllo — del tuo corpo, della tua energia, della tua vita. Con gli strumenti giusti sarai inarrestabile.',
     guideHook: 'La guida ti dà gli strumenti per prendere decisioni autonome e consapevoli sul tuo benessere.',
+    callHook: 'Nella videocall vediamo la tua situazione e valutiamo insieme se il nostro percorso ti dà quello che cerchi.',
   },
   pity: {
     subject: 'La tua guida personalizzata — Il Resiliente',
     emoji: '🔥',
     intro: 'Hai affrontato più ostacoli di quanti gli altri immaginino. Il fatto che tu sia qui dimostra una forza incredibile. Questa volta sarà diverso.',
     guideHook: 'La guida spiega perché i metodi precedenti non hanno funzionato e cosa cambiare.',
+    callHook: 'Nella videocall ascoltiamo la tua storia e valutiamo insieme se possiamo davvero aiutarti questa volta.',
   },
 }
 
@@ -90,15 +98,15 @@ function buildEmailHtml(name: string, needProfile: string, profileName: string):
             ${profile.intro}
           </p>
 
-          <div style="background-color:#f0faf8;border:1px solid #d0ece7;border-radius:8px;padding:16px;margin:0 0 24px;">
+          <!-- Guida -->
+          <div style="background-color:#f0faf8;border:1px solid #d0ece7;border-radius:8px;padding:16px;margin:0 0 20px;">
             <p style="font-size:14px;color:#1A535C;margin:0;line-height:1.5;">
               📖 ${profile.guideHook}
             </p>
           </div>
 
-          <!-- CTA Guida -->
           <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:0 0 24px;">
-            <a href="${guideUrl}" target="_blank" style="display:inline-block;background-color:#FF6B6B;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:600;font-size:15px;">
+            <a href="${guideUrl}" target="_blank" style="display:inline-block;background-color:#1A535C;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:600;font-size:14px;">
               Leggi la tua Guida Personalizzata →
             </a>
           </td></tr></table>
@@ -106,26 +114,36 @@ function buildEmailHtml(name: string, needProfile: string, profileName: string):
           <!-- Divider -->
           <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
 
-          <!-- App CTA -->
-          <div style="text-align:center;">
-            <p style="font-size:14px;color:#666;margin:0 0 12px;">
-              📱 <strong>Intanto, prova l'app gratuita!</strong><br>
-              <span style="font-size:13px;">Check-in giornaliero, badge, streak — tutto gratis.</span>
+          <!-- CTA PRIMARIO: Videocall -->
+          <div style="background-color:#FFF5F5;border:1px solid #FFD4D4;border-radius:10px;padding:20px;text-align:center;">
+            <p style="font-size:15px;font-weight:700;color:#1A535C;margin:0 0 8px;">
+              📞 Il prossimo passo?
             </p>
-            <a href="${appUrl}" target="_blank" style="display:inline-block;background-color:#1A535C;color:#ffffff;text-decoration:none;padding:10px 24px;border-radius:6px;font-weight:600;font-size:13px;">
-              Apri l'App Gratis
-            </a>
+            <p style="font-size:13px;color:#555;line-height:1.6;margin:0 0 6px;">
+              ${profile.callHook}
+            </p>
+            <p style="font-size:12px;color:#888;margin:0 0 16px;">
+              Nessun impegno, solo una chiacchierata per capire insieme se possiamo lavorare bene.
+            </p>
+            <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+              <a href="${calendlyUrl}" target="_blank" style="display:inline-block;background-color:#FF6B6B;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;">
+                Prenota la Videocall Gratuita →
+              </a>
+            </td></tr></table>
+            <p style="font-size:11px;color:#aaa;margin:8px 0 0;">
+              30 minuti · Gratuita · Nessun impegno
+            </p>
           </div>
 
           <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
 
-          <!-- Calendly -->
+          <!-- App secondaria -->
           <div style="text-align:center;">
-            <p style="font-size:13px;color:#888;margin:0 0 8px;">
-              Vuoi parlarne con noi? Prenota una call gratuita di 30 minuti.
+            <p style="font-size:13px;color:#888;margin:0 0 4px;">
+              📱 Intanto puoi provare l'app gratuita:
             </p>
-            <a href="${calendlyUrl}" target="_blank" style="color:#4ECDC4;text-decoration:underline;font-size:13px;font-weight:600;">
-              Prenota la Call →
+            <a href="${appUrl}" target="_blank" style="color:#4ECDC4;text-decoration:underline;font-size:13px;font-weight:600;">
+              Apri l'App Gratis →
             </a>
           </div>
         </td></tr>
