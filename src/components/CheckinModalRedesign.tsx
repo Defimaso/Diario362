@@ -163,11 +163,11 @@ const CheckinModalRedesign = ({ isOpen, onClose, onComplete, existingCheckin }: 
       toast({
         variant: 'destructive',
         title: 'Errore',
-        description: 'Non è stato possibile salvare il check-in',
+        description: 'Non è stato possibile salvare il diario',
       });
     } else {
       toast({
-        title: 'Check-in completato! ✨',
+        title: 'Diario completato! ✨',
         description: 'Il tuo progresso è stato registrato',
       });
       onComplete();

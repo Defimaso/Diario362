@@ -98,15 +98,15 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
       {/* Indicatore stato dati */}
       {checkins.length === 0 && (
         <div className="mb-2 px-2 py-1 bg-warning/10 border border-warning/30 rounded text-xs text-warning-foreground">
-          ⚠️ Nessun check-in negli ultimi 7 giorni
+          ⚠️ Nessun diario negli ultimi 7 giorni
         </div>
       )}
       
       <div className="flex items-center justify-between mb-3 sm:mb-4">
         <h4 className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
           <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-section-red" />
-          <span className="hidden xs:inline">Stato Check-in Giornaliero</span>
-          <span className="xs:hidden">Check-in</span>
+          <span className="hidden xs:inline">Stato Diario Giornaliero</span>
+          <span className="xs:hidden">Diario</span>
         </h4>
         <div className="text-[10px] sm:text-xs text-muted-foreground">
           <span className="font-medium text-section-red">{completedDays}/7</span> giorni
@@ -173,10 +173,10 @@ const DailyCheckinStatus = ({ clientId }: DailyCheckinStatusProps) => {
       {!lastCheckin && (
         <div className="text-center py-3 px-2 bg-muted/30 rounded-lg">
           <p className="text-xs sm:text-sm text-muted-foreground font-medium">
-            Nessun check-in registrato negli ultimi 7 giorni
+            Nessun diario registrato negli ultimi 7 giorni
           </p>
           <p className="text-[10px] sm:text-xs text-muted-foreground/60 mt-1">
-            Il cliente non ha ancora compilato il check giornaliero
+            Il cliente non ha ancora compilato il diario giornaliero
           </p>
         </div>
       )}

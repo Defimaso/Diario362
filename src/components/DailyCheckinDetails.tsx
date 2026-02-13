@@ -71,7 +71,7 @@ const DailyCheckinDetails = ({ checkins }: DailyCheckinDetailsProps) => {
     return (
       <div className="text-center py-4 bg-muted/20 rounded-lg">
         <Calendar className="w-8 h-8 mx-auto text-muted-foreground/40 mb-2" />
-        <p className="text-sm text-muted-foreground">Nessun check-in disponibile</p>
+        <p className="text-sm text-muted-foreground">Nessun diario disponibile</p>
       </div>
     );
   }
@@ -88,7 +88,7 @@ const DailyCheckinDetails = ({ checkins }: DailyCheckinDetailsProps) => {
     <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
       <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3 flex items-center gap-2">
         <Calendar className="w-3.5 h-3.5" />
-        Storico Check-in Dettagliato
+        Storico Diario Dettagliato
       </h4>
       
       {checkins.map((checkin) => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, BookOpen, Lock, Crown, MessageCircle, Timer } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, BookOpen, Lock, Crown, MessageCircle, Timer, ChevronDown, Check } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -30,6 +30,9 @@ import LeaderboardView from "@/components/LeaderboardView";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useOnboardingData } from "@/hooks/useOnboardingData";
+import { supabase } from "@/integrations/supabase/client";
 
 const Diario = () => {
   const { user, signOut, loading: authLoading, isAdmin, isCollaborator, isSuperAdmin } = useAuth();
@@ -54,11 +57,48 @@ const Diario = () => {
   
   const { isPremium, isTrial, trialDaysLeft } = useSubscription();
   const { unreadTotal } = useMessages();
+  const { profile: onboardingProfile } = useOnboardingData(user?.id);
 
   const [isCheckinOpen, setIsCheckinOpen] = useState(false);
   const [isBadgeSheetOpen, setIsBadgeSheetOpen] = useState(false);
   const [isStandalone, setIsStandalone] = useState(false);
+  const [percorso, setPercorso] = useState<string | null>(null);
   const navigate = useNavigate();
+
+  const percorsiOptions = [
+    "Metabolismo da Risvegliare",
+    "Ottimizzazione Performance",
+    "Equilibrio Emotivo",
+    "Riattivazione Graduale",
+    "Trasformazione Completa",
+  ];
+
+  // Sync percorso from onboarding data
+  useEffect(() => {
+    if (onboardingProfile?.profile_badge && !percorso) {
+      setPercorso(onboardingProfile.profile_badge);
+    }
+  }, [onboardingProfile]);
+
+  const handlePercorsoChange = async (newPercorso: string) => {
+    setPercorso(newPercorso);
+    if (!user) return;
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('email')
+        .eq('id', user.id)
+        .single();
+      if (profileData?.email) {
+        await supabase
+          .from('onboarding_leads')
+          .update({ profile_badge: newPercorso })
+          .eq('email', profileData.email);
+      }
+    } catch (err) {
+      console.error('Error updating percorso:', err);
+    }
+  };
 
   // Check if app is already installed (standalone mode)
   useEffect(() => {
@@ -130,7 +170,26 @@ const Diario = () => {
                 <span className="text-primary">362</span>
                 <span className="text-foreground">gradi</span>
               </h1>
-              <p className="text-xs sm:text-sm text-muted-foreground">Il Diario del tuo 2%</p>
+              <DropdownMenu>
+                <DropdownMenuTrigger className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors outline-none">
+                  {percorso || "Trasformazione Completa"}
+                  <ChevronDown className="w-3 h-3" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {percorsiOptions.map((p) => (
+                    <DropdownMenuItem
+                      key={p}
+                      onClick={() => handlePercorsoChange(p)}
+                      className="flex items-center justify-between gap-2"
+                    >
+                      {p}
+                      {(percorso || "Trasformazione Completa") === p && (
+                        <Check className="w-4 h-4 text-primary" />
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -218,8 +277,8 @@ const Diario = () => {
           className="mb-6 sm:mb-8"
         >
           <QuickActionCard
-            title={todayCheckin ? "Aggiorna Check-in" : "Check-in Giornaliero"}
-            description={todayCheckin ? "Modifica il tuo check-in di oggi" : "Registra il tuo progresso di oggi"}
+            title={todayCheckin ? "Aggiorna Diario" : "Diario Giornaliero"}
+            description={todayCheckin ? "Modifica il diario di oggi" : "Registra il tuo progresso di oggi"}
             icon={ClipboardCheck}
             variant="red"
             onClick={() => setIsCheckinOpen(true)}

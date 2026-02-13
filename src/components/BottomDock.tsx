@@ -57,21 +57,22 @@ const BottomDock = () => {
                   "flex flex-col items-center gap-1 px-4 py-1 rounded-xl transition-all duration-200 relative",
                   "hover:bg-muted/50 active:scale-95",
                   isActive && "bg-muted/30",
-                  isLocked && "opacity-50"
+                  isLocked && "opacity-75"
                 )}
               >
                 <div className="relative">
-                  {isLocked ? (
-                    <Lock className="w-6 h-6 text-muted-foreground" />
-                  ) : (
-                    <Icon
-                      className={cn(
-                        "w-6 h-6 transition-colors",
-                        isActive
+                  <Icon
+                    className={cn(
+                      "w-7 h-7 transition-colors",
+                      isLocked
+                        ? "text-muted-foreground/60"
+                        : isActive
                           ? "text-[hsl(var(--section-red))]"
                           : "text-muted-foreground"
-                      )}
-                    />
+                    )}
+                  />
+                  {isLocked && (
+                    <Lock className="w-3 h-3 text-muted-foreground absolute -bottom-0.5 -right-0.5 bg-card rounded-full p-[1px]" />
                   )}
                   {showBadge && (
                     <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-destructive rounded-full animate-pulse" />
@@ -79,10 +80,12 @@ const BottomDock = () => {
                 </div>
                 <span
                   className={cn(
-                    "text-[10px] font-medium transition-colors",
-                    isActive
-                      ? "text-[hsl(var(--section-red))]"
-                      : "text-muted-foreground"
+                    "text-xs font-medium transition-colors",
+                    isLocked
+                      ? "text-muted-foreground/60"
+                      : isActive
+                        ? "text-[hsl(var(--section-red))]"
+                        : "text-muted-foreground"
                   )}
                 >
                   {item.label}
