@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.notify-video-correction]
 verify_jwt = false
+
+[functions.send-quiz-email]
+verify_jwt = false
+
+[functions.check-absences]
+verify_jwt = false
+
+[functions.notify-interaction]
+verify_jwt = false

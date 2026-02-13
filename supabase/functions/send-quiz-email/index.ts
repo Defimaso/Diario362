@@ -1,8 +1,11 @@
 // =============================================
 // Edge Function: send-quiz-email
 // Riceve dati quiz dal sito 362gradi.ae
-// Invia email personalizzata via Resend
+// 1. Salva il lead in quiz_leads (DB)
+// 2. Invia email personalizzata via Resend
 // =============================================
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -16,6 +19,8 @@ interface QuizEmailRequest {
   profileName: string
   hookChoice?: string | null
   source?: string
+  quizMode?: string
+  allAnswers?: string[]
 }
 
 // Contenuto email per ogni profilo
@@ -152,7 +157,7 @@ Deno.serve(async (req) => {
       throw new Error('RESEND_API_KEY not configured')
     }
 
-    const { email, name, needProfile, profileName, hookChoice, source }: QuizEmailRequest = await req.json()
+    const { email, name, needProfile, profileName, hookChoice, source, quizMode, allAnswers }: QuizEmailRequest = await req.json()
 
     if (!email || !needProfile) {
       return new Response(
@@ -169,10 +174,15 @@ Deno.serve(async (req) => {
       )
     }
 
+    // ─── 1. Salva lead nel DB ───
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
     // Build email HTML
     const html = buildEmailHtml(name || '', needProfile, profileName || profile.subject)
 
-    // Send via Resend
+    // ─── 2. Invia email via Resend ───
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -188,21 +198,45 @@ Deno.serve(async (req) => {
     })
 
     const resendData = await resendResponse.json()
+    const emailSent = resendResponse.ok
 
-    if (!resendResponse.ok) {
+    if (!emailSent) {
       console.error('[send-quiz-email] Resend error:', resendData)
+    }
+
+    // ─── 3. Salva lead (anche se email fallisce) ───
+    const { error: dbError } = await supabase.from('quiz_leads').insert({
+      email,
+      name: name || null,
+      need_profile: needProfile,
+      profile_name: profileName || profile.subject,
+      hook_choice: hookChoice || null,
+      source: source || 'quiz_popup',
+      quiz_mode: quizMode || 'short',
+      all_answers: allAnswers || null,
+      email_sent: emailSent,
+      resend_email_id: resendData?.id || null,
+    })
+
+    if (dbError) {
+      console.error('[send-quiz-email] DB error:', dbError)
+    }
+
+    if (!emailSent) {
       return new Response(
-        JSON.stringify({ error: 'Email send failed', details: resendData }),
+        JSON.stringify({ error: 'Email send failed', details: resendData, leadSaved: !dbError }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    console.log('[send-quiz-email] Email sent:', {
+    console.log('[send-quiz-email] Lead saved + email sent:', {
       to: email,
       profile: needProfile,
       source: source || 'unknown',
+      quizMode: quizMode || 'short',
       hookChoice: hookChoice || 'none',
       resendId: resendData.id,
+      dbSaved: !dbError,
     })
 
     return new Response(
