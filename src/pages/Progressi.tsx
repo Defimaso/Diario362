@@ -1,22 +1,24 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Settings } from 'lucide-react';
+import { TrendingUp, Settings, Camera, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useProgressChecks } from '@/hooks/useProgressChecks';
-import { useSubscription } from '@/hooks/useSubscription';
-import { PremiumGate } from '@/components/PremiumGate';
+import { useUserChecks, UserCheck } from '@/hooks/useUserChecks';
 import Footer from '@/components/legal/Footer';
 import WeightChart from '@/components/progress/WeightChart';
 import PhotoComparison from '@/components/progress/PhotoComparison';
 import HistoryTable from '@/components/progress/HistoryTable';
+import CheckSlotCard from '@/components/checks/CheckSlotCard';
+import CheckFormModal from '@/components/checks/CheckFormModal';
 import BottomDock from '@/components/BottomDock';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { NotificationBell } from '@/components/NotificationBell';
 
 const Progressi = () => {
   const { user, loading: authLoading } = useAuth();
-  const { isPremium, isLoading: subLoading } = useSubscription();
   const navigate = useNavigate();
   const {
     progressChecks,
@@ -27,11 +29,25 @@ const Progressi = () => {
     getSignedPhotoUrl,
   } = useProgressChecks();
 
+  const {
+    loading: checksLoading,
+    uploading,
+    getCheckSlots,
+    saveCheck,
+    completedChecksCount,
+    totalChecks,
+    getFirstCheckWithPhotos,
+  } = useUserChecks();
+
+  const [selectedCheck, setSelectedCheck] = useState<{
+    checkNumber: number;
+    data: UserCheck | null;
+  } | null>(null);
+
   // Monthly checks are already merged inside useProgressChecks - no separate fetch needed
   const monthlyChecks = progressChecks.filter(c => c.source === 'external');
-  const monthlyLoading = false;
 
-  if (authLoading || subLoading) {
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -43,23 +59,12 @@ const Progressi = () => {
     return <Navigate to="/auth" replace />;
   }
 
-  if (!isPremium) {
-    return (
-      <div className="min-h-screen bg-background pb-24">
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-        </div>
-        <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
-          <PremiumGate />
-        </div>
-        <BottomDock />
-        <Footer />
-      </div>
-    );
-  }
-
   const datesWithPhotos = getDatesWithPhotos();
   const comparisonDefaults = getComparisonDefaults();
+  const checkSlots = getCheckSlots();
+  const completedSlots = checkSlots.filter(s => s.isCompleted);
+  const pendingSlots = checkSlots.filter(s => !s.isCompleted);
+  const firstCheck = getFirstCheckWithPhotos();
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -78,7 +83,7 @@ const Progressi = () => {
               <div>
                 <h1 className="text-2xl font-bold">I Tuoi Progressi</h1>
                 <p className="text-sm text-muted-foreground">
-                  Analizza il tuo percorso
+                  Check, peso e foto
                 </p>
               </div>
             </div>
@@ -100,7 +105,100 @@ const Progressi = () => {
       {/* Main Content */}
       <main className="px-4 space-y-4">
         <div className="max-w-lg mx-auto space-y-4">
-          {loading || monthlyLoading ? (
+          {/* Check Slots Section */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <div className="card-elegant rounded-2xl p-5 border border-primary/30">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <Camera className="w-5 h-5 text-primary" />
+                  <h2 className="font-semibold">I Tuoi Check</h2>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  {completedChecksCount} di {totalChecks} completati
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="mb-4">
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(completedChecksCount / totalChecks) * 100}%` }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                    className="h-full bg-gradient-to-r from-primary to-primary/70"
+                  />
+                </div>
+              </div>
+
+              {checksLoading ? (
+                <div className="space-y-3">
+                  {[1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-16 w-full rounded-xl" />
+                  ))}
+                </div>
+              ) : (
+                <Tabs defaultValue="pending">
+                  <TabsList className="grid w-full grid-cols-2 mb-3">
+                    <TabsTrigger value="pending" className="flex items-center gap-1.5 text-xs">
+                      <Camera className="w-3.5 h-3.5" />
+                      Da Fare ({pendingSlots.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="completed" className="flex items-center gap-1.5 text-xs">
+                      <Check className="w-3.5 h-3.5" />
+                      Completati ({completedSlots.length})
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="pending" className="space-y-2">
+                    {pendingSlots.length === 0 ? (
+                      <div className="text-center py-6">
+                        <Check className="w-10 h-10 mx-auto text-primary mb-2" />
+                        <p className="text-sm font-medium">Fantastico!</p>
+                        <p className="text-xs text-muted-foreground">Hai completato tutti i check disponibili.</p>
+                      </div>
+                    ) : (
+                      pendingSlots.map((slot) => (
+                        <CheckSlotCard
+                          key={slot.checkNumber}
+                          checkNumber={slot.checkNumber}
+                          data={slot.data}
+                          isCompleted={slot.isCompleted}
+                          onClick={() => setSelectedCheck({ checkNumber: slot.checkNumber, data: slot.data })}
+                        />
+                      ))
+                    )}
+                  </TabsContent>
+
+                  <TabsContent value="completed" className="space-y-2">
+                    {completedSlots.length === 0 ? (
+                      <div className="text-center py-6">
+                        <Camera className="w-10 h-10 mx-auto text-muted-foreground mb-2" />
+                        <p className="text-sm font-medium text-muted-foreground">Nessun check completato</p>
+                        <p className="text-xs text-muted-foreground">Inizia con il Check #1!</p>
+                      </div>
+                    ) : (
+                      completedSlots.map((slot) => (
+                        <CheckSlotCard
+                          key={slot.checkNumber}
+                          checkNumber={slot.checkNumber}
+                          data={slot.data}
+                          isCompleted={slot.isCompleted}
+                          onClick={() => setSelectedCheck({ checkNumber: slot.checkNumber, data: slot.data })}
+                        />
+                      ))
+                    )}
+                  </TabsContent>
+                </Tabs>
+              )}
+            </div>
+          </motion.section>
+
+          {/* Progress Charts */}
+          {loading ? (
             <div className="space-y-4">
               <Skeleton className="h-[280px] w-full rounded-xl" />
               <Skeleton className="h-[300px] w-full rounded-xl" />
@@ -124,6 +222,17 @@ const Progressi = () => {
           )}
         </div>
       </main>
+
+      {/* Check Form Modal */}
+      <CheckFormModal
+        isOpen={!!selectedCheck}
+        onClose={() => setSelectedCheck(null)}
+        checkNumber={selectedCheck?.checkNumber || 1}
+        existingData={selectedCheck?.data || null}
+        onSave={saveCheck}
+        uploading={uploading}
+        firstCheckData={selectedCheck && selectedCheck.checkNumber > 1 ? firstCheck : null}
+      />
 
       <BottomDock />
     </div>

@@ -16,7 +16,7 @@ const navItems: NavItem[] = [
   { path: '/diario', icon: ClipboardCheck, label: 'Diario' },
   { path: '/community', icon: Users, label: 'Community' },
   { path: '/area-personale', icon: FolderOpen, label: 'Materiali', premium: true },
-  { path: '/progressi', icon: TrendingUp, label: 'Progressi', premium: true },
+  { path: '/progressi', icon: TrendingUp, label: 'Progressi' },
 ];
 
 const BottomDock = () => {

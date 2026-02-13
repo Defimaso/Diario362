@@ -7,7 +7,6 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Auth from "./pages/Auth";
 import Diario from "./pages/Diario";
 import GestioneDiario from "./pages/GestioneDiario";
-import Checks from "./pages/Checks";
 import AreaPersonale from "./pages/AreaPersonale";
 import Progressi from "./pages/Progressi";
 import InstallApp from "./pages/InstallApp";
@@ -37,7 +36,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/diario" element={<Diario />} />
             <Route path="/gestionediario" element={<GestioneDiario />} />
-            <Route path="/checks" element={<Checks />} />
+            <Route path="/checks" element={<Navigate to="/progressi" replace />} />
             <Route path="/area-personale" element={<AreaPersonale />} />
             <Route path="/nutrizione" element={<Navigate to="/area-personale" replace />} />
             <Route path="/documenti" element={<Navigate to="/area-personale" replace />} />

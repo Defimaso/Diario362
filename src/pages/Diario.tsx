@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Camera, Apple, Settings, Info, BookOpen, Lock, Crown, MessageCircle, Timer, ChevronDown, Check } from "lucide-react";
+import { GraduationCap, ClipboardCheck, LogOut, Users, Trophy, Smartphone, Apple, Settings, Info, BookOpen, Lock, Crown, MessageCircle, Timer, ChevronDown, Check } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import MomentumCircle from "@/components/MomentumCircle";
 import StreakBadge from "@/components/StreakBadge";
@@ -11,7 +11,6 @@ import CheckinModalRedesign from "@/components/CheckinModalRedesign";
 import BadgeProgress from "@/components/BadgeProgress";
 import BadgeGallery from "@/components/BadgeGallery";
 import BadgeUnlockAnimation from "@/components/BadgeUnlockAnimation";
-import ProgressWidget from "@/components/checks/ProgressWidget";
 import DiarioPensieri from "@/components/DiarioPensieri";
 import Footer from "@/components/legal/Footer";
 import CookieBanner from "@/components/legal/CookieBanner";
@@ -417,18 +416,6 @@ const Diario = () => {
           </motion.section>
         )}
 
-        {/* Progress Widget - Premium only */}
-        {isPremium && (
-          <motion.section
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.35 }}
-            className="mb-6 sm:mb-8"
-          >
-            <ProgressWidget />
-          </motion.section>
-        )}
-
         {/* Challenge Card - visible to all */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
@@ -473,20 +460,6 @@ const Diario = () => {
 
         {/* Quick Actions */}
         <div className="space-y-3 sm:space-y-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <QuickActionCard
-              title="I Tuoi Check"
-              description={isPremium ? "Registra peso e foto mensili" : "Premium - Sblocca per accedere"}
-              icon={isPremium ? Camera : Lock}
-              variant="blue"
-              onClick={() => navigate(isPremium ? '/checks' : '/upgrade')}
-            />
-          </motion.div>
-
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
