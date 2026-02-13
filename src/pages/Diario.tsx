@@ -369,9 +369,9 @@ const Diario = () => {
               {/* Overlay */}
               <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-2xl backdrop-blur-[1px]">
                 <div className="text-center">
-                  <Crown className="w-6 h-6 text-primary mx-auto mb-1" />
-                  <p className="text-sm font-medium">Sblocca Statistiche</p>
-                  <p className="text-xs text-muted-foreground">Attiva Premium</p>
+                  <Crown className="w-8 h-8 text-primary mx-auto mb-2" />
+                  <p className="text-lg font-semibold">Sblocca Statistiche</p>
+                  <p className="text-sm text-muted-foreground">Attiva Premium</p>
                 </div>
               </div>
             </div>
@@ -398,8 +398,8 @@ const Diario = () => {
               </div>
               <div className="absolute inset-0 flex items-center justify-center bg-background/40 rounded-2xl backdrop-blur-[1px]">
                 <div className="text-center">
-                  <Lock className="w-5 h-5 text-primary mx-auto mb-1" />
-                  <p className="text-xs font-medium">Grafico Settimanale Premium</p>
+                  <Lock className="w-7 h-7 text-primary mx-auto mb-2" />
+                  <p className="text-base font-semibold">Grafico Settimanale Premium</p>
                 </div>
               </div>
             </div>
