@@ -7,8 +7,9 @@ import {
   MessageCircle, Beaker, HeartPulse, XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { trackConversion } from '@/lib/analytics';
 
-const CTA_URL = 'https://sso.teachable.com/secure/564301/identity/login/otp';
+const CTA_URL = 'https://calendly.com/info-xjs/call-362';
 const WHATSAPP_URL = 'https://wa.me/393XXXXXXXXX';
 
 /* ─── Fade-in wrapper ─── */
@@ -33,7 +34,12 @@ const Section = ({ children, className = '', id }: { children: React.ReactNode; 
 
 /* ─── CTA Button ─── */
 const CTAButton = ({ className = '' }: { className?: string }) => (
-  <a href={CTA_URL} target="_blank" rel="noopener noreferrer">
+  <a
+    href={CTA_URL}
+    target="_blank"
+    rel="noopener noreferrer"
+    onClick={() => trackConversion('calendly_click')}
+  >
     <Button
       size="lg"
       className={`bg-[#FFEE58] hover:bg-[#FFE400] text-gray-900 font-bold text-base px-8 py-6 rounded-full shadow-lg shadow-yellow-500/20 hover:shadow-yellow-500/30 transition-all ${className}`}
@@ -133,14 +139,49 @@ export default function Landing() {
         </FadeIn>
       </Section>
 
-      {/* ═══ 3. CREDIBILITY + CTA ═══ */}
+      {/* ═══ 3. CREDIBILITY + SOCIAL PROOF + CTA ═══ */}
       <section className="bg-gray-50 py-12 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto text-center">
           <FadeIn>
-            <p className="text-gray-600 mb-6 text-lg">
-              Dal 2017 lavoriamo online. Coerenti. Science-based. Senza paranoie.
-            </p>
-            <CTAButton />
+            <div className="flex flex-wrap items-center justify-center gap-6 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-[#503AA8]/10 flex items-center justify-center">
+                  <Users className="w-5 h-5 text-[#503AA8]" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-lg text-gray-900">600+</p>
+                  <p className="text-xs text-gray-500">clienti trasformati</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-[#503AA8]/10 flex items-center justify-center">
+                  <Award className="w-5 h-5 text-[#503AA8]" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-lg text-gray-900">Dal 2017</p>
+                  <p className="text-xs text-gray-500">online, coerenti</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-[#503AA8]/10 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-[#503AA8]" />
+                </div>
+                <div className="text-left">
+                  <p className="font-bold text-lg text-gray-900">Science-based</p>
+                  <p className="text-xs text-gray-500">zero mode, solo scienza</p>
+                </div>
+              </div>
+            </div>
+            <div className="inline-flex items-center gap-2 bg-red-50 border border-red-200 rounded-full px-4 py-2 mb-6">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+              </span>
+              <p className="text-sm font-semibold text-red-700">Solo 5 posti disponibili questo mese</p>
+            </div>
+            <div>
+              <CTAButton />
+            </div>
           </FadeIn>
         </div>
       </section>
