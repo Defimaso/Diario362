@@ -108,6 +108,15 @@ const GestioneDiario = () => {
   const [messageContent, setMessageContent] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
+  // Client-specific activation code state
+  const [clientCodeDialogOpen, setClientCodeDialogOpen] = useState(false);
+  const [clientCodeTarget, setClientCodeTarget] = useState<ClientData | null>(null);
+  const [generatedClientCode, setGeneratedClientCode] = useState<string>('');
+  const [isGeneratingClientCode, setIsGeneratingClientCode] = useState(false);
+
+  // Premium status tracking
+  const [clientSubscriptions, setClientSubscriptions] = useState<Map<string, { plan: string; activation_code: string | null }>>(new Map());
+
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -118,6 +127,29 @@ const GestioneDiario = () => {
       navigate('/diario');
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
+
+  // Fetch subscription status for all clients
+  useEffect(() => {
+    const fetchSubscriptions = async () => {
+      if (clients.length === 0) return;
+
+      const clientIds = clients.map(c => c.id);
+      const { data } = await supabase
+        .from('user_subscriptions' as any)
+        .select('user_id, plan, activation_code')
+        .in('user_id', clientIds);
+
+      if (data) {
+        const subsMap = new Map<string, { plan: string; activation_code: string | null }>();
+        (data as any[]).forEach(sub => {
+          subsMap.set(sub.user_id, { plan: sub.plan, activation_code: sub.activation_code });
+        });
+        setClientSubscriptions(subsMap);
+      }
+    };
+
+    fetchSubscriptions();
+  }, [clients]);
 
   // Analytics: compute team-wide metrics (must be before early returns)
   const analytics = useMemo(() => {
@@ -453,6 +485,47 @@ const GestioneDiario = () => {
     }
   };
 
+  // Generate activation code for a specific client
+  const generateClientCode = async (client: ClientData) => {
+    if (!user) return;
+    setIsGeneratingClientCode(true);
+    setClientCodeTarget(client);
+
+    // Generate code with format: 362-XXXXX
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let code = '362-';
+    for (let i = 0; i < 5; i++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
+    }
+
+    // Insert code assigned to this client
+    const { error } = await supabase
+      .from('activation_codes' as any)
+      .insert({
+        code,
+        created_by: user.id,
+        assigned_to: client.id,
+      } as any);
+
+    setIsGeneratingClientCode(false);
+
+    if (error) {
+      toast({ variant: 'destructive', title: 'Errore', description: 'Impossibile generare il codice' });
+    } else {
+      setGeneratedClientCode(code);
+      setClientCodeDialogOpen(true);
+      toast({ title: 'Codice generato!', description: `Codice per ${client.full_name} creato` });
+    }
+  };
+
+  // Copy client code to clipboard
+  const copyClientCode = () => {
+    if (generatedClientCode) {
+      navigator.clipboard.writeText(generatedClientCode);
+      toast({ title: 'Copiato!', description: 'Codice copiato negli appunti' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Background Effects */}
@@ -720,6 +793,29 @@ const GestioneDiario = () => {
                                       🔥 {client.streak}
                                     </span>
                                   )}
+                                  {clientSubscriptions.get(client.id)?.plan === 'premium' && (
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <span className="text-xs bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full shrink-0 cursor-help flex items-center gap-1">
+                                          <Crown className="w-3 h-3" />
+                                          Premium
+                                        </span>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="bg-card border-border">
+                                        <p className="text-sm">
+                                          <span className="font-semibold">Piano Premium</span>
+                                          {clientSubscriptions.get(client.id)?.activation_code && (
+                                            <>
+                                              <br />
+                                              <span className="text-muted-foreground text-xs">
+                                                Codice: {clientSubscriptions.get(client.id)?.activation_code}
+                                              </span>
+                                            </>
+                                          )}
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  )}
                                   {client.need_profile && (
                                     <Tooltip>
                                       <TooltipTrigger asChild>
@@ -866,6 +962,22 @@ const GestioneDiario = () => {
                             {hasUnreadNotes(client.id) && (
                               <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-badge-gold animate-pulse" />
                             )}
+                          </Button>
+
+                          {/* Generate Client Code Button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-primary/40 text-primary hover:bg-primary/10"
+                            onClick={() => generateClientCode(client)}
+                            disabled={isGeneratingClientCode}
+                          >
+                            {isGeneratingClientCode && clientCodeTarget?.id === client.id ? (
+                              <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                            ) : (
+                              <Key className="w-4 h-4 mr-1.5" />
+                            )}
+                            Genera Codice
                           </Button>
 
                           {/* Grant Premium Button */}
@@ -1178,6 +1290,62 @@ const GestioneDiario = () => {
                 ) : (
                   <><Send className="w-4 h-4 mr-2" />Invia</>
                 )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Client Activation Code Dialog */}
+      <Dialog open={clientCodeDialogOpen} onOpenChange={setClientCodeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Key className="w-5 h-5 text-primary" />
+              Codice Premium per {clientCodeTarget?.full_name}
+            </DialogTitle>
+            <DialogDescription>
+              Condividi questo codice con il cliente per attivare il premium
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            {/* Generated Code Display */}
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-4">
+              <div className="text-center space-y-2">
+                <p className="text-xs text-muted-foreground">Codice di attivazione</p>
+                <p className="text-2xl font-mono font-bold text-primary tracking-wider">
+                  {generatedClientCode}
+                </p>
+              </div>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+              <p className="text-sm font-medium">Come funziona:</p>
+              <ol className="text-sm text-muted-foreground space-y-1 list-decimal list-inside">
+                <li>Copia il codice qui sopra</li>
+                <li>Invialo al cliente via WhatsApp o email</li>
+                <li>Il cliente lo inserirà nella pagina Premium dell'app</li>
+                <li>Il codice può essere usato solo da {clientCodeTarget?.full_name}</li>
+              </ol>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setClientCodeDialogOpen(false)}
+              >
+                Chiudi
+              </Button>
+              <Button
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                onClick={copyClientCode}
+              >
+                <Copy className="w-4 h-4 mr-2" />
+                Copia Codice
               </Button>
             </div>
           </div>

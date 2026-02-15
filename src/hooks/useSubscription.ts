@@ -75,13 +75,19 @@ export function useSubscription() {
     // 1. Check if code exists and is unused
     const { data: codeData, error: codeError } = await supabase
       .from('activation_codes' as any)
-      .select('id, is_used')
+      .select('id, is_used, assigned_to')
       .eq('code', trimmedCode)
       .eq('is_used', false)
       .single();
 
     if (codeError || !codeData) {
       return { success: false, error: 'Codice non valido o gia\' utilizzato' };
+    }
+
+    // 1.1 Check if code is assigned to a specific user
+    const assignedTo = (codeData as any).assigned_to;
+    if (assignedTo && assignedTo !== user.id) {
+      return { success: false, error: 'Questo codice non e\' assegnato a te' };
     }
 
     // 2. Mark code as used
