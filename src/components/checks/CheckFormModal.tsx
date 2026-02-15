@@ -181,6 +181,13 @@ const CheckFormModal = ({
     if (!file) return;
 
     try {
+      // Security: Validate MIME type - only allow images
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
+      if (!allowedTypes.includes(file.type.toLowerCase())) {
+        toast.error('Formato non supportato. Usa JPG, PNG, WEBP o HEIC.');
+        return;
+      }
+
       // Validate file size (max 25MB for mobile photos)
       if (file.size > 25 * 1024 * 1024) {
         toast.error('Foto troppo grande. Massimo 25MB.');

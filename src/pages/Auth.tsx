@@ -36,7 +36,12 @@ const DEFAULT_STAFF_PASSWORD = '362@diario';
 
 const loginSchema = z.object({
   email: z.string().email('Email non valida'),
-  password: z.string().min(6, 'La password deve avere almeno 6 caratteri'),
+  password: z.string()
+    .min(12, 'La password deve avere almeno 12 caratteri')
+    .regex(/[A-Z]/, 'La password deve contenere almeno una lettera maiuscola')
+    .regex(/[a-z]/, 'La password deve contenere almeno una lettera minuscola')
+    .regex(/[0-9]/, 'La password deve contenere almeno un numero')
+    .regex(/[^A-Za-z0-9]/, 'La password deve contenere almeno un carattere speciale'),
 });
 
 const signupSchema = loginSchema.extend({

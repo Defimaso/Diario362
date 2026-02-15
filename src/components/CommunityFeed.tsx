@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCommunityPosts } from '@/hooks/useCommunityPosts';
 import { cn } from '@/lib/utils';
+import DOMPurify from 'dompurify';
 
 function timeAgo(dateStr: string): string {
   const now = new Date();
@@ -22,6 +23,15 @@ function timeAgo(dateStr: string): string {
   if (diffDays === 1) return 'ieri';
   if (diffDays < 7) return `${diffDays} giorni fa`;
   return date.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+}
+
+// Security: Sanitize user content to prevent XSS attacks
+function sanitizeContent(content: string): string {
+  return DOMPurify.sanitize(content, {
+    ALLOWED_TAGS: [], // Strip all HTML tags, only allow plain text
+    ALLOWED_ATTR: [],
+    KEEP_CONTENT: true, // Keep text content even when stripping tags
+  });
 }
 
 export default function CommunityFeed() {
@@ -140,7 +150,7 @@ export default function CommunityFeed() {
                     </span>
                   </div>
                   <p className="text-sm text-foreground/90 mt-1 leading-relaxed whitespace-pre-wrap break-words">
-                    {post.content}
+                    {sanitizeContent(post.content)}
                   </p>
                 </div>
 
