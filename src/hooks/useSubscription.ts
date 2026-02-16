@@ -46,9 +46,9 @@ export function useSubscription() {
 
     const fetchSubscription = async () => {
       const { data, error } = await supabase
-        .from('user_subscriptions' as any)
+        .from('profiles')
         .select('plan, activated_at, activation_code, trial_ends_at')
-        .eq('user_id', user.id)
+        .eq('id', user.id)
         .single();
 
       if (error || !data) {
@@ -72,11 +72,11 @@ export function useSubscription() {
 
     const trimmedCode = code.trim().toUpperCase();
 
-    // 1. Fetch own subscription to verify the code
+    // 1. Fetch own profile to verify the code
     const { data: sub, error: fetchError } = await supabase
-      .from('user_subscriptions' as any)
+      .from('profiles')
       .select('activation_code')
-      .eq('user_id', user.id)
+      .eq('id', user.id)
       .single();
 
     if (fetchError || !sub) {
@@ -89,12 +89,12 @@ export function useSubscription() {
 
     // 2. Code matches — activate premium
     const { error: updateError } = await supabase
-      .from('user_subscriptions' as any)
+      .from('profiles')
       .update({
         plan: 'premium',
         activated_at: new Date().toISOString(),
       } as any)
-      .eq('user_id', user.id);
+      .eq('id', user.id);
 
     if (updateError) {
       return { success: false, error: 'Errore durante l\'attivazione. Riprova.' };

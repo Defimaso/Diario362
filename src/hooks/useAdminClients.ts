@@ -143,19 +143,6 @@ export const useAdminClients = () => {
       if (checkinsError) throw checkinsError;
       console.log('useAdminClients - Checkins loaded:', checkinsData?.length);
 
-      // Fetch subscription status for premium detection and pending codes
-      const { data: subscriptionsData } = await supabase
-        .from('user_subscriptions' as any)
-        .select('user_id, plan, activation_code');
-
-      const subsMap = new Map<string, { plan: string; activation_code: string | null }>();
-      ((subscriptionsData as any[]) || []).forEach((s: any) => {
-        subsMap.set(s.user_id, { plan: s.plan, activation_code: s.activation_code });
-      });
-      const premiumUserIds = new Set(
-        [...subsMap.entries()].filter(([, v]) => v.plan === 'premium').map(([k]) => k)
-      );
-
       // Build client data
       const collaboratorCoachName = user.email ? getCollaboratorCoachName(user.email) : null;
 
@@ -174,8 +161,8 @@ export const useAdminClients = () => {
           need_profile: (profile as any).need_profile || null,
           referral_source: (profile as any).referral_source || null,
           coach_names: coachNames,
-          is_premium: premiumUserIds.has(profile.id),
-          premium_code: subsMap.get(profile.id)?.activation_code || null,
+          is_premium: (profile as any).plan === 'premium',
+          premium_code: (profile as any).activation_code || null,
           streak: calculateStreak(userCheckins),
           last_checkin: lastCheckin ? {
             date: lastCheckin.date,
