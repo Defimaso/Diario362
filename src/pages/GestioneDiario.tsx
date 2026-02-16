@@ -122,11 +122,11 @@ const GestioneDiario = () => {
       if (clients.length === 0) return;
 
       const clientIds = clients.map(c => c.id);
-      const { data } = await supabase
-        .from('profiles')
+      const { data } = await (supabase
+        .from('profiles') as any)
         .select('id')
         .in('id', clientIds)
-        .eq('is_premium' as any, true);
+        .eq('is_premium', true);
 
       if (data) {
         const premiumSet = new Set<string>();
