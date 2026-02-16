@@ -315,17 +315,16 @@ const GestioneDiario = () => {
       code += chars[Math.floor(Math.random() * chars.length)];
     }
 
-    const { data, error } = await supabase.rpc('generate_premium_code' as any, {
-      _client_id: client.id,
-      _code: code,
-    });
+    const { error } = await supabase
+      .from('profiles')
+      .update({ premium_code: code, updated_at: new Date().toISOString() } as any)
+      .eq('id', client.id);
 
     setIsGeneratingPremiumCode(false);
 
-    if (error || (data && !(data as any).success)) {
-      const msg = (data as any)?.error || error?.message || 'Errore sconosciuto';
-      console.error('Generate premium code error:', msg);
-      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile generare il codice: ${msg}` });
+    if (error) {
+      console.error('Generate premium code error:', error);
+      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile generare il codice: ${error.message}` });
     } else {
       setGeneratedPremiumCode(code);
       toast({ title: 'Codice generato!', description: `Codice per ${client.full_name}: ${code}` });
