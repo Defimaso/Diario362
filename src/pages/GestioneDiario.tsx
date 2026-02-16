@@ -97,8 +97,8 @@ const GestioneDiario = () => {
   const [messageContent, setMessageContent] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
-  // Premium status tracking
-  const [clientSubscriptions, setClientSubscriptions] = useState<Map<string, { plan: string; activation_code: string | null }>>(new Map());
+  // Premium status tracking (uses profiles.is_premium)
+  const [premiumClients, setPremiumClients] = useState<Set<string>>(new Set());
 
   // Premium activation dialog
   const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
@@ -116,26 +116,26 @@ const GestioneDiario = () => {
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
 
-  // Fetch subscription status for all clients via RPC
+  // Fetch premium status from profiles table
   useEffect(() => {
-    const fetchSubscriptions = async () => {
+    const fetchPremiumStatus = async () => {
       if (clients.length === 0) return;
 
       const clientIds = clients.map(c => c.id);
-      const { data } = await supabase.rpc('get_client_subscriptions', {
-        client_ids: clientIds,
-      });
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, is_premium')
+        .in('id', clientIds)
+        .eq('is_premium', true);
 
       if (data) {
-        const subsMap = new Map<string, { plan: string; activation_code: string | null }>();
-        (data as any[]).forEach(sub => {
-          subsMap.set(sub.user_id, { plan: sub.plan, activation_code: sub.activation_code });
-        });
-        setClientSubscriptions(subsMap);
+        const premiumSet = new Set<string>();
+        data.forEach((p: any) => premiumSet.add(p.id));
+        setPremiumClients(premiumSet);
       }
     };
 
-    fetchSubscriptions();
+    fetchPremiumStatus();
   }, [clients]);
 
   // Analytics: compute team-wide metrics (must be before early returns)
@@ -446,13 +446,16 @@ const GestioneDiario = () => {
     if (!premiumTarget || !user) return;
     setIsGrantingPremium(true);
 
-    const currentSub = clientSubscriptions.get(premiumTarget.id);
-    const isCurrentlyPremium = currentSub?.plan === 'premium';
+    const isCurrentlyPremium = premiumClients.has(premiumTarget.id);
 
-    const { data, error } = await supabase.rpc('toggle_premium', {
-      target_user_id: premiumTarget.id,
-      grant_premium: !isCurrentlyPremium,
-    });
+    const { error } = await supabase
+      .from('profiles')
+      .update({
+        is_premium: !isCurrentlyPremium,
+        premium_activated_at: !isCurrentlyPremium ? new Date().toISOString() : null,
+        premium_activated_by: !isCurrentlyPremium ? user.id : null,
+      } as any)
+      .eq('id', premiumTarget.id);
 
     setIsGrantingPremium(false);
     setPremiumDialogOpen(false);
@@ -460,16 +463,14 @@ const GestioneDiario = () => {
     if (error) {
       console.error('Premium toggle error:', error);
       toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${error.message}` });
-    } else if (data && !(data as any).success) {
-      toast({ variant: 'destructive', title: 'Errore', description: (data as any).error || 'Operazione non riuscita' });
     } else {
       // Update local state immediately
-      setClientSubscriptions(prev => {
-        const next = new Map(prev);
+      setPremiumClients(prev => {
+        const next = new Set(prev);
         if (isCurrentlyPremium) {
-          next.set(premiumTarget.id, { plan: 'free', activation_code: null });
+          next.delete(premiumTarget.id);
         } else {
-          next.set(premiumTarget.id, { plan: 'premium', activation_code: `COACH_${user.id.slice(0, 8).toUpperCase()}` });
+          next.add(premiumTarget.id);
         }
         return next;
       });
@@ -748,28 +749,11 @@ const GestioneDiario = () => {
                                       🔥 {client.streak}
                                     </span>
                                   )}
-                                  {clientSubscriptions.get(client.id)?.plan === 'premium' && (
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <span className="text-xs bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full shrink-0 cursor-help flex items-center gap-1">
-                                          <Crown className="w-3 h-3" />
-                                          Premium
-                                        </span>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="bg-card border-border">
-                                        <p className="text-sm">
-                                          <span className="font-semibold">Piano Premium</span>
-                                          {clientSubscriptions.get(client.id)?.activation_code && (
-                                            <>
-                                              <br />
-                                              <span className="text-muted-foreground text-xs">
-                                                Codice: {clientSubscriptions.get(client.id)?.activation_code}
-                                              </span>
-                                            </>
-                                          )}
-                                        </p>
-                                      </TooltipContent>
-                                    </Tooltip>
+                                  {premiumClients.has(client.id) && (
+                                    <span className="text-xs bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1">
+                                      <Crown className="w-3 h-3" />
+                                      Premium
+                                    </span>
                                   )}
                                   {client.need_profile && (
                                     <Tooltip>
@@ -886,7 +870,7 @@ const GestioneDiario = () => {
                           </Button>
 
                           {/* Premium Toggle Button */}
-                          {clientSubscriptions.get(client.id)?.plan === 'premium' ? (
+                          {premiumClients.has(client.id) ? (
                             <Button
                               size="sm"
                               variant="outline"
@@ -1222,13 +1206,13 @@ const GestioneDiario = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <Crown className="w-5 h-5 text-amber-500" />
-              {premiumTarget && clientSubscriptions.get(premiumTarget.id)?.plan === 'premium'
+              {premiumTarget && premiumClients.has(premiumTarget.id)
                 ? `Disattivare Premium per ${premiumTarget?.full_name}?`
                 : `Attivare Premium per ${premiumTarget?.full_name}?`
               }
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {premiumTarget && clientSubscriptions.get(premiumTarget.id)?.plan === 'premium' ? (
+              {premiumTarget && premiumClients.has(premiumTarget.id) ? (
                 <>
                   <strong>{premiumTarget?.full_name}</strong> perderà l'accesso a tutte le funzionalità premium:
                   <ul className="list-disc ml-5 mt-2 space-y-1">
@@ -1257,14 +1241,14 @@ const GestioneDiario = () => {
               onClick={handlePremiumToggle}
               disabled={isGrantingPremium}
               className={
-                premiumTarget && clientSubscriptions.get(premiumTarget.id)?.plan === 'premium'
+                premiumTarget && premiumClients.has(premiumTarget.id)
                   ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
                   : "bg-amber-500 text-white hover:bg-amber-600"
               }
             >
               {isGrantingPremium ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Elaborazione...</>
-              ) : premiumTarget && clientSubscriptions.get(premiumTarget.id)?.plan === 'premium' ? (
+              ) : premiumTarget && premiumClients.has(premiumTarget.id) ? (
                 'Disattiva Premium'
               ) : (
                 'Attiva Premium'
