@@ -20,6 +20,7 @@ export interface ClientData {
     two_percent_edge: string | null;
   } | null;
   status: 'green' | 'yellow' | 'red';
+  is_premium: boolean;
 }
 
 type CoachName = 'Ilaria' | 'Marco' | 'Martina' | 'Michela' | 'Cristina';
@@ -159,6 +160,7 @@ export const useAdminClients = () => {
           need_profile: (profile as any).need_profile || null,
           referral_source: (profile as any).referral_source || null,
           coach_names: coachNames,
+          is_premium: !!(profile as any).is_premium,
           streak: calculateStreak(userCheckins),
           last_checkin: lastCheckin ? {
             date: lastCheckin.date,

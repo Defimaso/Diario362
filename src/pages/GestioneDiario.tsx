@@ -110,27 +110,12 @@ const GestioneDiario = () => {
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
 
-  // Fetch premium status from activation_codes (PREMIUM_ prefix)
+  // Derive premium status from profiles.is_premium (already fetched in useAdminClients)
   useEffect(() => {
-    const fetchPremiumStatus = async () => {
-      if (clients.length === 0) return;
-
-      const clientIds = clients.map(c => c.id);
-      const { data } = await (supabase
-        .from('activation_codes' as any)
-        .select('used_by')
-        .like('code', 'PREMIUM_%')
-        .eq('is_used', true)
-        .in('used_by', clientIds) as any);
-
-      if (data) {
-        const premiumSet = new Set<string>();
-        (data as any[]).forEach((row: any) => premiumSet.add(row.used_by));
-        setPremiumClients(premiumSet);
-      }
-    };
-
-    fetchPremiumStatus();
+    if (clients.length === 0) return;
+    const premiumSet = new Set<string>();
+    clients.forEach(c => { if (c.is_premium) premiumSet.add(c.id); });
+    setPremiumClients(premiumSet);
   }, [clients]);
 
   // Analytics: compute team-wide metrics (must be before early returns)
@@ -436,62 +421,24 @@ const GestioneDiario = () => {
     setPremiumDialogOpen(true);
   };
 
-  // Admin grant/revoke premium for a specific client
+  // Admin grant/revoke premium for a specific client via edge function
   const handlePremiumToggle = async () => {
     if (!premiumTarget || !user) return;
     setIsGrantingPremium(true);
 
     const isCurrentlyPremium = premiumClients.has(premiumTarget.id);
 
-    let error: any = null;
-
-    if (isCurrentlyPremium) {
-      // Revoke: delete the PREMIUM_ code for this client
-      const result = await (supabase
-        .from('activation_codes' as any)
-        .delete()
-        .like('code', 'PREMIUM_%')
-        .eq('used_by', premiumTarget.id) as any);
-      error = result.error;
-
-      // Also update user_subscriptions to free
-      if (!error) {
-        await supabase
-          .from('user_subscriptions' as any)
-          .upsert({ user_id: premiumTarget.id, plan: 'free', activated_at: null, activation_code: null } as any, { onConflict: 'user_id' });
-      }
-    } else {
-      // Grant: insert a PREMIUM_ code marked as used by this client
-      const premiumCode = `PREMIUM_${Date.now()}`;
-      const result = await supabase
-        .from('activation_codes' as any)
-        .insert({
-          code: premiumCode,
-          is_used: true,
-          used_by: premiumTarget.id,
-          created_by: user.id,
-        } as any);
-      error = result.error;
-
-      // Also update user_subscriptions to premium
-      if (!error) {
-        await supabase
-          .from('user_subscriptions' as any)
-          .upsert({
-            user_id: premiumTarget.id,
-            plan: 'premium',
-            activated_at: new Date().toISOString(),
-            activation_code: premiumCode,
-          } as any, { onConflict: 'user_id' });
-      }
-    }
+    const { data, error } = await supabase.functions.invoke('toggle-premium', {
+      body: { userId: premiumTarget.id, grantPremium: !isCurrentlyPremium },
+    });
 
     setIsGrantingPremium(false);
     setPremiumDialogOpen(false);
 
-    if (error) {
-      console.error('Premium toggle error:', error);
-      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${error.message}` });
+    if (error || (data && data.error)) {
+      const msg = data?.error || error?.message || 'Errore sconosciuto';
+      console.error('Premium toggle error:', msg);
+      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${msg}` });
     } else {
       // Update local state immediately
       setPremiumClients(prev => {
