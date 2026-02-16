@@ -1,28 +1,25 @@
 -- ============================================
 -- Fix RLS Policies for user_subscriptions
 -- Problema: coach/admin non possono attivare premium per i clienti
--- Mancava super_admin e WITH CHECK per INSERT/UPDATE
+-- app_role enum: admin, collaborator, client (no super_admin)
+-- super_admin is checked via is_super_admin() function
 -- ============================================
 
--- Drop existing admin policy (might be missing super_admin)
+-- Drop existing admin policy
 DROP POLICY IF EXISTS "Admins can manage all subscriptions" ON public.user_subscriptions;
 
--- Recreate with all staff roles AND explicit WITH CHECK
+-- Recreate with correct role checks + is_super_admin function
 CREATE POLICY "Staff can manage all subscriptions"
   ON public.user_subscriptions FOR ALL
   USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_roles.user_id = auth.uid()
-      AND user_roles.role IN ('admin', 'super_admin', 'collaborator')
-    )
+    has_role(auth.uid(), 'admin'::app_role)
+    OR has_role(auth.uid(), 'collaborator'::app_role)
+    OR is_super_admin(auth.uid())
   )
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_roles.user_id = auth.uid()
-      AND user_roles.role IN ('admin', 'super_admin', 'collaborator')
-    )
+    has_role(auth.uid(), 'admin'::app_role)
+    OR has_role(auth.uid(), 'collaborator'::app_role)
+    OR is_super_admin(auth.uid())
   );
 
 -- Also ensure trial_ends_at column exists (used in useSubscription.ts)

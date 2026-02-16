@@ -1,6 +1,7 @@
 -- ============================================
 -- Fix RLS Policy for onboarding_leads
 -- SECURITY FIX: Prevent anyone from updating any lead
+-- app_role enum: admin, collaborator, client
 -- ============================================
 
 -- Drop the insecure update policy
@@ -10,18 +11,12 @@ DROP POLICY IF EXISTS "Anyone can update their own lead" ON public.onboarding_le
 CREATE POLICY "Only admins can update leads"
   ON public.onboarding_leads FOR UPDATE
   USING (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid()
-      AND role IN ('admin', 'super_admin')
-    )
+    has_role(auth.uid(), 'admin'::app_role)
+    OR is_super_admin(auth.uid())
   )
   WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM public.user_roles
-      WHERE user_id = auth.uid()
-      AND role IN ('admin', 'super_admin')
-    )
+    has_role(auth.uid(), 'admin'::app_role)
+    OR is_super_admin(auth.uid())
   );
 
 COMMENT ON POLICY "Only admins can update leads" ON public.onboarding_leads IS
