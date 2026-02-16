@@ -116,21 +116,19 @@ const GestioneDiario = () => {
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
 
-  // Fetch premium status from profiles table
+  // Fetch premium status via RPC (bypasses PostgREST schema cache)
   useEffect(() => {
     const fetchPremiumStatus = async () => {
       if (clients.length === 0) return;
 
       const clientIds = clients.map(c => c.id);
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, is_premium')
-        .in('id', clientIds)
-        .eq('is_premium', true);
+      const { data } = await supabase.rpc('get_premium_clients', {
+        client_ids: clientIds,
+      });
 
       if (data) {
         const premiumSet = new Set<string>();
-        data.forEach((p: any) => premiumSet.add(p.id));
+        (data as any[]).forEach((p: any) => premiumSet.add(p.id));
         setPremiumClients(premiumSet);
       }
     };
@@ -448,14 +446,10 @@ const GestioneDiario = () => {
 
     const isCurrentlyPremium = premiumClients.has(premiumTarget.id);
 
-    const { error } = await supabase
-      .from('profiles')
-      .update({
-        is_premium: !isCurrentlyPremium,
-        premium_activated_at: !isCurrentlyPremium ? new Date().toISOString() : null,
-        premium_activated_by: !isCurrentlyPremium ? user.id : null,
-      } as any)
-      .eq('id', premiumTarget.id);
+    const { data, error } = await supabase.rpc('toggle_premium', {
+      target_user_id: premiumTarget.id,
+      grant_premium: !isCurrentlyPremium,
+    });
 
     setIsGrantingPremium(false);
     setPremiumDialogOpen(false);
@@ -463,6 +457,8 @@ const GestioneDiario = () => {
     if (error) {
       console.error('Premium toggle error:', error);
       toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${error.message}` });
+    } else if (data && !(data as any).success) {
+      toast({ variant: 'destructive', title: 'Errore', description: (data as any).error || 'Operazione non riuscita' });
     } else {
       // Update local state immediately
       setPremiumClients(prev => {
