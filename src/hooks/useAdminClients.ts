@@ -146,12 +146,33 @@ export const useAdminClients = () => {
       // Build client data
       const collaboratorCoachName = user.email ? getCollaboratorCoachName(user.email) : null;
 
+      // Fetch premium status from secondary project API
+      let premiumMap: Record<string, { plan: string; activation_code: string | null }> = {};
+      try {
+        const premiumPromises = clientProfiles.map(async (p) => {
+          const res = await fetch('https://ppbbqchycxffsfavtsjp.supabase.co/functions/v1/toggle-premium', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'check-status', userId: p.id }),
+          });
+          const data = await res.json();
+          return { userId: p.id, plan: data?.plan || 'free', activation_code: data?.activation_code || null };
+        });
+        const premiumResults = await Promise.all(premiumPromises);
+        for (const r of premiumResults) {
+          premiumMap[r.userId] = { plan: r.plan, activation_code: r.activation_code };
+        }
+      } catch (e) {
+        console.warn('Failed to fetch premium status:', e);
+      }
+
       const clientsData: ClientData[] = clientProfiles.map(profile => {
         const assignments = assignmentsData?.filter(a => a.client_id === profile.id) || [];
         const coachNames = assignments.map(a => a.coach_name);
-        
+
         const userCheckins = checkinsData?.filter(c => c.user_id === profile.id) || [];
         const lastCheckin = userCheckins[0] || null;
+        const premium = premiumMap[profile.id];
 
         return {
           id: profile.id,
@@ -161,8 +182,8 @@ export const useAdminClients = () => {
           need_profile: (profile as any).need_profile || null,
           referral_source: (profile as any).referral_source || null,
           coach_names: coachNames,
-          is_premium: (profile as any).plan === 'premium' || false,
-          premium_code: (profile as any).activation_code || null,  // may be undefined if columns don't exist yet
+          is_premium: premium?.plan === 'premium' || false,
+          premium_code: premium?.activation_code || null,
           streak: calculateStreak(userCheckins),
           last_checkin: lastCheckin ? {
             date: lastCheckin.date,

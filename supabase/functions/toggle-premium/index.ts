@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Production project credentials (where users authenticate)
+const PROD_URL = "https://ezjtheshclmruzlgwyfa.supabase.co";
+const PROD_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV6anRoZXNoY2xtcnV6bGd3eWZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc2MTE0NDgsImV4cCI6MjA4MzE4NzQ0OH0.dakb7Pe8JnGS-Rj0Z80TQMT62HprSraxE8jnJYzVris";
+
 const getCorsHeaders = (origin: string | null) => ({
   'Access-Control-Allow-Origin': origin || '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -17,41 +21,41 @@ serve(async (req) => {
   }
 
   try {
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+    // This project's admin client (ppbbqchycxffsfavtsjp) — for premium_clients table
+    const localUrl = Deno.env.get('SUPABASE_URL')!;
+    const localServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const localAdmin = createClient(localUrl, localServiceKey);
 
     const body = await req.json();
     const { action } = body;
 
-    // ACTION: migrate — add premium columns to profiles (idempotent, safe to call multiple times)
-    if (action === 'migrate') {
-      const dbUrl = Deno.env.get('SUPABASE_DB_URL');
-      if (!dbUrl) {
+    // ACTION: check-status — check if a user is premium (no auth needed)
+    if (action === 'check-status') {
+      const { userId } = body;
+      if (!userId) {
         return new Response(
-          JSON.stringify({ error: 'DB URL not available' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ plan: 'free' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.5/mod.js");
-      const sql = postgres(dbUrl, { ssl: 'require' });
-
-      await sql`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free'`;
-      await sql`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activation_code TEXT`;
-      await sql`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`;
-      await sql`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ`;
-      await sql`UPDATE public.profiles SET plan = 'premium' WHERE plan IS NULL OR plan = 'free'`;
-      await sql`NOTIFY pgrst, 'reload schema'`;
-      await sql.end();
+      const { data } = await localAdmin
+        .from('premium_clients')
+        .select('plan, activation_code, activated_at')
+        .eq('user_id', userId)
+        .single();
 
       return new Response(
-        JSON.stringify({ success: true, message: 'Migration completed' }),
+        JSON.stringify({
+          plan: data?.plan || 'free',
+          activation_code: data?.activation_code || null,
+          activated_at: data?.activated_at || null,
+        }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // All other actions require authentication
+    // All other actions require authentication against PRODUCTION project
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -60,10 +64,13 @@ serve(async (req) => {
       );
     }
 
-    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    // Verify user against production project
+    const token = authHeader.replace('Bearer ', '');
+    const prodClient = createClient(PROD_URL, PROD_ANON_KEY, {
+      global: { headers: { Authorization: `Bearer ${token}` } }
+    });
 
+    const { data: { user }, error: authError } = await prodClient.auth.getUser(token);
     if (authError || !user) {
       return new Response(
         JSON.stringify({ error: 'Non autorizzato' }),
@@ -71,8 +78,8 @@ serve(async (req) => {
       );
     }
 
-    // Check if caller is staff
-    const { data: callerRoles } = await supabaseAdmin
+    // Check if caller is staff on the PRODUCTION project
+    const { data: callerRoles } = await prodClient
       .from('user_roles')
       .select('role')
       .eq('user_id', user.id);
@@ -97,14 +104,18 @@ serve(async (req) => {
         code += chars[Math.floor(Math.random() * chars.length)];
       }
 
-      const { error: updateError } = await supabaseAdmin
-        .from('profiles')
-        .update({ activation_code: code } as any)
-        .eq('id', clientId);
+      // Upsert into premium_clients on THIS project
+      const { error: upsertError } = await localAdmin
+        .from('premium_clients')
+        .upsert({
+          user_id: clientId,
+          activation_code: code,
+          plan: 'free',
+        }, { onConflict: 'user_id' });
 
-      if (updateError) {
+      if (upsertError) {
         return new Response(
-          JSON.stringify({ error: updateError.message }),
+          JSON.stringify({ error: upsertError.message }),
           { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
@@ -127,33 +138,36 @@ serve(async (req) => {
 
       const trimmedCode = code.trim().toUpperCase();
 
-      const { data: profile, error: fetchError } = await supabaseAdmin
-        .from('profiles')
+      // Fetch the user's premium record from THIS project
+      const { data: record, error: fetchError } = await localAdmin
+        .from('premium_clients')
         .select('activation_code')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
-      if (fetchError || !profile) {
+      if (fetchError || !record) {
         return new Response(
-          JSON.stringify({ error: 'Profilo non trovato' }),
-          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Nessun codice assegnato. Chiedi al tuo coach.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      if ((profile as any).activation_code !== trimmedCode) {
+      if (record.activation_code !== trimmedCode) {
         return new Response(
           JSON.stringify({ error: 'Codice non valido' }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const { error: updateError } = await supabaseAdmin
-        .from('profiles')
+      // Code matches — activate premium
+      const { error: updateError } = await localAdmin
+        .from('premium_clients')
         .update({
           plan: 'premium',
           activated_at: new Date().toISOString(),
-        } as any)
-        .eq('id', user.id);
+          activation_code: null, // clear code after use
+        })
+        .eq('user_id', user.id);
 
       if (updateError) {
         return new Response(

@@ -9,20 +9,21 @@ interface Subscription {
   trial_ends_at: string | null;
 }
 
-// Track whether migration has been attempted this session
-let migrationAttempted = false;
+// Premium API lives on the secondary Supabase project (ppbbqchycxffsfavtsjp)
+// because we can't deploy edge functions on the Lovable-managed production project
+const PREMIUM_API_URL = 'https://ppbbqchycxffsfavtsjp.supabase.co/functions/v1/toggle-premium';
 
-async function ensureMigration() {
-  if (migrationAttempted) return;
-  migrationAttempted = true;
-  try {
-    await supabase.functions.invoke('toggle-premium', {
-      body: { action: 'migrate' },
-    });
-    console.log('Premium migration completed');
-  } catch (e) {
-    console.warn('Premium migration skipped:', e);
+async function callPremiumApi(action: string, body: Record<string, unknown> = {}, authToken?: string) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (authToken) {
+    headers['Authorization'] = `Bearer ${authToken}`;
   }
+  const res = await fetch(PREMIUM_API_URL, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ action, ...body }),
+  });
+  return res.json();
 }
 
 export function useSubscription() {
@@ -61,28 +62,17 @@ export function useSubscription() {
     }
 
     const fetchSubscription = async () => {
-      // Trigger migration to add premium columns (runs once per session)
-      await ensureMigration();
-
-      // Use select('*') so it never fails even if premium columns don't exist yet
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error || !data) {
-        console.warn('useSubscription fetch error:', error?.message);
-        setSubscription({ plan: 'free', activated_at: null, activation_code: null, trial_ends_at: null });
-      } else {
-        // Premium columns may or may not exist — gracefully default
-        const d = data as any;
+      try {
+        const data = await callPremiumApi('check-status', { userId: user.id });
         setSubscription({
-          plan: d.plan || 'free',
-          activated_at: d.activated_at || null,
-          activation_code: d.activation_code || null,
-          trial_ends_at: d.trial_ends_at || null,
+          plan: data?.plan || 'free',
+          activated_at: data?.activated_at || null,
+          activation_code: data?.activation_code || null,
+          trial_ends_at: null,
         });
+      } catch (e) {
+        console.warn('useSubscription fetch error:', e);
+        setSubscription({ plan: 'free', activated_at: null, activation_code: null, trial_ends_at: null });
       }
       setIsLoading(false);
     };
@@ -93,30 +83,30 @@ export function useSubscription() {
   const activateCode = useCallback(async (code: string): Promise<{ success: boolean; error?: string }> => {
     if (!user) return { success: false, error: 'Non autenticato' };
 
-    // Use edge function for activation (bypasses schema cache issues)
-    const { data, error } = await supabase.functions.invoke('toggle-premium', {
-      body: { action: 'activate-code', code: code.trim().toUpperCase() },
-    });
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) return { success: false, error: 'Sessione scaduta. Riprova il login.' };
 
-    if (error) {
-      console.error('activate-code edge function error:', error);
+      const result = await callPremiumApi('activate-code', { code: code.trim().toUpperCase() }, token);
+
+      if (result?.error) {
+        return { success: false, error: result.error };
+      }
+
+      // Update local state
+      setSubscription({
+        plan: 'premium',
+        activated_at: new Date().toISOString(),
+        activation_code: code.trim().toUpperCase(),
+        trial_ends_at: null,
+      });
+
+      return { success: true };
+    } catch (e) {
+      console.error('activate-code error:', e);
       return { success: false, error: 'Errore durante l\'attivazione. Riprova.' };
     }
-
-    const result = data as any;
-    if (result?.error) {
-      return { success: false, error: result.error };
-    }
-
-    // Update local state
-    setSubscription({
-      plan: 'premium',
-      activated_at: new Date().toISOString(),
-      activation_code: code.trim().toUpperCase(),
-      trial_ends_at: null,
-    });
-
-    return { success: true };
   }, [user]);
 
   const isTrial = isTrialActive();

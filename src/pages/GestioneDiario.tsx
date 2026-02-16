@@ -305,24 +305,31 @@ const GestioneDiario = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Generate a premium code for a specific client via edge function
+  // Generate a premium code for a specific client via premium API on secondary project
   const generatePremiumCode = async (client: ClientData) => {
     setIsGeneratingPremiumCode(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('toggle-premium', {
-        body: { action: 'generate-code', clientId: client.id },
-      });
-
-      setIsGeneratingPremiumCode(false);
-
-      if (error) {
-        console.error('Generate premium code edge function error:', error);
-        toast({ variant: 'destructive', title: 'Errore', description: `Impossibile generare il codice: ${error.message}` });
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) {
+        setIsGeneratingPremiumCode(false);
+        toast({ variant: 'destructive', title: 'Errore', description: 'Sessione scaduta. Riprova il login.' });
         return;
       }
 
-      const result = data as any;
+      const res = await fetch('https://ppbbqchycxffsfavtsjp.supabase.co/functions/v1/toggle-premium', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: 'generate-code', clientId: client.id }),
+      });
+
+      const result = await res.json();
+      setIsGeneratingPremiumCode(false);
+
       if (result?.error) {
         console.error('Generate premium code error:', result.error);
         toast({ variant: 'destructive', title: 'Errore', description: `Impossibile generare il codice: ${result.error}` });
