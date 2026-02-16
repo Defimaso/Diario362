@@ -72,20 +72,35 @@ export function useSubscription() {
 
     const trimmedCode = code.trim().toUpperCase();
 
-    const { data, error } = await supabase.rpc('activate_premium_code' as any, {
-      _code: trimmedCode,
-    });
+    // 1. Fetch own subscription to verify the code
+    const { data: sub, error: fetchError } = await supabase
+      .from('user_subscriptions' as any)
+      .select('activation_code')
+      .eq('user_id', user.id)
+      .single();
 
-    if (error) {
+    if (fetchError || !sub) {
+      return { success: false, error: 'Nessun codice assegnato. Chiedi al tuo coach.' };
+    }
+
+    if ((sub as any).activation_code !== trimmedCode) {
+      return { success: false, error: 'Codice non valido' };
+    }
+
+    // 2. Code matches — activate premium
+    const { error: updateError } = await supabase
+      .from('user_subscriptions' as any)
+      .update({
+        plan: 'premium',
+        activated_at: new Date().toISOString(),
+      } as any)
+      .eq('user_id', user.id);
+
+    if (updateError) {
       return { success: false, error: 'Errore durante l\'attivazione. Riprova.' };
     }
 
-    const result = data as { success: boolean; error?: string };
-    if (!result.success) {
-      return { success: false, error: result.error || 'Codice non valido' };
-    }
-
-    // Update local state
+    // 3. Update local state
     setSubscription({
       plan: 'premium',
       activated_at: new Date().toISOString(),

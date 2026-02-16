@@ -315,10 +315,14 @@ const GestioneDiario = () => {
       code += chars[Math.floor(Math.random() * chars.length)];
     }
 
+    // Save code to user_subscriptions (staff has full RLS access on this table)
     const { error } = await supabase
-      .from('profiles')
-      .update({ premium_code: code, updated_at: new Date().toISOString() } as any)
-      .eq('id', client.id);
+      .from('user_subscriptions' as any)
+      .upsert({
+        user_id: client.id,
+        plan: 'free',
+        activation_code: code,
+      } as any, { onConflict: 'user_id' });
 
     setIsGeneratingPremiumCode(false);
 
