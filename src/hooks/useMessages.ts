@@ -105,7 +105,7 @@ export function useMessages(otherUserId?: string) {
       .order('created_at', { ascending: true });
 
     if (!error && data) {
-      setMessages(data as Message[]);
+      setMessages(data as unknown as Message[]);
 
       // Mark unread messages as read
       const unreadIds = (data as any[])
@@ -139,7 +139,7 @@ export function useMessages(otherUserId?: string) {
 
     if (error) return { error: error.message };
 
-    setMessages(prev => [...prev, data as Message]);
+    setMessages(prev => [...prev, data as unknown as Message]);
     return { error: null };
   }, [user]);
 
