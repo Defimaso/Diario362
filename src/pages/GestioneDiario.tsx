@@ -66,11 +66,9 @@ const GestioneDiario = () => {
   const [deleteConfirmStep, setDeleteConfirmStep] = useState(1);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Coach notes state
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [notesClient, setNotesClient] = useState<ClientData | null>(null);
 
-  // Activation codes state
   const [codesDialogOpen, setCodesDialogOpen] = useState(false);
   const [codeCount, setCodeCount] = useState(5);
   const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
@@ -78,10 +76,8 @@ const GestioneDiario = () => {
   const [existingCodes, setExistingCodes] = useState<Array<{ code: string; is_used: boolean; used_by: string | null; created_at: string }>>([]);
   const [showExistingCodes, setShowExistingCodes] = useState(false);
 
-  // Analytics view state
   const [showAnalytics, setShowAnalytics] = useState(false);
 
-  // Challenge creation state
   const [challengeDialogOpen, setChallengeDialogOpen] = useState(false);
   const [challengeTitle, setChallengeTitle] = useState('');
   const [challengeDesc, setChallengeDesc] = useState('');
@@ -91,16 +87,14 @@ const GestioneDiario = () => {
   const [isCreatingChallenge, setIsCreatingChallenge] = useState(false);
   const { createChallenge } = useChallenges();
 
-  // Quick message state
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [messageClient, setMessageClient] = useState<ClientData | null>(null);
   const [messageContent, setMessageContent] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
-  // Premium status tracking (uses profiles.is_premium)
+  // Premium status tracking (uses activation_codes with PREMIUM_ prefix)
   const [premiumClients, setPremiumClients] = useState<Set<string>>(new Set());
 
-  // Premium activation dialog
   const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
   const [premiumTarget, setPremiumTarget] = useState<ClientData | null>(null);
   const [isGrantingPremium, setIsGrantingPremium] = useState(false);
@@ -116,7 +110,7 @@ const GestioneDiario = () => {
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
 
-  // Fetch premium status from activation_codes (existing table, no schema cache issues)
+  // Fetch premium status from activation_codes (PREMIUM_ prefix)
   useEffect(() => {
     const fetchPremiumStatus = async () => {
       if (clients.length === 0) return;
@@ -125,7 +119,7 @@ const GestioneDiario = () => {
       const { data } = await (supabase
         .from('activation_codes' as any)
         .select('used_by')
-        .like('code', 'PREMIUM_%' as any)
+        .like('code', 'PREMIUM_%')
         .eq('is_used', true)
         .in('used_by', clientIds) as any);
 
@@ -456,20 +450,40 @@ const GestioneDiario = () => {
       const result = await (supabase
         .from('activation_codes' as any)
         .delete()
-        .like('code', 'PREMIUM_%' as any)
+        .like('code', 'PREMIUM_%')
         .eq('used_by', premiumTarget.id) as any);
       error = result.error;
+
+      // Also update user_subscriptions to free
+      if (!error) {
+        await supabase
+          .from('user_subscriptions' as any)
+          .upsert({ user_id: premiumTarget.id, plan: 'free', activated_at: null, activation_code: null } as any, { onConflict: 'user_id' });
+      }
     } else {
       // Grant: insert a PREMIUM_ code marked as used by this client
+      const premiumCode = `PREMIUM_${Date.now()}`;
       const result = await supabase
         .from('activation_codes' as any)
         .insert({
-          code: `PREMIUM_${Date.now()}`,
+          code: premiumCode,
           is_used: true,
           used_by: premiumTarget.id,
           created_by: user.id,
         } as any);
       error = result.error;
+
+      // Also update user_subscriptions to premium
+      if (!error) {
+        await supabase
+          .from('user_subscriptions' as any)
+          .upsert({
+            user_id: premiumTarget.id,
+            plan: 'premium',
+            activated_at: new Date().toISOString(),
+            activation_code: premiumCode,
+          } as any, { onConflict: 'user_id' });
+      }
     }
 
     setIsGrantingPremium(false);
