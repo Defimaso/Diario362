@@ -116,21 +116,22 @@ const GestioneDiario = () => {
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
 
-  // Fetch premium status from profiles (existing table, no schema cache issues)
+  // Fetch premium status from activation_codes (existing table, no schema cache issues)
   useEffect(() => {
     const fetchPremiumStatus = async () => {
       if (clients.length === 0) return;
 
       const clientIds = clients.map(c => c.id);
       const { data } = await (supabase
-        .from('profiles') as any)
-        .select('id')
-        .in('id', clientIds)
-        .eq('is_premium', true);
+        .from('activation_codes' as any)
+        .select('used_by')
+        .like('code', 'PREMIUM_%' as any)
+        .eq('is_used', true)
+        .in('used_by', clientIds) as any);
 
       if (data) {
         const premiumSet = new Set<string>();
-        data.forEach((p: any) => premiumSet.add(p.id));
+        (data as any[]).forEach((row: any) => premiumSet.add(row.used_by));
         setPremiumClients(premiumSet);
       }
     };
@@ -448,34 +449,35 @@ const GestioneDiario = () => {
 
     const isCurrentlyPremium = premiumClients.has(premiumTarget.id);
 
-    let data: any = null;
-    let errMsg: string | null = null;
+    let error: any = null;
 
-    try {
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-      const response = await fetch('https://ppbbqchycxffsfavtsjp.supabase.co/functions/v1/toggle-premium', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId: premiumTarget.id, grantPremium: !isCurrentlyPremium }),
-      });
-      data = await response.json();
-      if (!response.ok || data.error) {
-        errMsg = data.error || `HTTP ${response.status}`;
-      }
-    } catch (err: any) {
-      errMsg = err.message || 'Errore di rete';
+    if (isCurrentlyPremium) {
+      // Revoke: delete the PREMIUM_ code for this client
+      const result = await (supabase
+        .from('activation_codes' as any)
+        .delete()
+        .like('code', 'PREMIUM_%' as any)
+        .eq('used_by', premiumTarget.id) as any);
+      error = result.error;
+    } else {
+      // Grant: insert a PREMIUM_ code marked as used by this client
+      const result = await supabase
+        .from('activation_codes' as any)
+        .insert({
+          code: `PREMIUM_${Date.now()}`,
+          is_used: true,
+          used_by: premiumTarget.id,
+          created_by: user.id,
+        } as any);
+      error = result.error;
     }
 
     setIsGrantingPremium(false);
     setPremiumDialogOpen(false);
 
-    if (errMsg) {
-      console.error('Premium toggle error:', errMsg);
-      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${errMsg}` });
+    if (error) {
+      console.error('Premium toggle error:', error);
+      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${error.message}` });
     } else {
       // Update local state immediately
       setPremiumClients(prev => {
