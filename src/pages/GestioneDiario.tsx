@@ -116,16 +116,15 @@ const GestioneDiario = () => {
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
 
-  // Fetch subscription status for all clients
+  // Fetch subscription status for all clients via RPC
   useEffect(() => {
     const fetchSubscriptions = async () => {
       if (clients.length === 0) return;
 
       const clientIds = clients.map(c => c.id);
-      const { data } = await supabase
-        .from('user_subscriptions' as any)
-        .select('user_id, plan, activation_code')
-        .in('user_id', clientIds);
+      const { data } = await supabase.rpc('get_client_subscriptions', {
+        client_ids: clientIds,
+      });
 
       if (data) {
         const subsMap = new Map<string, { plan: string; activation_code: string | null }>();
@@ -450,58 +449,34 @@ const GestioneDiario = () => {
     const currentSub = clientSubscriptions.get(premiumTarget.id);
     const isCurrentlyPremium = currentSub?.plan === 'premium';
 
-    if (isCurrentlyPremium) {
-      // Revoke premium
-      const { error } = await supabase
-        .from('user_subscriptions' as any)
-        .update({
-          plan: 'free',
-          activated_at: null,
-          activation_code: null,
-        } as any)
-        .eq('user_id', premiumTarget.id);
+    const { data, error } = await supabase.rpc('toggle_premium', {
+      target_user_id: premiumTarget.id,
+      grant_premium: !isCurrentlyPremium,
+    });
 
-      setIsGrantingPremium(false);
-      setPremiumDialogOpen(false);
+    setIsGrantingPremium(false);
+    setPremiumDialogOpen(false);
 
-      if (error) {
-        console.error('Premium deactivation error:', error);
-        toast({ variant: 'destructive', title: 'Errore', description: `Impossibile disattivare premium: ${error.message}` });
-      } else {
-        // Update local state immediately
-        setClientSubscriptions(prev => {
-          const next = new Map(prev);
-          next.set(premiumTarget.id, { plan: 'free', activation_code: null });
-          return next;
-        });
-        toast({ title: 'Premium disattivato', description: `${premiumTarget.full_name} ora ha il piano free` });
-      }
+    if (error) {
+      console.error('Premium toggle error:', error);
+      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${error.message}` });
+    } else if (data && !(data as any).success) {
+      toast({ variant: 'destructive', title: 'Errore', description: (data as any).error || 'Operazione non riuscita' });
     } else {
-      // Grant premium
-      const { error } = await supabase
-        .from('user_subscriptions' as any)
-        .upsert({
-          user_id: premiumTarget.id,
-          plan: 'premium',
-          activated_at: new Date().toISOString(),
-          activation_code: `COACH_${user.id.slice(0, 8).toUpperCase()}`,
-        } as any, { onConflict: 'user_id' });
-
-      setIsGrantingPremium(false);
-      setPremiumDialogOpen(false);
-
-      if (error) {
-        console.error('Premium activation error:', error);
-        toast({ variant: 'destructive', title: 'Errore', description: `Impossibile attivare premium: ${error.message}` });
-      } else {
-        // Update local state immediately
-        setClientSubscriptions(prev => {
-          const next = new Map(prev);
+      // Update local state immediately
+      setClientSubscriptions(prev => {
+        const next = new Map(prev);
+        if (isCurrentlyPremium) {
+          next.set(premiumTarget.id, { plan: 'free', activation_code: null });
+        } else {
           next.set(premiumTarget.id, { plan: 'premium', activation_code: `COACH_${user.id.slice(0, 8).toUpperCase()}` });
-          return next;
-        });
-        toast({ title: 'Premium attivato!', description: `${premiumTarget.full_name} ora ha accesso premium` });
-      }
+        }
+        return next;
+      });
+      toast({
+        title: isCurrentlyPremium ? 'Premium disattivato' : 'Premium attivato!',
+        description: `${premiumTarget.full_name} ora ha ${isCurrentlyPremium ? 'il piano free' : 'accesso premium'}`,
+      });
     }
     setPremiumTarget(null);
   };
