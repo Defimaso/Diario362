@@ -69,12 +69,11 @@ const GestioneDiario = () => {
   const [notesDialogOpen, setNotesDialogOpen] = useState(false);
   const [notesClient, setNotesClient] = useState<ClientData | null>(null);
 
-  const [codesDialogOpen, setCodesDialogOpen] = useState(false);
-  const [codeCount, setCodeCount] = useState(5);
-  const [generatedCodes, setGeneratedCodes] = useState<string[]>([]);
-  const [isGeneratingCodes, setIsGeneratingCodes] = useState(false);
-  const [existingCodes, setExistingCodes] = useState<Array<{ code: string; is_used: boolean; used_by: string | null; created_at: string }>>([]);
-  const [showExistingCodes, setShowExistingCodes] = useState(false);
+  // Premium code generation per-client
+  const [premiumCodeDialogOpen, setPremiumCodeDialogOpen] = useState(false);
+  const [premiumCodeTarget, setPremiumCodeTarget] = useState<ClientData | null>(null);
+  const [generatedPremiumCode, setGeneratedPremiumCode] = useState<string | null>(null);
+  const [isGeneratingPremiumCode, setIsGeneratingPremiumCode] = useState(false);
 
   const [showAnalytics, setShowAnalytics] = useState(false);
 
@@ -92,12 +91,8 @@ const GestioneDiario = () => {
   const [messageContent, setMessageContent] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
 
-  // Premium status tracking (uses activation_codes with PREMIUM_ prefix)
+  // Premium status tracking (from user_subscriptions via useAdminClients)
   const [premiumClients, setPremiumClients] = useState<Set<string>>(new Set());
-
-  const [premiumDialogOpen, setPremiumDialogOpen] = useState(false);
-  const [premiumTarget, setPremiumTarget] = useState<ClientData | null>(null);
-  const [isGrantingPremium, setIsGrantingPremium] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -310,53 +305,29 @@ const GestioneDiario = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Generate random activation codes
-  const generateCodes = async () => {
-    if (!user) return;
-    setIsGeneratingCodes(true);
+  // Generate a premium code for a specific client
+  const generatePremiumCode = async (client: ClientData) => {
+    setIsGeneratingPremiumCode(true);
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    const codes: string[] = [];
-    for (let i = 0; i < codeCount; i++) {
-      let code = '362-';
-      for (let j = 0; j < 5; j++) {
-        code += chars[Math.floor(Math.random() * chars.length)];
-      }
-      codes.push(code);
+    let code = '362-';
+    for (let j = 0; j < 5; j++) {
+      code += chars[Math.floor(Math.random() * chars.length)];
     }
 
     const { error } = await supabase
-      .from('activation_codes' as any)
-      .insert(codes.map(code => ({
-        code,
-        created_by: user.id,
-      })) as any);
+      .from('profiles')
+      .update({ premium_code: code } as any)
+      .eq('id', client.id);
 
-    setIsGeneratingCodes(false);
+    setIsGeneratingPremiumCode(false);
 
     if (error) {
-      toast({ variant: 'destructive', title: 'Errore', description: 'Impossibile generare i codici' });
+      toast({ variant: 'destructive', title: 'Errore', description: 'Impossibile generare il codice premium' });
     } else {
-      setGeneratedCodes(codes);
-      toast({ title: 'Codici generati!', description: `${codes.length} codici creati con successo` });
+      setGeneratedPremiumCode(code);
+      toast({ title: 'Codice generato!', description: `Codice per ${client.full_name}: ${code}` });
     }
-  };
-
-  const fetchExistingCodes = async () => {
-    const { data } = await supabase
-      .from('activation_codes' as any)
-      .select('code, is_used, used_by, created_at')
-      .order('created_at', { ascending: false })
-      .limit(100);
-
-    setExistingCodes((data as any[]) || []);
-    setShowExistingCodes(true);
-  };
-
-  const copyAllCodes = () => {
-    const text = generatedCodes.join('\n');
-    navigator.clipboard.writeText(text);
-    toast({ title: 'Copiato!', description: 'Codici copiati negli appunti' });
   };
 
   // Create a new challenge
@@ -415,47 +386,11 @@ const GestioneDiario = () => {
     }
   };
 
-  // Open premium confirmation dialog
-  const openPremiumDialog = (client: ClientData) => {
-    setPremiumTarget(client);
-    setPremiumDialogOpen(true);
-  };
-
-  // Admin grant/revoke premium for a specific client via edge function
-  const handlePremiumToggle = async () => {
-    if (!premiumTarget || !user) return;
-    setIsGrantingPremium(true);
-
-    const isCurrentlyPremium = premiumClients.has(premiumTarget.id);
-
-    const { data, error } = await supabase.functions.invoke('toggle-premium', {
-      body: { userId: premiumTarget.id, grantPremium: !isCurrentlyPremium },
-    });
-
-    setIsGrantingPremium(false);
-    setPremiumDialogOpen(false);
-
-    if (error || (data && data.error)) {
-      const msg = data?.error || error?.message || 'Errore sconosciuto';
-      console.error('Premium toggle error:', msg);
-      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${msg}` });
-    } else {
-      // Update local state immediately
-      setPremiumClients(prev => {
-        const next = new Set(prev);
-        if (isCurrentlyPremium) {
-          next.delete(premiumTarget.id);
-        } else {
-          next.add(premiumTarget.id);
-        }
-        return next;
-      });
-      toast({
-        title: isCurrentlyPremium ? 'Premium disattivato' : 'Premium attivato!',
-        description: `${premiumTarget.full_name} ora ha ${isCurrentlyPremium ? 'il piano free' : 'accesso premium'}`,
-      });
-    }
-    setPremiumTarget(null);
+  // Open premium code generation dialog
+  const openPremiumCodeDialog = (client: ClientData) => {
+    setPremiumCodeTarget(client);
+    setGeneratedPremiumCode(client.premium_code || null);
+    setPremiumCodeDialogOpen(true);
   };
 
   return (
@@ -505,15 +440,6 @@ const GestioneDiario = () => {
               title="Crea Sfida"
             >
               <Trophy className="w-5 h-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => { setGeneratedCodes([]); setShowExistingCodes(false); setCodesDialogOpen(true); }}
-              className="text-muted-foreground hover:text-foreground"
-              title="Codici Attivazione"
-            >
-              <Key className="w-5 h-5" />
             </Button>
             <Button
               variant="ghost"
@@ -845,26 +771,21 @@ const GestioneDiario = () => {
                             )}
                           </Button>
 
-                          {/* Premium Toggle Button */}
+                          {/* Premium Code Button */}
                           {premiumClients.has(client.id) ? (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-green-500/40 text-green-500 hover:bg-green-500/10"
-                              onClick={() => openPremiumDialog(client)}
-                            >
-                              <Crown className="w-4 h-4 mr-1.5" />
+                            <span className="text-xs text-green-500 flex items-center gap-1 px-2 py-1 border border-green-500/40 rounded-md">
+                              <Crown className="w-4 h-4" />
                               Premium Attivo
-                            </Button>
+                            </span>
                           ) : (
                             <Button
                               size="sm"
                               variant="outline"
                               className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
-                              onClick={() => openPremiumDialog(client)}
+                              onClick={() => openPremiumCodeDialog(client)}
                             >
-                              <Crown className="w-4 h-4 mr-1.5" />
-                              Attiva Premium
+                              <Key className="w-4 h-4 mr-1.5" />
+                              {client.premium_code ? 'Vedi Codice' : 'Genera Codice'}
                             </Button>
                           )}
 
@@ -971,87 +892,58 @@ const GestioneDiario = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Activation Codes Dialog */}
-      <Dialog open={codesDialogOpen} onOpenChange={setCodesDialogOpen}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+      {/* Premium Code Generation Dialog */}
+      <Dialog open={premiumCodeDialogOpen} onOpenChange={(open) => {
+        setPremiumCodeDialogOpen(open);
+        if (!open) { setPremiumCodeTarget(null); setGeneratedPremiumCode(null); }
+      }}>
+        <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Key className="w-5 h-5 text-primary" />
-              Codici di Attivazione
+              <Crown className="w-5 h-5 text-amber-500" />
+              Codice Premium per {premiumCodeTarget?.full_name}
             </DialogTitle>
             <DialogDescription>
-              Genera codici per utenti che hanno acquistato il percorso
+              Genera un codice che il cliente inserirà nell'app per sbloccare Premium
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4">
-            {/* Generate New Codes */}
-            <div className="space-y-3">
-              <h4 className="text-sm font-medium">Genera nuovi codici</h4>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={codeCount}
-                  onChange={(e) => setCodeCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
-                  className="w-20"
-                />
-                <Button onClick={generateCodes} disabled={isGeneratingCodes} className="flex-1">
-                  {isGeneratingCodes ? (
+            {generatedPremiumCode ? (
+              <div className="text-center space-y-3">
+                <div className="font-mono text-2xl font-bold tracking-widest bg-muted p-4 rounded-lg">
+                  {generatedPremiumCode}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedPremiumCode);
+                    toast({ title: 'Copiato!', description: 'Codice copiato negli appunti' });
+                  }}
+                >
+                  <Copy className="w-4 h-4 mr-1" />
+                  Copia Codice
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Invia questo codice al cliente. Una volta inserito nell'app, Premium verrà attivato e il codice sarà invalidato.
+                </p>
+              </div>
+            ) : (
+              <div className="text-center">
+                <Button
+                  onClick={() => premiumCodeTarget && generatePremiumCode(premiumCodeTarget)}
+                  disabled={isGeneratingPremiumCode}
+                  className="bg-amber-500 text-white hover:bg-amber-600"
+                >
+                  {isGeneratingPremiumCode ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generazione...</>
                   ) : (
-                    'Genera Codici'
+                    <><Key className="w-4 h-4 mr-2" />Genera Codice</>
                   )}
                 </Button>
               </div>
-            </div>
-
-            {/* Generated Codes */}
-            {generatedCodes.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-sm font-medium text-green-500">Codici generati</h4>
-                  <Button size="sm" variant="outline" onClick={copyAllCodes}>
-                    <Copy className="w-3 h-3 mr-1" />
-                    Copia tutti
-                  </Button>
-                </div>
-                <div className="bg-muted rounded-lg p-3 space-y-1 max-h-40 overflow-y-auto">
-                  {generatedCodes.map((code) => (
-                    <div key={code} className="font-mono text-sm">{code}</div>
-                  ))}
-                </div>
-              </div>
             )}
-
-            {/* View Existing Codes */}
-            <div className="border-t pt-4">
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={fetchExistingCodes}
-              >
-                Vedi codici esistenti
-              </Button>
-
-              {showExistingCodes && (
-                <div className="mt-3 space-y-2 max-h-48 overflow-y-auto">
-                  {existingCodes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-2">Nessun codice trovato</p>
-                  ) : (
-                    existingCodes.map((c) => (
-                      <div key={c.code} className="flex items-center justify-between text-sm p-2 rounded bg-muted/50">
-                        <span className="font-mono">{c.code}</span>
-                        <span className={c.is_used ? "text-muted-foreground" : "text-green-500 font-medium"}>
-                          {c.is_used ? 'Usato' : 'Disponibile'}
-                        </span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -1173,66 +1065,6 @@ const GestioneDiario = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Premium Activation/Deactivation Dialog */}
-      <AlertDialog open={premiumDialogOpen} onOpenChange={(open) => {
-        setPremiumDialogOpen(open);
-        if (!open) setPremiumTarget(null);
-      }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Crown className="w-5 h-5 text-amber-500" />
-              {premiumTarget && premiumClients.has(premiumTarget.id)
-                ? `Disattivare Premium per ${premiumTarget?.full_name}?`
-                : `Attivare Premium per ${premiumTarget?.full_name}?`
-              }
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {premiumTarget && premiumClients.has(premiumTarget.id) ? (
-                <>
-                  <strong>{premiumTarget?.full_name}</strong> perderà l'accesso a tutte le funzionalità premium:
-                  <ul className="list-disc ml-5 mt-2 space-y-1">
-                    <li>Check mensili e foto progresso</li>
-                    <li>Analisi dettagliate</li>
-                    <li>Community e sfide</li>
-                    <li>Contenuti esclusivi</li>
-                  </ul>
-                </>
-              ) : (
-                <>
-                  <strong>{premiumTarget?.full_name}</strong> avrà accesso immediato a tutte le funzionalità premium:
-                  <ul className="list-disc ml-5 mt-2 space-y-1">
-                    <li>Check mensili e foto progresso</li>
-                    <li>Analisi dettagliate</li>
-                    <li>Community e sfide</li>
-                    <li>Contenuti esclusivi</li>
-                  </ul>
-                </>
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isGrantingPremium}>Annulla</AlertDialogCancel>
-            <Button
-              onClick={handlePremiumToggle}
-              disabled={isGrantingPremium}
-              className={
-                premiumTarget && premiumClients.has(premiumTarget.id)
-                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  : "bg-amber-500 text-white hover:bg-amber-600"
-              }
-            >
-              {isGrantingPremium ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Elaborazione...</>
-              ) : premiumTarget && premiumClients.has(premiumTarget.id) ? (
-                'Disattiva Premium'
-              ) : (
-                'Attiva Premium'
-              )}
-            </Button>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 };

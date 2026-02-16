@@ -72,50 +72,20 @@ export function useSubscription() {
 
     const trimmedCode = code.trim().toUpperCase();
 
-    // 1. Check if code exists and is unused
-    const { data: codeData, error: codeError } = await supabase
-      .from('activation_codes' as any)
-      .select('id, is_used, assigned_to')
-      .eq('code', trimmedCode)
-      .eq('is_used', false)
-      .single();
+    const { data, error } = await supabase.rpc('activate_premium_code' as any, {
+      _code: trimmedCode,
+    });
 
-    if (codeError || !codeData) {
-      return { success: false, error: 'Codice non valido o gia\' utilizzato' };
-    }
-
-    // 1.1 Check if code is assigned to a specific user
-    const assignedTo = (codeData as any).assigned_to;
-    if (assignedTo && assignedTo !== user.id) {
-      return { success: false, error: 'Questo codice non e\' assegnato a te' };
-    }
-
-    // 2. Mark code as used
-    await supabase
-      .from('activation_codes' as any)
-      .update({
-        is_used: true,
-        used_by: user.id,
-        used_at: new Date().toISOString(),
-      } as any)
-      .eq('id', (codeData as any).id);
-
-    // 3. Update subscription to premium
-    const { error: subError } = await supabase
-      .from('user_subscriptions' as any)
-      .upsert({
-        user_id: user.id,
-        plan: 'premium',
-        activated_at: new Date().toISOString(),
-        activation_code: trimmedCode,
-        trial_ends_at: null,
-      } as any, { onConflict: 'user_id' });
-
-    if (subError) {
+    if (error) {
       return { success: false, error: 'Errore durante l\'attivazione. Riprova.' };
     }
 
-    // 4. Update local state
+    const result = data as { success: boolean; error?: string };
+    if (!result.success) {
+      return { success: false, error: result.error || 'Codice non valido' };
+    }
+
+    // Update local state
     setSubscription({
       plan: 'premium',
       activated_at: new Date().toISOString(),

@@ -21,6 +21,7 @@ export interface ClientData {
   } | null;
   status: 'green' | 'yellow' | 'red';
   is_premium: boolean;
+  premium_code: string | null;
 }
 
 type CoachName = 'Ilaria' | 'Marco' | 'Martina' | 'Michela' | 'Cristina';
@@ -142,6 +143,17 @@ export const useAdminClients = () => {
       if (checkinsError) throw checkinsError;
       console.log('useAdminClients - Checkins loaded:', checkinsData?.length);
 
+      // Fetch subscription status for premium detection
+      const { data: subscriptionsData } = await supabase
+        .from('user_subscriptions' as any)
+        .select('user_id, plan');
+
+      const premiumUserIds = new Set(
+        ((subscriptionsData as any[]) || [])
+          .filter((s: any) => s.plan === 'premium')
+          .map((s: any) => s.user_id)
+      );
+
       // Build client data
       const collaboratorCoachName = user.email ? getCollaboratorCoachName(user.email) : null;
 
@@ -160,7 +172,8 @@ export const useAdminClients = () => {
           need_profile: (profile as any).need_profile || null,
           referral_source: (profile as any).referral_source || null,
           coach_names: coachNames,
-          is_premium: !!(profile as any).is_premium,
+          is_premium: premiumUserIds.has(profile.id),
+          premium_code: (profile as any).premium_code || null,
           streak: calculateStreak(userCheckins),
           last_checkin: lastCheckin ? {
             date: lastCheckin.date,
