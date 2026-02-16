@@ -305,30 +305,36 @@ const GestioneDiario = () => {
     URL.revokeObjectURL(url);
   };
 
-  // Generate a premium code for a specific client
+  // Generate a premium code for a specific client via edge function
   const generatePremiumCode = async (client: ClientData) => {
     setIsGeneratingPremiumCode(true);
 
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = '362-';
-    for (let j = 0; j < 5; j++) {
-      code += chars[Math.floor(Math.random() * chars.length)];
-    }
+    try {
+      const { data, error } = await supabase.functions.invoke('toggle-premium', {
+        body: { action: 'generate-code', clientId: client.id },
+      });
 
-    // Save code to profiles (staff has RLS access on this table)
-    const { error } = await supabase
-      .from('profiles')
-      .update({ activation_code: code } as any)
-      .eq('id', client.id);
+      setIsGeneratingPremiumCode(false);
 
-    setIsGeneratingPremiumCode(false);
+      if (error) {
+        console.error('Generate premium code edge function error:', error);
+        toast({ variant: 'destructive', title: 'Errore', description: `Impossibile generare il codice: ${error.message}` });
+        return;
+      }
 
-    if (error) {
-      console.error('Generate premium code error:', error);
-      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile generare il codice: ${error.message}` });
-    } else {
-      setGeneratedPremiumCode(code);
-      toast({ title: 'Codice generato!', description: `Codice per ${client.full_name}: ${code}` });
+      const result = data as any;
+      if (result?.error) {
+        console.error('Generate premium code error:', result.error);
+        toast({ variant: 'destructive', title: 'Errore', description: `Impossibile generare il codice: ${result.error}` });
+        return;
+      }
+
+      setGeneratedPremiumCode(result.code);
+      toast({ title: 'Codice generato!', description: `Codice per ${client.full_name}: ${result.code}` });
+    } catch (err: any) {
+      setIsGeneratingPremiumCode(false);
+      console.error('Generate premium code exception:', err);
+      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile generare il codice: ${err.message}` });
     }
   };
 

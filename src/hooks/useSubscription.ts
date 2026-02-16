@@ -9,6 +9,22 @@ interface Subscription {
   trial_ends_at: string | null;
 }
 
+// Track whether migration has been attempted this session
+let migrationAttempted = false;
+
+async function ensureMigration() {
+  if (migrationAttempted) return;
+  migrationAttempted = true;
+  try {
+    await supabase.functions.invoke('toggle-premium', {
+      body: { action: 'migrate' },
+    });
+    console.log('Premium migration completed');
+  } catch (e) {
+    console.warn('Premium migration skipped:', e);
+  }
+}
+
 export function useSubscription() {
   const { user, isAdmin, isCollaborator, isSuperAdmin } = useAuth();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -45,20 +61,27 @@ export function useSubscription() {
     }
 
     const fetchSubscription = async () => {
+      // Trigger migration to add premium columns (runs once per session)
+      await ensureMigration();
+
+      // Use select('*') so it never fails even if premium columns don't exist yet
       const { data, error } = await supabase
         .from('profiles')
-        .select('plan, activated_at, activation_code, trial_ends_at')
+        .select('*')
         .eq('id', user.id)
         .single();
 
       if (error || !data) {
+        console.warn('useSubscription fetch error:', error?.message);
         setSubscription({ plan: 'free', activated_at: null, activation_code: null, trial_ends_at: null });
       } else {
+        // Premium columns may or may not exist — gracefully default
+        const d = data as any;
         setSubscription({
-          plan: (data as any).plan || 'free',
-          activated_at: (data as any).activated_at,
-          activation_code: (data as any).activation_code,
-          trial_ends_at: (data as any).trial_ends_at || null,
+          plan: d.plan || 'free',
+          activated_at: d.activated_at || null,
+          activation_code: d.activation_code || null,
+          trial_ends_at: d.trial_ends_at || null,
         });
       }
       setIsLoading(false);
@@ -70,41 +93,26 @@ export function useSubscription() {
   const activateCode = useCallback(async (code: string): Promise<{ success: boolean; error?: string }> => {
     if (!user) return { success: false, error: 'Non autenticato' };
 
-    const trimmedCode = code.trim().toUpperCase();
+    // Use edge function for activation (bypasses schema cache issues)
+    const { data, error } = await supabase.functions.invoke('toggle-premium', {
+      body: { action: 'activate-code', code: code.trim().toUpperCase() },
+    });
 
-    // 1. Fetch own profile to verify the code
-    const { data: sub, error: fetchError } = await supabase
-      .from('profiles')
-      .select('activation_code')
-      .eq('id', user.id)
-      .single();
-
-    if (fetchError || !sub) {
-      return { success: false, error: 'Nessun codice assegnato. Chiedi al tuo coach.' };
-    }
-
-    if ((sub as any).activation_code !== trimmedCode) {
-      return { success: false, error: 'Codice non valido' };
-    }
-
-    // 2. Code matches — activate premium
-    const { error: updateError } = await supabase
-      .from('profiles')
-      .update({
-        plan: 'premium',
-        activated_at: new Date().toISOString(),
-      } as any)
-      .eq('id', user.id);
-
-    if (updateError) {
+    if (error) {
+      console.error('activate-code edge function error:', error);
       return { success: false, error: 'Errore durante l\'attivazione. Riprova.' };
     }
 
-    // 3. Update local state
+    const result = data as any;
+    if (result?.error) {
+      return { success: false, error: result.error };
+    }
+
+    // Update local state
     setSubscription({
       plan: 'premium',
       activated_at: new Date().toISOString(),
-      activation_code: trimmedCode,
+      activation_code: code.trim().toUpperCase(),
       trial_ends_at: null,
     });
 

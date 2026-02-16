@@ -1,26 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const getCorsHeaders = (origin: string | null) => {
-  return {
-    'Access-Control-Allow-Origin': origin || '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Credentials': 'true',
-  };
-};
-
-// Decode JWT payload without verification (verification done by auth.getUser)
-function decodeJwtPayload(token: string): any {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1]));
-    return payload;
-  } catch {
-    return null;
-  }
-}
+const getCorsHeaders = (origin: string | null) => ({
+  'Access-Control-Allow-Origin': origin || '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Credentials': 'true',
+});
 
 serve(async (req) => {
   const origin = req.headers.get('origin');
@@ -33,11 +19,39 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Admin client for THIS project (where the data lives)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get auth token
+    const body = await req.json();
+    const { action } = body;
+
+    // ACTION: migrate — add premium columns to profiles (idempotent, safe to call multiple times)
+    if (action === 'migrate') {
+      const dbUrl = Deno.env.get('SUPABASE_DB_URL');
+      if (!dbUrl) {
+        return new Response(
+          JSON.stringify({ error: 'DB URL not available' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { default: postgres } = await import("https://deno.land/x/postgresjs@v3.4.5/mod.js");
+      const sql = postgres(dbUrl, { ssl: 'require' });
+
+      await sql`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS plan TEXT DEFAULT 'free'`;
+      await sql`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activation_code TEXT`;
+      await sql`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`;
+      await sql`ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS trial_ends_at TIMESTAMPTZ`;
+      await sql`UPDATE public.profiles SET plan = 'premium' WHERE plan IS NULL OR plan = 'free'`;
+      await sql`NOTIFY pgrst, 'reload schema'`;
+      await sql.end();
+
+      return new Response(
+        JSON.stringify({ success: true, message: 'Migration completed' }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // All other actions require authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -46,100 +60,124 @@ serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace('Bearer ', '');
-    const jwtPayload = decodeJwtPayload(token);
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
 
-    if (!jwtPayload || !jwtPayload.sub) {
+    if (authError || !user) {
       return new Response(
-        JSON.stringify({ error: 'Token non valido' }),
+        JSON.stringify({ error: 'Non autorizzato' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Determine which Supabase project issued the token
-    const tokenRef = jwtPayload.iss?.replace('https://','').split('.')[0] || '';
-    const tokenUrl = tokenRef ? `https://${tokenRef}.supabase.co` : supabaseUrl;
-
-    // Verify user against the ISSUING project's auth
-    let callerId: string;
-
-    // Try verifying against the token's project first, then fallback to this project
-    for (const url of [tokenUrl, supabaseUrl]) {
-      try {
-        const anonKey = url === supabaseUrl ? Deno.env.get('SUPABASE_ANON_KEY')! : token;
-        const userClient = createClient(url, anonKey, {
-          global: { headers: { Authorization: authHeader } }
-        });
-        const { data: { user }, error } = await userClient.auth.getUser();
-        if (user && !error) {
-          callerId = user.id;
-          break;
-        }
-      } catch { /* try next */ }
-    }
-
-    if (!callerId!) {
-      return new Response(
-        JSON.stringify({ error: 'Non autorizzato - token non verificato' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    // Check caller is admin/collaborator/super_admin using THIS project's data
+    // Check if caller is staff
     const { data: callerRoles } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', callerId);
+      .eq('user_id', user.id);
 
-    const { data: isSuperAdmin } = await supabaseAdmin
-      .rpc('is_super_admin', { _user_id: callerId });
+    const isStaff = callerRoles?.some((r: any) =>
+      r.role === 'admin' || r.role === 'collaborator'
+    );
 
-    const isStaff = isSuperAdmin ||
-      callerRoles?.some((r: any) => r.role === 'admin' || r.role === 'collaborator');
+    // ACTION: generate-code — coach generates a premium code for a client
+    if (action === 'generate-code' && isStaff) {
+      const { clientId } = body;
+      if (!clientId) {
+        return new Response(
+          JSON.stringify({ error: 'clientId mancante' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-    if (!isStaff) {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let code = '362-';
+      for (let j = 0; j < 5; j++) {
+        code += chars[Math.floor(Math.random() * chars.length)];
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({ activation_code: code } as any)
+        .eq('id', clientId);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Non autorizzato: solo admin e collaboratori' }),
-        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true, code }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const { userId, grantPremium } = await req.json();
-    if (!userId) {
-      return new Response(
-        JSON.stringify({ error: 'ID utente mancante' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    // ACTION: activate-code — client activates a premium code
+    if (action === 'activate-code') {
+      const { code } = body;
+      if (!code) {
+        return new Response(
+          JSON.stringify({ error: 'Codice mancante' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
-    // Update profiles.is_premium using service role
-    const { error: updateError } = await supabaseAdmin
-      .from('profiles')
-      .update({
-        is_premium: !!grantPremium,
-        premium_activated_at: grantPremium ? new Date().toISOString() : null,
-        premium_activated_by: grantPremium ? callerId : null,
-      })
-      .eq('id', userId);
+      const trimmedCode = code.trim().toUpperCase();
 
-    if (updateError) {
-      console.error('Error toggling premium:', updateError);
+      const { data: profile, error: fetchError } = await supabaseAdmin
+        .from('profiles')
+        .select('activation_code')
+        .eq('id', user.id)
+        .single();
+
+      if (fetchError || !profile) {
+        return new Response(
+          JSON.stringify({ error: 'Profilo non trovato' }),
+          { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      if ((profile as any).activation_code !== trimmedCode) {
+        return new Response(
+          JSON.stringify({ error: 'Codice non valido' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from('profiles')
+        .update({
+          plan: 'premium',
+          activated_at: new Date().toISOString(),
+        } as any)
+        .eq('id', user.id);
+
+      if (updateError) {
+        return new Response(
+          JSON.stringify({ error: updateError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Errore aggiornamento: ' + updateError.message }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     return new Response(
-      JSON.stringify({ success: true, premium: !!grantPremium }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: 'Azione non valida o non autorizzata' }),
+      { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Error:', error);
     return new Response(
-      JSON.stringify({ error: 'Errore interno del server: ' + (error as Error).message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      JSON.stringify({ error: (error as Error).message }),
+      { status: 500, headers: { ...getCorsHeaders(req.headers.get('origin')), 'Content-Type': 'application/json' } }
     );
   }
 });

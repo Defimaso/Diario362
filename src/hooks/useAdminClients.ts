@@ -161,8 +161,8 @@ export const useAdminClients = () => {
           need_profile: (profile as any).need_profile || null,
           referral_source: (profile as any).referral_source || null,
           coach_names: coachNames,
-          is_premium: (profile as any).plan === 'premium',
-          premium_code: (profile as any).activation_code || null,
+          is_premium: (profile as any).plan === 'premium' || false,
+          premium_code: (profile as any).activation_code || null,  // may be undefined if columns don't exist yet
           streak: calculateStreak(userCheckins),
           last_checkin: lastCheckin ? {
             date: lastCheckin.date,
