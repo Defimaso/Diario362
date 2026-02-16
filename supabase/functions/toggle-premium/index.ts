@@ -10,6 +10,18 @@ const getCorsHeaders = (origin: string | null) => {
   };
 };
 
+// Decode JWT payload without verification (verification done by auth.getUser)
+function decodeJwtPayload(token: string): any {
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1]));
+    return payload;
+  } catch {
+    return null;
+  }
+}
+
 serve(async (req) => {
   const origin = req.headers.get('origin');
   const corsHeaders = getCorsHeaders(origin);
@@ -22,9 +34,10 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+    // Admin client for THIS project (where the data lives)
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Verify caller identity
+    // Get auth token
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
@@ -33,26 +46,53 @@ serve(async (req) => {
       );
     }
 
-    const supabaseUser = createClient(supabaseUrl, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: authHeader } }
-    });
+    const token = authHeader.replace('Bearer ', '');
+    const jwtPayload = decodeJwtPayload(token);
 
-    const { data: { user: caller }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !caller) {
+    if (!jwtPayload || !jwtPayload.sub) {
       return new Response(
-        JSON.stringify({ error: 'Non autorizzato' }),
+        JSON.stringify({ error: 'Token non valido' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Check caller is admin, collaborator, or super_admin
+    // Determine which Supabase project issued the token
+    const tokenRef = jwtPayload.iss?.replace('https://','').split('.')[0] || '';
+    const tokenUrl = tokenRef ? `https://${tokenRef}.supabase.co` : supabaseUrl;
+
+    // Verify user against the ISSUING project's auth
+    let callerId: string;
+
+    // Try verifying against the token's project first, then fallback to this project
+    for (const url of [tokenUrl, supabaseUrl]) {
+      try {
+        const anonKey = url === supabaseUrl ? Deno.env.get('SUPABASE_ANON_KEY')! : token;
+        const userClient = createClient(url, anonKey, {
+          global: { headers: { Authorization: authHeader } }
+        });
+        const { data: { user }, error } = await userClient.auth.getUser();
+        if (user && !error) {
+          callerId = user.id;
+          break;
+        }
+      } catch { /* try next */ }
+    }
+
+    if (!callerId!) {
+      return new Response(
+        JSON.stringify({ error: 'Non autorizzato - token non verificato' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Check caller is admin/collaborator/super_admin using THIS project's data
     const { data: callerRoles } = await supabaseAdmin
       .from('user_roles')
       .select('role')
-      .eq('user_id', caller.id);
+      .eq('user_id', callerId);
 
     const { data: isSuperAdmin } = await supabaseAdmin
-      .rpc('is_super_admin', { _user_id: caller.id });
+      .rpc('is_super_admin', { _user_id: callerId });
 
     const isStaff = isSuperAdmin ||
       callerRoles?.some((r: any) => r.role === 'admin' || r.role === 'collaborator');
@@ -72,13 +112,13 @@ serve(async (req) => {
       );
     }
 
-    // Update profiles.is_premium using service role (bypasses RLS and schema cache)
+    // Update profiles.is_premium using service role
     const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({
         is_premium: !!grantPremium,
         premium_activated_at: grantPremium ? new Date().toISOString() : null,
-        premium_activated_by: grantPremium ? caller.id : null,
+        premium_activated_by: grantPremium ? callerId : null,
       })
       .eq('id', userId);
 
@@ -98,7 +138,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Unexpected error:', error);
     return new Response(
-      JSON.stringify({ error: 'Errore interno del server' }),
+      JSON.stringify({ error: 'Errore interno del server: ' + (error as Error).message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
