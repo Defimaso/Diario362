@@ -116,19 +116,21 @@ const GestioneDiario = () => {
     }
   }, [user, authLoading, isAdmin, isCollaborator, isSuperAdmin, navigate]);
 
-  // Fetch premium status via RPC (bypasses PostgREST schema cache)
+  // Fetch premium status from profiles (existing table, no schema cache issues)
   useEffect(() => {
     const fetchPremiumStatus = async () => {
       if (clients.length === 0) return;
 
       const clientIds = clients.map(c => c.id);
-      const { data } = await supabase.rpc('get_premium_clients', {
-        client_ids: clientIds,
-      });
+      const { data } = await supabase
+        .from('profiles')
+        .select('id')
+        .in('id', clientIds)
+        .eq('is_premium' as any, true);
 
       if (data) {
         const premiumSet = new Set<string>();
-        (data as any[]).forEach((p: any) => premiumSet.add(p.id));
+        data.forEach((p: any) => premiumSet.add(p.id));
         setPremiumClients(premiumSet);
       }
     };
@@ -446,19 +448,17 @@ const GestioneDiario = () => {
 
     const isCurrentlyPremium = premiumClients.has(premiumTarget.id);
 
-    const { data, error } = await supabase.rpc('toggle_premium', {
-      target_user_id: premiumTarget.id,
-      grant_premium: !isCurrentlyPremium,
+    const { data, error } = await supabase.functions.invoke('toggle-premium', {
+      body: { userId: premiumTarget.id, grantPremium: !isCurrentlyPremium },
     });
 
     setIsGrantingPremium(false);
     setPremiumDialogOpen(false);
 
-    if (error) {
-      console.error('Premium toggle error:', error);
-      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${error.message}` });
-    } else if (data && !(data as any).success) {
-      toast({ variant: 'destructive', title: 'Errore', description: (data as any).error || 'Operazione non riuscita' });
+    if (error || (data && data.error)) {
+      const errMsg = data?.error || error?.message || 'Errore sconosciuto';
+      console.error('Premium toggle error:', errMsg);
+      toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${errMsg}` });
     } else {
       // Update local state immediately
       setPremiumClients(prev => {
