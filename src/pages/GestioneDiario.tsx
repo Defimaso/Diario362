@@ -448,15 +448,32 @@ const GestioneDiario = () => {
 
     const isCurrentlyPremium = premiumClients.has(premiumTarget.id);
 
-    const { data, error } = await supabase.functions.invoke('toggle-premium', {
-      body: { userId: premiumTarget.id, grantPremium: !isCurrentlyPremium },
-    });
+    let data: any = null;
+    let errMsg: string | null = null;
+
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      const response = await fetch('https://ppbbqchycxffsfavtsjp.supabase.co/functions/v1/toggle-premium', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId: premiumTarget.id, grantPremium: !isCurrentlyPremium }),
+      });
+      data = await response.json();
+      if (!response.ok || data.error) {
+        errMsg = data.error || `HTTP ${response.status}`;
+      }
+    } catch (err: any) {
+      errMsg = err.message || 'Errore di rete';
+    }
 
     setIsGrantingPremium(false);
     setPremiumDialogOpen(false);
 
-    if (error || (data && data.error)) {
-      const errMsg = data?.error || error?.message || 'Errore sconosciuto';
+    if (errMsg) {
       console.error('Premium toggle error:', errMsg);
       toast({ variant: 'destructive', title: 'Errore', description: `Impossibile ${isCurrentlyPremium ? 'disattivare' : 'attivare'} premium: ${errMsg}` });
     } else {
