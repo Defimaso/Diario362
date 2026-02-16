@@ -465,7 +465,8 @@ const GestioneDiario = () => {
       setPremiumDialogOpen(false);
 
       if (error) {
-        toast({ variant: 'destructive', title: 'Errore', description: 'Impossibile disattivare premium' });
+        console.error('Premium deactivation error:', error);
+        toast({ variant: 'destructive', title: 'Errore', description: `Impossibile disattivare premium: ${error.message}` });
       } else {
         // Update local state immediately
         setClientSubscriptions(prev => {
@@ -490,7 +491,8 @@ const GestioneDiario = () => {
       setPremiumDialogOpen(false);
 
       if (error) {
-        toast({ variant: 'destructive', title: 'Errore', description: 'Impossibile attivare premium' });
+        console.error('Premium activation error:', error);
+        toast({ variant: 'destructive', title: 'Errore', description: `Impossibile attivare premium: ${error.message}` });
       } else {
         // Update local state immediately
         setClientSubscriptions(prev => {
