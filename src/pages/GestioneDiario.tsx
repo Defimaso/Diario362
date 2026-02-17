@@ -93,7 +93,7 @@ const GestioneDiario = () => {
 
   // Premium status tracking (from user_subscriptions via useAdminClients)
   const [premiumClients, setPremiumClients] = useState<Set<string>>(new Set());
-  const [isDirectActivating, setIsDirectActivating] = useState(false);
+  const [togglingPremiumId, setTogglingPremiumId] = useState<string | null>(null);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -306,6 +306,43 @@ const GestioneDiario = () => {
     URL.revokeObjectURL(url);
   };
 
+  // Toggle premium directly for a client (no code needed)
+  const togglePremiumDirect = async (client: ClientData, makePremium: boolean) => {
+    setTogglingPremiumId(client.id);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) {
+        toast({ variant: 'destructive', title: 'Errore', description: 'Sessione scaduta. Riprova il login.' });
+        return;
+      }
+
+      const res = await fetch('https://ppbbqchycxffsfavtsjp.supabase.co/functions/v1/toggle-premium', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ action: 'set-premium', clientId: client.id, premium: makePremium }),
+      });
+      const result = await res.json();
+
+      if (result?.error) {
+        toast({ variant: 'destructive', title: 'Errore', description: result.error });
+        return;
+      }
+
+      // Update local state
+      setPremiumClients(prev => {
+        const next = new Set(prev);
+        if (makePremium) next.add(client.id); else next.delete(client.id);
+        return next;
+      });
+      toast({ title: makePremium ? 'Premium attivato!' : 'Premium rimosso', description: client.full_name });
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Errore', description: err.message });
+    } finally {
+      setTogglingPremiumId(null);
+    }
+  };
+
   // Generate a premium code for a specific client via premium API on secondary project
   const generatePremiumCode = async (client: ClientData) => {
     setIsGeneratingPremiumCode(true);
@@ -409,36 +446,10 @@ const GestioneDiario = () => {
     setPremiumCodeDialogOpen(true);
   };
 
-  // Direct activate premium for a client
-  const directActivatePremium = async (client: ClientData) => {
-    setIsDirectActivating(true);
-    try {
-      const session = await supabase.auth.getSession();
-      const token = session.data.session?.access_token;
-      if (!token) {
-        toast({ variant: 'destructive', title: 'Errore', description: 'Sessione scaduta.' });
-        setIsDirectActivating(false);
-        return;
-      }
-
-      const res = await fetch('https://ppbbqchycxffsfavtsjp.supabase.co/functions/v1/toggle-premium', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ action: 'direct-activate', clientId: client.id }),
-      });
-      const result = await res.json();
-
-      if (result?.error) {
-        toast({ variant: 'destructive', title: 'Errore', description: result.error });
-      } else {
-        setPremiumClients(prev => new Set([...prev, client.id]));
-        toast({ title: 'Premium attivato!', description: `${client.full_name} è ora Premium.` });
-        setPremiumCodeDialogOpen(false);
-      }
-    } catch (err: any) {
-      toast({ variant: 'destructive', title: 'Errore', description: err.message });
-    }
-    setIsDirectActivating(false);
+  // Direct activate premium from within the dialog
+  const directActivatePremiumFromDialog = async (client: ClientData) => {
+    await togglePremiumDirect(client, true);
+    setPremiumCodeDialogOpen(false);
   };
 
   return (
@@ -819,22 +830,49 @@ const GestioneDiario = () => {
                             )}
                           </Button>
 
-                          {/* Premium Code Button */}
-                          {premiumClients.has(client.id) && (
-                            <span className="text-xs text-green-500 flex items-center gap-1 px-2 py-1 border border-green-500/40 rounded-md">
-                              <Crown className="w-4 h-4" />
-                              Premium
-                            </span>
+                          {/* Premium Buttons */}
+                          {premiumClients.has(client.id) ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-green-500/40 text-green-500 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/40"
+                              disabled={togglingPremiumId === client.id}
+                              onClick={() => togglePremiumDirect(client, false)}
+                            >
+                              {togglingPremiumId === client.id ? (
+                                <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                              ) : (
+                                <Crown className="w-4 h-4 mr-1.5" />
+                              )}
+                              Premium Attivo
+                            </Button>
+                          ) : (
+                            <div className="flex gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-green-500/40 text-green-500 hover:bg-green-500/10"
+                                disabled={togglingPremiumId === client.id}
+                                onClick={() => togglePremiumDirect(client, true)}
+                              >
+                                {togglingPremiumId === client.id ? (
+                                  <Loader2 className="w-4 h-4 mr-1.5 animate-spin" />
+                                ) : (
+                                  <Crown className="w-4 h-4 mr-1.5" />
+                                )}
+                                Attiva Premium
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+                                onClick={() => openPremiumCodeDialog(client)}
+                              >
+                                <Key className="w-4 h-4 mr-1.5" />
+                                Codice
+                              </Button>
+                            </div>
                           )}
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
-                            onClick={() => openPremiumCodeDialog(client)}
-                          >
-                            <Key className="w-4 h-4 mr-1.5" />
-                            {client.premium_code ? 'Vedi Codice' : 'Genera Codice'}
-                          </Button>
 
                           {/* Delete User Button - Super Admin Only */}
                           {isSuperAdmin && (
@@ -961,11 +999,11 @@ const GestioneDiario = () => {
               <div className="text-center p-3 border border-green-500/30 rounded-lg bg-green-500/5">
                 <p className="text-sm text-muted-foreground mb-2">Attiva Premium direttamente senza codice</p>
                 <Button
-                  onClick={() => premiumCodeTarget && directActivatePremium(premiumCodeTarget)}
-                  disabled={isDirectActivating}
+                  onClick={() => premiumCodeTarget && directActivatePremiumFromDialog(premiumCodeTarget)}
+                  disabled={togglingPremiumId === premiumCodeTarget?.id}
                   className="bg-green-600 text-white hover:bg-green-700"
                 >
-                  {isDirectActivating ? (
+                  {togglingPremiumId === premiumCodeTarget?.id ? (
                     <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Attivazione...</>
                   ) : (
                     <><Crown className="w-4 h-4 mr-2" />Attiva Premium Diretto</>

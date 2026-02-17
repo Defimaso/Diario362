@@ -88,9 +88,9 @@ serve(async (req) => {
       r.role === 'admin' || r.role === 'collaborator'
     );
 
-    // ACTION: direct-activate — staff directly activates premium for a client
-    if (action === 'direct-activate' && isStaff) {
-      const { clientId } = body;
+    // ACTION: set-premium — staff directly sets a client's premium status (no code needed)
+    if (action === 'set-premium' && isStaff) {
+      const { clientId, premium } = body;
       if (!clientId) {
         return new Response(
           JSON.stringify({ error: 'clientId mancante' }),
@@ -98,12 +98,13 @@ serve(async (req) => {
         );
       }
 
+      const newPlan = premium ? 'premium' : 'free';
       const { error: upsertError } = await localAdmin
         .from('premium_clients')
         .upsert({
           user_id: clientId,
-          plan: 'premium',
-          activated_at: new Date().toISOString(),
+          plan: newPlan,
+          activated_at: premium ? new Date().toISOString() : null,
           activation_code: null,
         }, { onConflict: 'user_id' });
 
@@ -115,7 +116,7 @@ serve(async (req) => {
       }
 
       return new Response(
-        JSON.stringify({ success: true }),
+        JSON.stringify({ success: true, plan: newPlan }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
