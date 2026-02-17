@@ -93,6 +93,7 @@ const GestioneDiario = () => {
 
   // Premium status tracking (from user_subscriptions via useAdminClients)
   const [premiumClients, setPremiumClients] = useState<Set<string>>(new Set());
+  const [isDirectActivating, setIsDirectActivating] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -406,6 +407,38 @@ const GestioneDiario = () => {
     setPremiumCodeTarget(client);
     setGeneratedPremiumCode(client.premium_code || null);
     setPremiumCodeDialogOpen(true);
+  };
+
+  // Direct activate premium for a client
+  const directActivatePremium = async (client: ClientData) => {
+    setIsDirectActivating(true);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) {
+        toast({ variant: 'destructive', title: 'Errore', description: 'Sessione scaduta.' });
+        setIsDirectActivating(false);
+        return;
+      }
+
+      const res = await fetch('https://ppbbqchycxffsfavtsjp.supabase.co/functions/v1/toggle-premium', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ action: 'direct-activate', clientId: client.id }),
+      });
+      const result = await res.json();
+
+      if (result?.error) {
+        toast({ variant: 'destructive', title: 'Errore', description: result.error });
+      } else {
+        setPremiumClients(prev => new Set([...prev, client.id]));
+        toast({ title: 'Premium attivato!', description: `${client.full_name} è ora Premium.` });
+        setPremiumCodeDialogOpen(false);
+      }
+    } catch (err: any) {
+      toast({ variant: 'destructive', title: 'Errore', description: err.message });
+    }
+    setIsDirectActivating(false);
   };
 
   return (
@@ -923,41 +956,68 @@ const GestioneDiario = () => {
           </DialogHeader>
 
           <div className="space-y-4">
-            {generatedPremiumCode ? (
-              <div className="text-center space-y-3">
-                <div className="font-mono text-2xl font-bold tracking-widest bg-muted p-4 rounded-lg">
-                  {generatedPremiumCode}
-                </div>
+            {/* Direct Activate Button */}
+            {!premiumClients.has(premiumCodeTarget?.id || '') && (
+              <div className="text-center p-3 border border-green-500/30 rounded-lg bg-green-500/5">
+                <p className="text-sm text-muted-foreground mb-2">Attiva Premium direttamente senza codice</p>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    navigator.clipboard.writeText(generatedPremiumCode);
-                    toast({ title: 'Copiato!', description: 'Codice copiato negli appunti' });
-                  }}
+                  onClick={() => premiumCodeTarget && directActivatePremium(premiumCodeTarget)}
+                  disabled={isDirectActivating}
+                  className="bg-green-600 text-white hover:bg-green-700"
                 >
-                  <Copy className="w-4 h-4 mr-1" />
-                  Copia Codice
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Invia questo codice al cliente. Una volta inserito nell'app, Premium verrà attivato e il codice sarà invalidato.
-                </p>
-              </div>
-            ) : (
-              <div className="text-center">
-                <Button
-                  onClick={() => premiumCodeTarget && generatePremiumCode(premiumCodeTarget)}
-                  disabled={isGeneratingPremiumCode}
-                  className="bg-amber-500 text-white hover:bg-amber-600"
-                >
-                  {isGeneratingPremiumCode ? (
-                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generazione...</>
+                  {isDirectActivating ? (
+                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Attivazione...</>
                   ) : (
-                    <><Key className="w-4 h-4 mr-2" />Genera Codice</>
+                    <><Crown className="w-4 h-4 mr-2" />Attiva Premium Diretto</>
                   )}
                 </Button>
               </div>
             )}
+
+            {premiumClients.has(premiumCodeTarget?.id || '') && (
+              <div className="text-center p-3 border border-green-500/30 rounded-lg bg-green-500/5">
+                <span className="text-green-500 font-medium flex items-center justify-center gap-2">
+                  <Crown className="w-5 h-5" /> Già Premium
+                </span>
+              </div>
+            )}
+
+            <div className="border-t border-border pt-4">
+              <p className="text-xs text-muted-foreground mb-3 text-center">Oppure genera un codice che il cliente inserirà nell'app</p>
+              {generatedPremiumCode ? (
+                <div className="text-center space-y-3">
+                  <div className="font-mono text-2xl font-bold tracking-widest bg-muted p-4 rounded-lg">
+                    {generatedPremiumCode}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(generatedPremiumCode);
+                      toast({ title: 'Copiato!', description: 'Codice copiato negli appunti' });
+                    }}
+                  >
+                    <Copy className="w-4 h-4 mr-1" />
+                    Copia Codice
+                  </Button>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <Button
+                    onClick={() => premiumCodeTarget && generatePremiumCode(premiumCodeTarget)}
+                    disabled={isGeneratingPremiumCode}
+                    variant="outline"
+                    className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+                  >
+                    {isGeneratingPremiumCode ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Generazione...</>
+                    ) : (
+                      <><Key className="w-4 h-4 mr-2" />Genera Codice</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
         </DialogContent>
       </Dialog>
