@@ -88,7 +88,7 @@ serve(async (req) => {
       r.role === 'admin' || r.role === 'collaborator'
     );
 
-    // ACTION: set-premium — staff directly sets a client's premium status (no code needed)
+    // ACTION: set-premium — staff directly toggles a client's premium status (no code needed)
     if (action === 'set-premium' && isStaff) {
       const { clientId, premium } = body;
       if (!clientId) {
