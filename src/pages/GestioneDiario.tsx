@@ -787,22 +787,21 @@ const GestioneDiario = () => {
                           </Button>
 
                           {/* Premium Code Button */}
-                          {premiumClients.has(client.id) ? (
+                          {premiumClients.has(client.id) && (
                             <span className="text-xs text-green-500 flex items-center gap-1 px-2 py-1 border border-green-500/40 rounded-md">
                               <Crown className="w-4 h-4" />
-                              Premium Attivo
+                              Premium
                             </span>
-                          ) : (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
-                              onClick={() => openPremiumCodeDialog(client)}
-                            >
-                              <Key className="w-4 h-4 mr-1.5" />
-                              {client.premium_code ? 'Vedi Codice' : 'Genera Codice'}
-                            </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10"
+                            onClick={() => openPremiumCodeDialog(client)}
+                          >
+                            <Key className="w-4 h-4 mr-1.5" />
+                            {client.premium_code ? 'Vedi Codice' : 'Genera Codice'}
+                          </Button>
 
                           {/* Delete User Button - Super Admin Only */}
                           {isSuperAdmin && (
