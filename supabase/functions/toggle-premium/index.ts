@@ -88,6 +88,38 @@ serve(async (req) => {
       r.role === 'admin' || r.role === 'collaborator'
     );
 
+    // ACTION: direct-activate — staff directly activates premium for a client
+    if (action === 'direct-activate' && isStaff) {
+      const { clientId } = body;
+      if (!clientId) {
+        return new Response(
+          JSON.stringify({ error: 'clientId mancante' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const { error: upsertError } = await localAdmin
+        .from('premium_clients')
+        .upsert({
+          user_id: clientId,
+          plan: 'premium',
+          activated_at: new Date().toISOString(),
+          activation_code: null,
+        }, { onConflict: 'user_id' });
+
+      if (upsertError) {
+        return new Response(
+          JSON.stringify({ error: upsertError.message }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // ACTION: generate-code — coach generates a premium code for a client
     if (action === 'generate-code' && isStaff) {
       const { clientId } = body;
