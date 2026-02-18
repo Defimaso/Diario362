@@ -97,6 +97,11 @@ const Auth = () => {
   const [coachName, setCoachName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [consents, setConsents] = useState({
     terms: false,
@@ -162,12 +167,89 @@ const Auth = () => {
     return signInResult;
   };
 
-  // Reindirizzamento post-login - tutti atterrano su /diario
+  const handleResetPassword = async () => {
+    if (!email) {
+      setErrors({ email: 'Inserisci la tua email per recuperare la password' });
+      return;
+    }
+    const emailCheck = z.string().email().safeParse(email);
+    if (!emailCheck.success) {
+      setErrors({ email: 'Email non valida' });
+      return;
+    }
+    setIsResetting(true);
+    setErrors({});
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth?reset=true`,
+    });
+    setIsResetting(false);
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Errore',
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: 'Email inviata!',
+        description: 'Controlla la tua casella email per il link di recupero password.',
+      });
+      setShowResetForm(false);
+    }
+  };
+
+  // Intercetta evento PASSWORD_RECOVERY da Supabase
   useEffect(() => {
-    if (user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsRecoveryMode(true);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleUpdatePassword = async () => {
+    const passwordCheck = z.string()
+      .min(12, 'La password deve avere almeno 12 caratteri')
+      .regex(/[A-Z]/, 'Deve contenere almeno una maiuscola')
+      .regex(/[a-z]/, 'Deve contenere almeno una minuscola')
+      .regex(/[0-9]/, 'Deve contenere almeno un numero')
+      .regex(/[^A-Za-z0-9]/, 'Deve contenere almeno un carattere speciale')
+      .safeParse(newPassword);
+
+    if (!passwordCheck.success) {
+      setErrors({ newPassword: passwordCheck.error.errors[0].message });
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    setErrors({});
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    setIsUpdatingPassword(false);
+
+    if (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Errore',
+        description: error.message,
+      });
+    } else {
+      toast({
+        title: 'Password aggiornata!',
+        description: 'La tua nuova password è stata salvata.',
+      });
+      setIsRecoveryMode(false);
+      setNewPassword('');
       navigate('/diario');
     }
-  }, [user, navigate]);
+  };
+
+  // Reindirizzamento post-login - solo se NON in recovery mode
+  useEffect(() => {
+    if (user && !isRecoveryMode) {
+      navigate('/diario');
+    }
+  }, [user, navigate, isRecoveryMode]);
 
   const validateForm = () => {
     try {
@@ -280,6 +362,50 @@ const Auth = () => {
           <p className="text-muted-foreground mt-2">Il Diario del tuo 2% Extra</p>
         </div>
 
+        {/* Recovery mode: imposta nuova password */}
+        {isRecoveryMode && (
+          <div className="card-elegant p-6 rounded-2xl space-y-4">
+            <h2 className="text-lg font-semibold text-foreground text-center">Imposta nuova password</h2>
+            <p className="text-sm text-muted-foreground text-center">
+              Scegli una nuova password sicura per il tuo account.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nuova Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  id="newPassword"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Minimo 12 caratteri"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pl-10 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {errors.newPassword && (
+                <p className="text-xs text-destructive">{errors.newPassword}</p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Maiuscola, minuscola, numero, carattere speciale, min 12 caratteri
+              </p>
+            </div>
+            <Button
+              onClick={handleUpdatePassword}
+              disabled={isUpdatingPassword}
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              {isUpdatingPassword ? 'Aggiornamento...' : 'Salva nuova password'}
+            </Button>
+          </div>
+        )}
+
         {/* Welcome banner for quiz referrals */}
         {isFromQuiz && needProfile && (
           <motion.div
@@ -299,8 +425,8 @@ const Auth = () => {
           </motion.div>
         )}
 
-        {/* Card */}
-        <div className="card-elegant p-6 rounded-2xl">
+        {/* Card - nascosto in recovery mode */}
+        {!isRecoveryMode && <div className="card-elegant p-6 rounded-2xl">
           {/* User Type Switch */}
           <div className="flex items-center justify-center gap-3 mb-6 pb-4 border-b border-border">
             <span className={`text-sm font-medium transition-colors ${!isCollaborator ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -420,7 +546,47 @@ const Auth = () => {
               {errors.password && (
                 <p className="text-xs text-destructive">{errors.password}</p>
               )}
+              {(isLogin || isCollaborator) && !showResetForm && (
+                <button
+                  type="button"
+                  onClick={() => setShowResetForm(true)}
+                  className="text-xs text-primary hover:text-primary/80 transition-colors"
+                >
+                  Password dimenticata?
+                </button>
+              )}
             </div>
+
+            {showResetForm && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-3"
+              >
+                <p className="text-sm text-foreground">
+                  Inserisci la tua email qui sopra e clicca il pulsante per ricevere il link di recupero.
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    onClick={handleResetPassword}
+                    disabled={isResetting}
+                    className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                    size="sm"
+                  >
+                    {isResetting ? 'Invio in corso...' : 'Invia link di recupero'}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowResetForm(false)}
+                  >
+                    Annulla
+                  </Button>
+                </div>
+              </motion.div>
+            )}
 
             {!isCollaborator && !isLogin && (
               <>
@@ -469,7 +635,7 @@ const Auth = () => {
                 : (isCollaborator || isLogin) ? 'Accedi' : 'Registrati'}
             </Button>
           </form>
-        </div>
+        </div>}
 
         <p className="text-center text-sm text-muted-foreground mt-6">
           "Non accontentarti di 360°. Trova il tuo 2% extra."
