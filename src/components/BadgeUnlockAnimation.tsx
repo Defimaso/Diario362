@@ -144,7 +144,7 @@ const BadgeUnlockAnimation = ({ badge, isOpen, onClose }: BadgeUnlockAnimationPr
               transition={{ delay: 0.6 }}
               className="text-lg font-medium text-muted-foreground mb-2"
             >
-              🎉 Nuovo Badge Sbloccato!
+              🎉 Nuova Milestone Sbloccata!
             </motion.p>
 
             {/* Title */}

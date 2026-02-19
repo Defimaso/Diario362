@@ -166,7 +166,7 @@ const steps: Omit<StepProps, 'delay'>[] = [
   {
     step: 0,
     title: 'Installa l\'App',
-    description: 'Il primo passo: aggiungi 362gradi alla schermata Home',
+    description: 'Il primo passo: aggiungi Diario362 alla schermata Home',
     icon: <Smartphone className="w-5 h-5 text-cyan-500" />,
     color: 'bg-cyan-500/15',
     details: [
@@ -210,22 +210,22 @@ const steps: Omit<StepProps, 'delay'>[] = [
   },
   {
     step: 2,
-    title: 'Badges & Streak',
-    description: 'Piu\' giorni consecutivi compili, piu\' badge sblocchi',
+    title: 'Percorso & Streak',
+    description: 'Piu\' giorni consecutivi compili, piu\' milestone sblocchi',
     icon: <Trophy className="w-5 h-5 text-yellow-500" />,
     color: 'bg-yellow-500/15',
     details: [
       'La Streak conta i giorni consecutivi in cui hai compilato il diario',
-      'Ogni traguardo sblocca un badge con animazione speciale',
-      'Scintilla (1-2 giorni) > Momentum (3-6) > Costanza (7-13) > Leggenda (14+)',
-      'Badge extra per numero totale di check-in: 10, 50, 100, 365',
-      'Tocca la barra dei badges nel Diario per vedere la Galleria completa',
+      'Ogni traguardo sblocca una milestone con animazione celebrativa',
+      '20 livelli in 4 fasi: Inizio (settimana 1), Consolidamento (mesi 1-3), Trasformazione (mesi 4-6), Mastery (mesi 7-12)',
+      'Primo Passo (1gg) > Prima Settimana (7gg) > Un Mese (30gg) > Maestra 362° (300gg)',
+      'Tocca la barra del percorso nel Diario per vedere tutti i livelli',
     ],
     howTo: [
       'Compila il diario ogni giorno — la streak si aggiorna automaticamente',
-      'Quando sblocchi un nuovo badge, vedrai un\'animazione celebrativa',
-      'Tocca l\'icona del badge in alto a destra nel Diario per la Galleria',
-      'Nella Galleria vedi tutti i badge disponibili e quali hai gia\' sbloccato',
+      'Quando sblocchi una nuova milestone, vedrai un\'animazione celebrativa',
+      'Tocca il percorso nel Diario per la Galleria completa dei 20 livelli',
+      'Nella Galleria vedi tutte le milestone e quali hai gia\' sbloccato',
     ],
     tip: 'Non spezzare la streak! Anche un check-in veloce (senza il 2% Extra) conta.',
   },
@@ -450,7 +450,7 @@ const Guida = () => {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div>
-            <h1 className="text-xl font-bold">Come usare 362gradi</h1>
+            <h1 className="text-xl font-bold">Come usare Diario362</h1>
             <p className="text-xs text-muted-foreground">Guida completa a tutte le funzioni</p>
           </div>
         </motion.header>
@@ -467,7 +467,7 @@ const Guida = () => {
               <BookOpen className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="font-semibold text-sm mb-1">Benvenuta in 362gradi!</h2>
+              <h2 className="font-semibold text-sm mb-1">Benvenuta in Diario362!</h2>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 L'app ti aiuta a monitorare ogni giorno recupero, energia, mindset e nutrizione.
                 Le funzioni base sono gratuite per tutti. Le funzioni premium si sbloccano

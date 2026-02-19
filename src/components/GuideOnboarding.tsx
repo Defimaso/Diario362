@@ -126,7 +126,7 @@ export const GuideOnboarding = ({ userId }: GuideOnboardingProps) => {
                     <BookOpen className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-base">Benvenuta in 362gradi!</h2>
+                    <h2 className="font-bold text-base">Benvenuta in Diario362!</h2>
                     <p className="text-xs text-muted-foreground">Ecco cosa puoi fare</p>
                   </div>
                 </div>

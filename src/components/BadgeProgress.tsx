@@ -157,7 +157,7 @@ const BadgeProgress = ({ streak, totalCheckins, className, compact = false }: Ba
         >
           <Crown className="w-5 h-5" style={{ color: currentSolid }} />
           <span className="text-sm font-medium" style={{ color: currentSolid }}>
-            Hai raggiunto il livello massimo! Sei un vero Maestro 362°
+            Hai raggiunto il livello massimo! Sei una vera Maestra 362°
           </span>
         </div>
       )}

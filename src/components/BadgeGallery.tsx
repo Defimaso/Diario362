@@ -123,7 +123,7 @@ const BadgeGallery = ({ streak, totalCheckins, className }: BadgeGalleryProps) =
     <div className={cn("space-y-6", className)}>
       <div className="flex items-center gap-2">
         <Trophy className="w-5 h-5 text-badge-gold" />
-        <h3 className="text-lg font-bold">I Tuoi Trofei</h3>
+        <h3 className="text-lg font-bold">Il Tuo Percorso</h3>
         <span className="text-sm text-muted-foreground">
           ({unlockedBadges.length}/{ELITE_BADGES.length})
         </span>
@@ -165,7 +165,7 @@ const BadgeGallery = ({ streak, totalCheckins, className }: BadgeGalleryProps) =
         );
       })}
 
-      {/* Spirit Animal Drawer */}
+      {/* Milestone Drawer */}
       <SpiritAnimalDrawer
         badge={selectedBadge}
         isOpen={isDrawerOpen}

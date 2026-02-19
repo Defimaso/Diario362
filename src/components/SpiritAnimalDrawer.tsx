@@ -47,7 +47,7 @@ const SpiritAnimalDrawer = ({
         <div className="overflow-y-auto px-4 pb-8">
           <DrawerHeader className="text-center pt-2">
             <DrawerTitle className="sr-only">
-              {badge.name} - Spirito Animale
+              {badge.name} - Milestone Percorso
             </DrawerTitle>
           </DrawerHeader>
 
@@ -125,7 +125,7 @@ const SpiritAnimalDrawer = ({
             transition={{ delay: 0.2 }}
             className="text-sm text-muted-foreground text-center mb-6"
           >
-            {isUnlocked ? 'Il tuo Spirito Guida' : 'Spirito da Risvegliare'}
+            {isUnlocked ? 'Milestone Raggiunta' : 'Milestone da Sbloccare'}
           </motion.p>
 
           {isUnlocked ? (
@@ -138,7 +138,7 @@ const SpiritAnimalDrawer = ({
                 className="bg-card border border-border rounded-xl p-4 mb-4"
               >
                 <h3 className="text-sm font-semibold text-muted-foreground mb-3">
-                  Qualità Positive
+                  Qualita' Sviluppate
                 </h3>
                 <div className="grid grid-cols-2 gap-2">
                   {spiritContent.traits.map((trait) => (
@@ -184,7 +184,7 @@ const SpiritAnimalDrawer = ({
                   "{badge.motivationalQuote}"
                 </p>
                 <p className="text-xs text-right mt-2" style={{ color: `${solidColor}99` }}>
-                  — 362gradi
+                  — Diario362
                 </p>
               </motion.div>
             </>
