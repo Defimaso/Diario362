@@ -135,9 +135,23 @@
     @apply border-border;
   }
 
+  html {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    position: relative;
+    width: 100%;
+  }
+
+  #root {
+    overflow-x: hidden;
+    min-height: 100dvh;
   }
 }
 
