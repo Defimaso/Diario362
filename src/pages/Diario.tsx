@@ -30,6 +30,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useOnboardingData } from "@/hooks/useOnboardingData";
+import { GuideOnboarding, GuideButton } from "@/components/GuideOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 
 const Diario = () => {
@@ -191,6 +192,7 @@ const Diario = () => {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <GuideButton />
             <StreakBadge streak={streak} />
             <NotificationBell />
             {(isAdmin || isCollaborator || isSuperAdmin) && (
@@ -562,6 +564,9 @@ const Diario = () => {
         />
       </div>
       
+      {/* Guide Onboarding Popup */}
+      <GuideOnboarding userId={user.id} />
+
       {/* Bottom Dock */}
       <BottomDock />
       
