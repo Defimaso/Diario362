@@ -3,7 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import {
   BookOpen, X, Smartphone, ClipboardCheck, Trophy, TrendingUp,
-  FolderOpen, Bell, ChevronRight, Crown, ArrowRight
+  FolderOpen, Bell, ChevronRight, Crown, ArrowRight, BarChart3,
+  MessageCircle, Dumbbell, Lock
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -19,37 +20,56 @@ const quickSteps = [
     title: 'Installa l\'App',
     desc: 'Aggiungi alla schermata Home per notifiche e accesso rapido',
     color: 'bg-cyan-500/15 border-cyan-500/20',
+    section: 'free' as const,
   },
   {
     icon: <ClipboardCheck className="w-5 h-5 text-[hsl(var(--section-red))]" />,
     title: 'Compila il Diario',
     desc: 'Ogni giorno: recupero, energia, mindset, nutrizione e il tuo 2% extra',
     color: 'bg-[hsl(var(--section-red))]/15 border-[hsl(var(--section-red))]/20',
+    section: 'free' as const,
   },
   {
     icon: <Trophy className="w-5 h-5 text-yellow-400" />,
     title: 'Sblocca Badge',
-    desc: 'Ogni giorno consecutivo aumenta la streak e sblocca nuovi badge',
+    desc: 'Giorni consecutivi = streak + badge celebrativi con animazione',
     color: 'bg-yellow-500/15 border-yellow-500/20',
+    section: 'free' as const,
   },
   {
     icon: <TrendingUp className="w-5 h-5 text-emerald-400" />,
-    title: 'Traccia i Progressi',
-    desc: 'Check mensili con foto e peso per vedere la trasformazione',
+    title: 'Progressi & Foto',
+    desc: 'Check mensili con peso e foto per vedere la tua trasformazione',
     color: 'bg-emerald-500/15 border-emerald-500/20',
-  },
-  {
-    icon: <FolderOpen className="w-5 h-5 text-primary" />,
-    title: 'Area Personale',
-    desc: 'Piano alimentare, documenti e video dal tuo coach',
-    color: 'bg-primary/15 border-primary/20',
-    premium: true,
+    section: 'free' as const,
   },
   {
     icon: <Bell className="w-5 h-5 text-amber-400" />,
     title: 'Attiva le Notifiche',
-    desc: 'Vai nelle Impostazioni per non perderti nulla',
+    desc: 'Promemoria diario e aggiornamenti dal coach',
     color: 'bg-amber-500/15 border-amber-500/20',
+    section: 'free' as const,
+  },
+  {
+    icon: <BarChart3 className="w-5 h-5 text-blue-400" />,
+    title: 'Statistiche Avanzate',
+    desc: 'Grafici settimanali e medie dettagliate dei tuoi parametri',
+    color: 'bg-blue-500/15 border-blue-500/20',
+    section: 'premium' as const,
+  },
+  {
+    icon: <FolderOpen className="w-5 h-5 text-primary" />,
+    title: 'Materiali & Video',
+    desc: 'Piano alimentare, documenti e video-correzioni dal coach',
+    color: 'bg-primary/15 border-primary/20',
+    section: 'premium' as const,
+  },
+  {
+    icon: <MessageCircle className="w-5 h-5 text-green-400" />,
+    title: 'Chat col Coach',
+    desc: 'Messaggi diretti con il tuo coach dedicato',
+    color: 'bg-green-500/15 border-green-500/20',
+    section: 'premium' as const,
   },
 ];
 
@@ -106,8 +126,8 @@ export const GuideOnboarding = ({ userId }: GuideOnboardingProps) => {
                     <BookOpen className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h2 className="font-bold text-base">Benvenuto in 362gradi!</h2>
-                    <p className="text-xs text-muted-foreground">Ecco come iniziare</p>
+                    <h2 className="font-bold text-base">Benvenuta in 362gradi!</h2>
+                    <p className="text-xs text-muted-foreground">Ecco cosa puoi fare</p>
                   </div>
                 </div>
                 <button
@@ -120,7 +140,14 @@ export const GuideOnboarding = ({ userId }: GuideOnboardingProps) => {
 
               {/* Steps - scrollabile */}
               <div className="flex-1 overflow-y-auto px-5 pb-3 space-y-2.5">
-                {quickSteps.map((step, i) => (
+                {/* Free section label */}
+                <div className="flex items-center gap-2 pt-1">
+                  <div className="h-px flex-1 bg-emerald-500/30" />
+                  <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-wider">Gratis</span>
+                  <div className="h-px flex-1 bg-emerald-500/30" />
+                </div>
+
+                {quickSteps.filter(s => s.section === 'free').map((step, i) => (
                   <motion.div
                     key={i}
                     initial={{ opacity: 0, x: -15 }}
@@ -130,14 +157,35 @@ export const GuideOnboarding = ({ userId }: GuideOnboardingProps) => {
                   >
                     <div className="shrink-0 mt-0.5">{step.icon}</div>
                     <div className="flex-1 min-w-0">
+                      <span className="font-semibold text-sm">{step.title}</span>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{step.desc}</p>
+                    </div>
+                  </motion.div>
+                ))}
+
+                {/* Premium section label */}
+                <div className="flex items-center gap-2 pt-2">
+                  <div className="h-px flex-1 bg-amber-500/30" />
+                  <span className="text-[9px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
+                    <Crown className="w-2.5 h-2.5" />
+                    Percorso Personalizzato
+                  </span>
+                  <div className="h-px flex-1 bg-amber-500/30" />
+                </div>
+
+                {quickSteps.filter(s => s.section === 'premium').map((step, i) => (
+                  <motion.div
+                    key={`p-${i}`}
+                    initial={{ opacity: 0, x: -15 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 + i * 0.07 }}
+                    className={`flex items-start gap-3 p-3 rounded-xl border ${step.color} opacity-80`}
+                  >
+                    <div className="shrink-0 mt-0.5">{step.icon}</div>
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
                         <span className="font-semibold text-sm">{step.title}</span>
-                        {step.premium && (
-                          <span className="inline-flex items-center gap-0.5 text-[9px] font-bold text-amber-500 bg-amber-500/10 px-1.5 py-0.5 rounded-full">
-                            <Crown className="w-2 h-2" />
-                            PREMIUM
-                          </span>
-                        )}
+                        <Lock className="w-3 h-3 text-amber-500" />
                       </div>
                       <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{step.desc}</p>
                     </div>
