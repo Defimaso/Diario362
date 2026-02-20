@@ -191,8 +191,7 @@ const Diario = () => {
               </DropdownMenu>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <GuideButton />
+          <div className="flex items-center gap-0.5">
             <StreakBadge streak={streak} />
             <NotificationBell />
             {(isAdmin || isCollaborator || isSuperAdmin) && (
@@ -200,13 +199,14 @@ const Diario = () => {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-primary hover:text-primary/80"
+                  className="text-primary hover:text-primary/80 w-8 h-8"
                 >
-                  <Users className="w-5 h-5" />
+                  <Users className="w-4 h-4" />
                 </Button>
               </Link>
             )}
-            <Link to="/settings">
+            {/* Su sm+ mostra Settings e LogOut direttamente */}
+            <Link to="/settings" className="hidden sm:inline-flex">
               <Button
                 variant="ghost"
                 size="icon"
@@ -219,10 +219,37 @@ const Diario = () => {
               variant="ghost"
               size="icon"
               onClick={handleSignOut}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground hidden sm:inline-flex"
             >
               <LogOut className="w-5 h-5" />
             </Button>
+            {/* Su mobile: dropdown "..." con Settings e LogOut */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-muted-foreground hover:text-foreground sm:hidden w-8 h-8"
+                >
+                  <span className="text-lg leading-none">⋯</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link to="/settings" className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    Impostazioni
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  onClick={handleSignOut}
+                  className="flex items-center gap-2 text-destructive focus:text-destructive"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Esci
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </motion.header>
 

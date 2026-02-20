@@ -94,7 +94,8 @@ const ImageCropperModal = ({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-4 bg-card rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
+            className="fixed inset-2 sm:inset-4 bg-card rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
+            style={{ bottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b border-border">
@@ -167,10 +168,10 @@ const ImageCropperModal = ({
             </div>
 
             {/* Controls */}
-            <div className="p-4 space-y-4 border-t border-border bg-card">
+            <div className="p-3 sm:p-4 space-y-3 border-t border-border bg-card">
               {/* Zoom Slider */}
               <div className="flex items-center gap-3">
-                <ZoomOut className="w-4 h-4 text-muted-foreground" />
+                <ZoomOut className="w-4 h-4 text-muted-foreground shrink-0" />
                 <Slider
                   value={[zoom]}
                   min={1}
@@ -179,7 +180,7 @@ const ImageCropperModal = ({
                   onValueChange={(value) => setZoom(value[0])}
                   className="flex-1"
                 />
-                <ZoomIn className="w-4 h-4 text-muted-foreground" />
+                <ZoomIn className="w-4 h-4 text-muted-foreground shrink-0" />
               </div>
 
               {/* Info Text */}
@@ -187,33 +188,32 @@ const ImageCropperModal = ({
                 Trascina per posizionare, usa lo slider per lo zoom
               </p>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3">
+              {/* Action Buttons — prominenti su mobile */}
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 h-12 text-sm"
                   onClick={handleClose}
                   disabled={isProcessing}
                 >
-                  <X className="w-4 h-4 mr-2" />
+                  <X className="w-4 h-4 mr-1.5" />
                   Annulla
                 </Button>
                 <Button
-                  className="flex-1 bg-primary"
+                  className="flex-2 h-12 text-sm font-semibold bg-primary min-w-[160px]"
                   onClick={handleConfirm}
                   disabled={isProcessing || !croppedAreaPixels}
-                  size="lg"
                 >
                   {isProcessing ? (
                     <motion.div
                       animate={{ rotate: 360 }}
                       transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                      className="w-4 h-4 border-2 border-white border-t-transparent rounded-full"
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
                     />
                   ) : (
                     <>
-                      <Check className="w-4 h-4 mr-2" />
-                      Conferma e Continua
+                      <Check className="w-4 h-4 mr-1.5" />
+                      Conferma ✓
                     </>
                   )}
                 </Button>
