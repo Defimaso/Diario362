@@ -373,14 +373,6 @@ export type Database = {
           weekend_challenge: string | null
           weekly_sessions: string | null
           why_now: string | null
-          lead_id: string | null
-          utm_source: string | null
-          utm_medium: string | null
-          utm_campaign: string | null
-          utm_content: string | null
-          utm_term: string | null
-          user_agent: string | null
-          referrer: string | null
         }
         Insert: {
           age?: number | null
@@ -435,14 +427,6 @@ export type Database = {
           weekend_challenge?: string | null
           weekly_sessions?: string | null
           why_now?: string | null
-          lead_id?: string | null
-          utm_source?: string | null
-          utm_medium?: string | null
-          utm_campaign?: string | null
-          utm_content?: string | null
-          utm_term?: string | null
-          user_agent?: string | null
-          referrer?: string | null
         }
         Update: {
           age?: number | null
@@ -497,89 +481,6 @@ export type Database = {
           weekend_challenge?: string | null
           weekly_sessions?: string | null
           why_now?: string | null
-          lead_id?: string | null
-          utm_source?: string | null
-          utm_medium?: string | null
-          utm_campaign?: string | null
-          utm_content?: string | null
-          utm_term?: string | null
-          user_agent?: string | null
-          referrer?: string | null
-        }
-        Relationships: []
-      }
-      quiz_leads: {
-        Row: {
-          id: string
-          lead_id: string | null
-          email: string | null
-          name: string | null
-          need_profile: string | null
-          profile_name: string | null
-          hook_choice: string | null
-          source: string | null
-          quiz_mode: string | null
-          all_answers: Json | null
-          email_sent: boolean | null
-          resend_email_id: string | null
-          consent_given: boolean | null
-          consent_timestamp: string | null
-          utm_source: string | null
-          utm_medium: string | null
-          utm_campaign: string | null
-          utm_content: string | null
-          utm_term: string | null
-          user_agent: string | null
-          referrer: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          lead_id?: string | null
-          email?: string | null
-          name?: string | null
-          need_profile?: string | null
-          profile_name?: string | null
-          hook_choice?: string | null
-          source?: string | null
-          quiz_mode?: string | null
-          all_answers?: Json | null
-          email_sent?: boolean | null
-          resend_email_id?: string | null
-          consent_given?: boolean | null
-          consent_timestamp?: string | null
-          utm_source?: string | null
-          utm_medium?: string | null
-          utm_campaign?: string | null
-          utm_content?: string | null
-          utm_term?: string | null
-          user_agent?: string | null
-          referrer?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          lead_id?: string | null
-          email?: string | null
-          name?: string | null
-          need_profile?: string | null
-          profile_name?: string | null
-          hook_choice?: string | null
-          source?: string | null
-          quiz_mode?: string | null
-          all_answers?: Json | null
-          email_sent?: boolean | null
-          resend_email_id?: string | null
-          consent_given?: boolean | null
-          consent_timestamp?: string | null
-          utm_source?: string | null
-          utm_medium?: string | null
-          utm_campaign?: string | null
-          utm_content?: string | null
-          utm_term?: string | null
-          user_agent?: string | null
-          referrer?: string | null
-          created_at?: string
         }
         Relationships: []
       }
