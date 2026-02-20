@@ -5,12 +5,14 @@ import {
   FolderOpen, MessageCircle, Bell, Settings, ChevronRight, Crown,
   BookOpen, BarChart3, PenLine, Dumbbell, UtensilsCrossed,
   MessageSquare, Sparkles, Lock, ChevronDown, ChevronUp,
-  Target, Zap, Heart, Brain, Flame, Camera, Scale, Table2
+  Target, Zap, Heart, Brain, Flame, Camera, Scale, Table2,
+  RotateCcw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Footer from '@/components/legal/Footer';
 import BottomDock from '@/components/BottomDock';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface StepProps {
   step: number;
@@ -420,8 +422,19 @@ const steps: Omit<StepProps, 'delay'>[] = [
   },
 ];
 
+const GUIDE_SEEN_KEY = 'diario_guide_seen';
+const TOUR_VERSION = 'v2';
+
 const Guida = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const handleRestartTour = () => {
+    if (user?.id) {
+      localStorage.removeItem(`${GUIDE_SEEN_KEY}_${user.id}_${TOUR_VERSION}`);
+    }
+    navigate('/diario');
+  };
 
   const freeSteps = steps.filter((_, i) => i <= 5);
   const premiumSteps = steps.filter((_, i) => i >= 6 && i <= 11);
@@ -466,13 +479,22 @@ const Guida = () => {
             <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
               <BookOpen className="w-5 h-5 text-primary" />
             </div>
-            <div>
+            <div className="flex-1">
               <h2 className="font-semibold text-sm mb-1">Benvenuta in Diario362!</h2>
               <p className="text-xs text-muted-foreground leading-relaxed">
                 L'app ti aiuta a monitorare ogni giorno recupero, energia, mindset e nutrizione.
                 Le funzioni base sono gratuite per tutti. Le funzioni premium si sbloccano
                 attivando il percorso personalizzato con il tuo coach.
               </p>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRestartTour}
+                className="mt-3 h-8 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/10"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                Ripeti tour guidato
+              </Button>
             </div>
           </div>
         </motion.div>
