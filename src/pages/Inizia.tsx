@@ -68,6 +68,15 @@ interface FunnelData {
   // Final
   name: string;
   email: string;
+
+  // Tracking
+  utm_source: string | null;
+  utm_medium: string | null;
+  utm_campaign: string | null;
+  utm_content: string | null;
+  utm_term: string | null;
+  user_agent: string | null;
+  referrer: string | null;
 }
 
 const initialData: FunnelData = {
@@ -116,6 +125,13 @@ const initialData: FunnelData = {
   commit_daily_diary: null,
   name: "",
   email: "",
+  utm_source: null,
+  utm_medium: null,
+  utm_campaign: null,
+  utm_content: null,
+  utm_term: null,
+  user_agent: null,
+  referrer: null,
 };
 
 type StepType = "question" | "interstitial" | "result";
@@ -201,6 +217,21 @@ const Inizia = () => {
   const currentStep = steps[currentStepIndex];
   const totalQuestionSteps = steps.filter(s => s.type === "question").length;
   const currentQuestionIndex = steps.slice(0, currentStepIndex + 1).filter(s => s.type === "question").length;
+
+  // Capture UTM params and tracking info on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tracking = {
+      utm_source: params.get("utm_source"),
+      utm_medium: params.get("utm_medium"),
+      utm_campaign: params.get("utm_campaign"),
+      utm_content: params.get("utm_content"),
+      utm_term: params.get("utm_term"),
+      user_agent: navigator.userAgent,
+      referrer: document.referrer || null,
+    };
+    setData(prev => ({ ...prev, ...tracking }));
+  }, []);
   
   // Create or update lead in Supabase
   const saveLead = async (newData: Partial<FunnelData>) => {
