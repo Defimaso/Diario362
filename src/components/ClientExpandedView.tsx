@@ -189,7 +189,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
                   return scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '-';
                 })()}
               </div>
-              <div className="text-[10px] text-muted-foreground">Nutrizione</div>
+              <div className="text-xs text-muted-foreground">Nutrizione</div>
             </div>
             <div className="p-2 rounded-lg bg-muted/50">
               <div className="text-lg font-bold tabular-nums">
@@ -198,13 +198,13 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
                   return scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '-';
                 })()}
               </div>
-              <div className="text-[10px] text-muted-foreground">Allenamento</div>
+              <div className="text-xs text-muted-foreground">Allenamento</div>
             </div>
             <div className="p-2 rounded-lg bg-muted/50">
               <div className="text-lg font-bold tabular-nums">
                 {dailyCheckins.filter(c => c.training_rest_day === true).length}
               </div>
-              <div className="text-[10px] text-muted-foreground">Giorni riposo</div>
+              <div className="text-xs text-muted-foreground">Giorni riposo</div>
             </div>
           </div>
         </div>
@@ -652,7 +652,7 @@ interface PhotoRowProps {
 const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
   ({ label, first, last, firstNum, lastNum }, ref) => (
     <div className="space-y-1" ref={ref}>
-      <p className="text-[10px] sm:text-xs text-muted-foreground font-medium">{label}</p>
+      <p className="text-xs sm:text-xs text-muted-foreground font-medium">{label}</p>
       <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
         <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-muted">
           {first ? (
@@ -662,7 +662,7 @@ const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
               <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
             </div>
           )}
-          <span className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 text-[10px] sm:text-xs bg-black/60 text-white px-1.5 sm:px-2 py-0.5 rounded">
+          <span className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 text-xs sm:text-xs bg-black/60 text-white px-1.5 sm:px-2 py-0.5 rounded">
             #{firstNum}
           </span>
         </div>
@@ -674,7 +674,7 @@ const PhotoRow = forwardRef<HTMLDivElement, PhotoRowProps>(
               <Camera className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground" />
             </div>
           )}
-          <span className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 text-[10px] sm:text-xs bg-black/60 text-white px-1.5 sm:px-2 py-0.5 rounded">
+          <span className="absolute bottom-0.5 left-0.5 sm:bottom-1 sm:left-1 text-xs sm:text-xs bg-black/60 text-white px-1.5 sm:px-2 py-0.5 rounded">
             #{lastNum}
           </span>
         </div>

@@ -62,9 +62,9 @@ const WeeklyChart = ({ data = [] }: WeeklyChartProps) => {
       className="card-elegant rounded-xl p-4 sm:p-5"
     >
       <h3 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Progresso Settimanale</h3>
-      <div className="h-[100px] sm:h-[120px]">
+      <div className="h-[120px] sm:h-[140px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={last7Days} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
+          <AreaChart data={last7Days} margin={{ top: 5, right: 5, left: 5, bottom: 0 }}>
             <defs>
               <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="hsl(45, 100%, 50%)" stopOpacity={0.4} />

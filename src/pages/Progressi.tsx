@@ -69,7 +69,7 @@ const Progressi = () => {
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header */}
-      <header className="bg-gradient-to-br from-green-500/20 via-background to-background pt-12 pb-6 px-4">
+      <header className="bg-gradient-to-br from-green-500/20 via-background to-background pt-6 sm:pt-12 pb-4 sm:pb-6 px-4">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}

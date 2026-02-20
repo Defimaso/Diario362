@@ -96,9 +96,53 @@ const HistoryTable = ({ data, monthlyChecks = [], onSelectCheck }: HistoryTableP
           </Badge>
         </div>
 
+        {/* Mobile: card list — Desktop: tabella */}
         <ScrollArea className="h-[300px]">
           <TooltipProvider>
-            <Table>
+            {/* Card layout su mobile */}
+            <div className="sm:hidden space-y-2">
+              {data.map((check) => {
+                const isExternal = check.source === 'external';
+                return (
+                  <div
+                    key={check.id}
+                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/30 cursor-pointer active:bg-muted/60 transition-colors"
+                    onClick={() => handleRowClick(check)}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium leading-tight">
+                        {new Date(check.date).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </p>
+                      <div className="flex items-center gap-3 mt-1">
+                        {check.weight && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Scale className="w-3 h-3" />{check.weight} kg
+                          </span>
+                        )}
+                        {countPhotos(check) > 0 && (
+                          <span className="text-xs text-muted-foreground flex items-center gap-1">
+                            <Image className="w-3 h-3" />{countPhotos(check)} foto
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {isExternal ? (
+                        <FileSpreadsheet className="w-4 h-4 text-green-500" />
+                      ) : (
+                        <Database className="w-4 h-4 text-blue-500" />
+                      )}
+                      {(isExternal || onSelectCheck) && (
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Tabella su sm+ */}
+            <Table className="hidden sm:table">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[140px]">Data</TableHead>

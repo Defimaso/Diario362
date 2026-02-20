@@ -411,6 +411,7 @@ const CheckFormModal = ({
                   </Label>
                   <Input
                     type="number"
+                    inputMode="decimal"
                     step="0.1"
                     placeholder="Es: 72.5"
                     value={weight}
@@ -424,7 +425,7 @@ const CheckFormModal = ({
                     <Camera className="w-4 h-4 text-primary" />
                     Foto Progresso
                   </Label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
                     <PhotoUploadBox
                       label="Fronte"
                       preview={photoFrontPreview}
