@@ -89,17 +89,16 @@ const ImageCropperModal = ({
             onClick={handleClose}
           />
 
-          {/* Modal */}
+          {/* Modal — fullscreen su mobile per garantire visibilità bottoni */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-2 sm:inset-4 bg-card rounded-2xl z-50 flex flex-col overflow-hidden shadow-2xl"
-            style={{ bottom: 'max(8px, env(safe-area-inset-bottom, 8px))' }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="fixed inset-0 bg-card z-50 flex flex-col overflow-hidden"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <h2 className="text-lg font-bold">
+            {/* Header — altezza fissa, non si comprime */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
+              <h2 className="text-base font-bold">
                 Ritaglia Foto {PHOTO_TYPE_LABELS[photoType]}
               </h2>
               <div className="flex items-center gap-2">
@@ -108,29 +107,29 @@ const ImageCropperModal = ({
                     variant={showGhost ? 'secondary' : 'ghost'}
                     size="sm"
                     onClick={() => setShowGhost(!showGhost)}
-                    className="flex items-center gap-1"
+                    className="flex items-center gap-1 h-8 text-xs"
                   >
-                    <Ghost className="w-4 h-4" />
-                    <span className="text-xs">Riferimento</span>
+                    <Ghost className="w-3.5 h-3.5" />
+                    Riferimento
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" onClick={handleClose}>
-                  <X className="w-5 h-5" />
+                <Button variant="ghost" size="icon" onClick={handleClose} className="h-8 w-8">
+                  <X className="w-4 h-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Cropper Area */}
-            <div className="flex-1 relative bg-black">
+            {/* Cropper Area — flex-1 + min-h-0 è il fix critico per mobile */}
+            <div className="flex-1 min-h-0 relative bg-black">
               {/* Ghost Overlay */}
               {ghostImageSrc && showGhost && (
-                <div 
+                <div
                   className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center"
                   style={{ opacity: 0.35 }}
                 >
-                  <img 
-                    src={ghostImageSrc} 
-                    alt="Reference from Check #1" 
+                  <img
+                    src={ghostImageSrc}
+                    alt="Reference from Check #1"
                     className="max-w-full max-h-full object-contain"
                   />
                 </div>
@@ -157,9 +156,9 @@ const ImageCropperModal = ({
                 }}
               />
 
-              {/* Alignment Guide Text */}
+              {/* Hint testo — solo se ghost attivo */}
               {ghostImageSrc && showGhost && (
-                <div className="absolute bottom-4 left-0 right-0 text-center z-20">
+                <div className="absolute bottom-3 left-0 right-0 text-center z-20">
                   <span className="bg-black/60 text-white text-xs px-3 py-1.5 rounded-full">
                     Allinea la tua sagoma con il riferimento
                   </span>
@@ -167,8 +166,11 @@ const ImageCropperModal = ({
               )}
             </div>
 
-            {/* Controls */}
-            <div className="p-3 sm:p-4 space-y-3 border-t border-border bg-card">
+            {/* Controls — altezza fissa, sempre visibili */}
+            <div
+              className="shrink-0 px-4 pt-3 border-t border-border bg-card space-y-3"
+              style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+            >
               {/* Zoom Slider */}
               <div className="flex items-center gap-3">
                 <ZoomOut className="w-4 h-4 text-muted-foreground shrink-0" />
@@ -183,24 +185,22 @@ const ImageCropperModal = ({
                 <ZoomIn className="w-4 h-4 text-muted-foreground shrink-0" />
               </div>
 
-              {/* Info Text */}
-              <p className="text-xs text-muted-foreground text-center">
-                Trascina per posizionare, usa lo slider per lo zoom
+              <p className="text-xs text-muted-foreground text-center leading-tight">
+                Trascina per posizionare • slider per zoom
               </p>
 
-              {/* Action Buttons — prominenti su mobile */}
+              {/* Bottoni — Annulla piccolo, Conferma grande e verde */}
               <div className="flex gap-2">
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 text-sm"
+                  className="h-12 px-4 text-sm shrink-0"
                   onClick={handleClose}
                   disabled={isProcessing}
                 >
-                  <X className="w-4 h-4 mr-1.5" />
-                  Annulla
+                  <X className="w-4 h-4" />
                 </Button>
                 <Button
-                  className="flex-2 h-12 text-sm font-semibold bg-primary min-w-[160px]"
+                  className="flex-1 h-12 text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white"
                   onClick={handleConfirm}
                   disabled={isProcessing || !croppedAreaPixels}
                 >
@@ -212,8 +212,8 @@ const ImageCropperModal = ({
                     />
                   ) : (
                     <>
-                      <Check className="w-4 h-4 mr-1.5" />
-                      Conferma ✓
+                      <Check className="w-5 h-5 mr-2" />
+                      Conferma Ritaglio
                     </>
                   )}
                 </Button>
