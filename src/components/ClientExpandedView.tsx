@@ -1,5 +1,5 @@
 import { useState, useEffect, forwardRef, memo } from 'react';
-import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video, Upload, User, Target, Brain, Activity } from 'lucide-react';
+import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video, Upload, User, Target, Brain, Activity, PlusCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays } from 'date-fns';
@@ -16,6 +16,8 @@ import StaffDietUpload from './staff/StaffDietUpload';
 import ClientDocumentsSection from './staff/ClientDocumentsSection';
 import StoricoDiario from './staff/StoricoDiario';
 import { useOnboardingData } from '@/hooks/useOnboardingData';
+import CheckFormModal from './checks/CheckFormModal';
+import { useUserChecks } from '@/hooks/useUserChecks';
 
 interface UserCheck {
   id: string;
@@ -51,9 +53,18 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
   const [checks, setChecks] = useState<UserCheck[]>([]);
   const [dailyCheckins, setDailyCheckins] = useState<DailyCheckin[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checkModalOpen, setCheckModalOpen] = useState(false);
+  const [selectedCheckNumber, setSelectedCheckNumber] = useState<number>(1);
   const { logAction } = useAuditLog();
   const { dietPlan, loading: dietLoading, downloadDietPlan, refetch: refetchDiet } = useUserDiet(clientId);
   const { profile: onboardingProfile, loading: onboardingLoading } = useOnboardingData(clientId);
+  const {
+    checks: clientChecks,
+    uploading: checkUploading,
+    saveCheck: saveClientCheck,
+    getFirstCheckWithPhotos,
+    refetch: refetchClientChecks,
+  } = useUserChecks(clientId);
 
   useEffect(() => {
     const fetchChecks = async () => {
@@ -336,10 +347,25 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
 
       {/* Check History Table */}
       <div className="bg-card rounded-xl p-3 sm:p-4 border border-border overflow-hidden">
-        <h4 className="text-xs sm:text-sm font-medium text-muted-foreground mb-2 sm:mb-3 flex items-center gap-2">
-          <FileText className="w-4 h-4" />
-          Storico Check ({checks.length})
-        </h4>
+        <div className="flex items-center justify-between mb-2 sm:mb-3">
+          <h4 className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Storico Check ({checks.length})
+          </h4>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-7 text-xs gap-1 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10"
+            onClick={() => {
+              const nextNumber = checks.length + 1;
+              setSelectedCheckNumber(Math.min(nextNumber, 100));
+              setCheckModalOpen(true);
+            }}
+          >
+            <PlusCircle className="w-3 h-3" />
+            Aggiungi check
+          </Button>
+        </div>
         
         {checks.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-4">
@@ -527,6 +553,31 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
           </p>
         </div>
       )}
+
+      {/* Coach: inserisci check per il cliente */}
+      <CheckFormModal
+        isOpen={checkModalOpen}
+        onClose={() => setCheckModalOpen(false)}
+        checkNumber={selectedCheckNumber}
+        existingData={clientChecks.find(c => c.check_number === selectedCheckNumber) ?? null}
+        onSave={async (data) => {
+          const result = await saveClientCheck(data);
+          if (!result.error) {
+            await refetchClientChecks();
+            // Sync the local checks list used by the table in this component
+            const { data: updated } = await supabase
+              .from('user_checks')
+              .select('*')
+              .eq('user_id', clientId)
+              .order('check_number', { ascending: true });
+            if (updated) setChecks(updated);
+            setCheckModalOpen(false);
+          }
+          return result;
+        }}
+        uploading={checkUploading}
+        firstCheckData={getFirstCheckWithPhotos()}
+      />
     </div>
   );
 };
