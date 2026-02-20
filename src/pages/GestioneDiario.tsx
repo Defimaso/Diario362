@@ -45,6 +45,7 @@ import { useCoachNotes } from "@/hooks/useCoachNotes";
 import CoachNotesDialog from "@/components/CoachNotesDialog";
 import ClientExpandedView from "@/components/ClientExpandedView";
 import CoachAnalytics from "@/components/CoachAnalytics";
+import AdminCoachDashboard from "@/components/staff/AdminCoachDashboard";
 import { useChallenges } from "@/hooks/useChallenges";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -519,6 +520,17 @@ const GestioneDiario = () => {
             </Button>
           </div>
         </motion.header>
+
+        {/* Admin-only: Coach Dashboard */}
+        {isSuperAdmin && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.05 }}
+          >
+            <AdminCoachDashboard clients={clients} />
+          </motion.div>
+        )}
 
         {/* Stats Overview */}
         <motion.div
