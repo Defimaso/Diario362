@@ -210,6 +210,28 @@ export const useUserChecks = (clientId?: string) => {
     }
   };
 
+  // Delete a check by id
+  const deleteCheck = async (checkId: string) => {
+    try {
+      const { error } = await supabase
+        .from('user_checks')
+        .delete()
+        .eq('id', checkId);
+
+      if (error) {
+        toast.error('Errore nella cancellazione del check');
+      } else {
+        toast.success('Check eliminato');
+        await fetchChecks();
+      }
+      return { error };
+    } catch (err) {
+      const error = err instanceof Error ? err : new Error('Errore sconosciuto');
+      toast.error('Errore nella cancellazione del check');
+      return { error };
+    }
+  };
+
   // Get signed URL for photos
   const getSignedPhotoUrl = async (url: string): Promise<string | null> => {
     if (!url) return null;
@@ -251,6 +273,7 @@ export const useUserChecks = (clientId?: string) => {
     getComparisonData,
     getWeightChartData,
     saveCheck,
+    deleteCheck,
     getSignedPhotoUrl,
     getFirstCheckWithPhotos,
     refetch: fetchChecks,

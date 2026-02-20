@@ -1,5 +1,5 @@
 import { useState, useEffect, forwardRef, memo } from 'react';
-import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video, Upload, User, Target, Brain, Activity, PlusCircle } from 'lucide-react';
+import { Camera, TrendingDown, TrendingUp, Scale, FileText, Apple, Download, Video, Upload, User, Target, Brain, Activity, PlusCircle, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, Tooltip } from 'recharts';
 import { format, subDays } from 'date-fns';
@@ -18,6 +18,16 @@ import StoricoDiario from './staff/StoricoDiario';
 import { useOnboardingData } from '@/hooks/useOnboardingData';
 import CheckFormModal from './checks/CheckFormModal';
 import { useUserChecks } from '@/hooks/useUserChecks';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface UserCheck {
   id: string;
@@ -55,6 +65,8 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
   const [loading, setLoading] = useState(true);
   const [checkModalOpen, setCheckModalOpen] = useState(false);
   const [selectedCheckNumber, setSelectedCheckNumber] = useState<number>(1);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [checkToDelete, setCheckToDelete] = useState<{ id: string; number: number } | null>(null);
   const { logAction } = useAuditLog();
   const { dietPlan, loading: dietLoading, downloadDietPlan, refetch: refetchDiet } = useUserDiet(clientId);
   const { profile: onboardingProfile, loading: onboardingLoading } = useOnboardingData(clientId);
@@ -62,6 +74,7 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
     checks: clientChecks,
     uploading: checkUploading,
     saveCheck: saveClientCheck,
+    deleteCheck: deleteClientCheck,
     getFirstCheckWithPhotos,
     refetch: refetchClientChecks,
   } = useUserChecks(clientId);
@@ -381,11 +394,12 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
                   <th className="text-left py-2 px-2 text-muted-foreground font-medium">Peso</th>
                   <th className="text-left py-2 px-2 text-muted-foreground font-medium">Foto</th>
                   <th className="text-left py-2 px-2 text-muted-foreground font-medium">Note</th>
+                  <th className="py-2 px-2"></th>
                 </tr>
               </thead>
               <tbody>
                 {checks.map((check) => (
-                  <tr key={check.id} className="border-b border-border/50 last:border-0">
+                  <tr key={check.id} className="border-b border-border/50 last:border-0 group">
                     <td className="py-2 px-2 font-medium">{check.check_number}</td>
                     <td className="py-2 px-2">
                       {format(new Date(check.check_date), 'dd/MM/yy', { locale: it })}
@@ -403,6 +417,18 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
                     </td>
                     <td className="py-2 px-2 max-w-[150px] truncate text-muted-foreground">
                       {check.notes || '-'}
+                    </td>
+                    <td className="py-2 px-2">
+                      <button
+                        onClick={() => {
+                          setCheckToDelete({ id: check.id, number: check.check_number });
+                          setDeleteDialogOpen(true);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded hover:bg-red-500/10 text-red-400 hover:text-red-500"
+                        title="Elimina check"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -553,6 +579,38 @@ const ClientExpandedView = ({ clientId, clientName, coachNames }: ClientExpanded
           </p>
         </div>
       )}
+
+      {/* Coach: conferma eliminazione check */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminare Check #{checkToDelete?.number}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Questa azione è irreversibile. Il check e tutte le foto associate verranno eliminati definitivamente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={async () => {
+                if (!checkToDelete) return;
+                await deleteClientCheck(checkToDelete.id);
+                // Sync local list
+                const { data: updated } = await supabase
+                  .from('user_checks')
+                  .select('*')
+                  .eq('user_id', clientId)
+                  .order('check_number', { ascending: true });
+                if (updated) setChecks(updated);
+                setCheckToDelete(null);
+              }}
+            >
+              Elimina
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Coach: inserisci check per il cliente */}
       <CheckFormModal
