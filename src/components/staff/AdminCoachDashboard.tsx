@@ -1,6 +1,12 @@
 import { useMemo, useState } from 'react';
 import { ClientData } from '@/hooks/useAdminClients';
-import { isClientAtRisk } from '@/lib/badges';
+
+function isClientAtRiskSimple(lastCheckinDate: string | null): boolean {
+  if (!lastCheckinDate) return true;
+  const diff = Math.floor((Date.now() - new Date(lastCheckinDate).getTime()) / 86400000);
+  return diff > 3;
+}
+
 import { Users, CheckCircle2, AlertTriangle, XCircle, TrendingUp, Activity, Target, Flame } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -69,7 +75,7 @@ function computeStats(clients: ClientData[]): CoachStats {
     avgEnergy:   avg(withCheckin.map(c => c.last_checkin?.energy)),
     avgMindset:  avg(withCheckin.map(c => c.last_checkin?.mindset)),
     avgStreak:   avg(clients.map(c => c.streak)),
-    atRisk:  clients.filter(c => isClientAtRisk(c.last_checkin?.date ?? null)).length,
+    atRisk:  clients.filter(c => isClientAtRiskSimple(c.last_checkin?.date ?? null)).length,
     premium: clients.filter(c => c.is_premium).length,
   };
 }
@@ -87,7 +93,7 @@ function StatCard({ label, value, icon: Icon, color }: { label: string; value: s
 function ClientRow({ client }: { client: ClientData }) {
   const today = new Date().toISOString().split('T')[0];
   const checkedToday = client.last_checkin?.date === today;
-  const atRisk = isClientAtRisk(client.last_checkin?.date ?? null);
+  const atRisk = isClientAtRiskSimple(client.last_checkin?.date ?? null);
 
   return (
     <div className={cn(
@@ -171,7 +177,7 @@ function CoachPanel({ coach, clients }: { coach: CoachName; clients: ClientData[
         {clients
           .sort((a, b) => {
             // At-risk first, then by status
-            const risk = (isClientAtRisk(b.last_checkin?.date ?? null) ? 1 : 0) - (isClientAtRisk(a.last_checkin?.date ?? null) ? 1 : 0);
+            const risk = (isClientAtRiskSimple(b.last_checkin?.date ?? null) ? 1 : 0) - (isClientAtRiskSimple(a.last_checkin?.date ?? null) ? 1 : 0);
             if (risk !== 0) return risk;
             const order = { red: 0, yellow: 1, green: 2 };
             return order[a.status] - order[b.status];
