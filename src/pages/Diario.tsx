@@ -280,6 +280,19 @@ const Diario = () => {
           </motion.div>
         )}
 
+        {/* Beta Banner — sempre visibile */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.02 }}
+          className="mb-3 px-3 py-2 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center gap-2"
+        >
+          <span className="text-base">🧪</span>
+          <p className="text-xs text-violet-400 font-medium leading-tight">
+            App in fase di test — non è la versione definitiva. Grazie per la pazienza!
+          </p>
+        </motion.div>
+
         {/* Messages notification */}
         {unreadTotal > 0 && (
           <motion.div

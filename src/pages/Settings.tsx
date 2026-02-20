@@ -232,6 +232,32 @@ const Settings = () => {
             </div>
           </motion.section>
 
+          {/* App Info / Beta Notice */}
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.28 }}
+          >
+            <div className="card-elegant p-4 sm:p-5 rounded-2xl border-violet-500/20">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-full bg-violet-500/10 shrink-0">
+                  <span className="text-base">🧪</span>
+                </div>
+                <div>
+                  <h2 className="font-semibold text-sm mb-1">Versione Beta</h2>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    L'app è attualmente in fase di test. Potresti incontrare piccoli bug o
+                    funzionalità incomplete. Grazie per la tua pazienza mentre lavoriamo
+                    per migliorarla ogni giorno! 🙏
+                  </p>
+                  <p className="text-xs text-violet-400 font-medium mt-2">
+                    Per segnalare problemi contatta il tuo coach.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </motion.section>
+
           {/* Danger Zone */}
           <motion.section
             initial={{ opacity: 0, y: 20 }}
