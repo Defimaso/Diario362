@@ -80,21 +80,21 @@ const ImageCropperModal = ({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop — z-[200] sopra il BottomDock (z-50) */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[200]"
             onClick={handleClose}
           />
 
-          {/* Modal — fullscreen su mobile per garantire visibilità bottoni */}
+          {/* Modal — fullscreen, sopra tutto incluso BottomDock */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed inset-0 bg-card z-50 flex flex-col overflow-hidden"
+            className="fixed inset-0 bg-card z-[200] flex flex-col overflow-hidden"
           >
             {/* Header — altezza fissa, non si comprime */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
@@ -166,10 +166,10 @@ const ImageCropperModal = ({
               )}
             </div>
 
-            {/* Controls — altezza fissa, sempre visibili */}
+            {/* Controls — altezza fissa, sempre visibili, padding per notch */}
             <div
               className="shrink-0 px-4 pt-3 border-t border-border bg-card space-y-3"
-              style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+              style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom, 0px))' }}
             >
               {/* Zoom Slider */}
               <div className="flex items-center gap-3">
