@@ -192,6 +192,7 @@ const Diario = () => {
             </div>
           </div>
           <div className="flex items-center gap-0.5">
+            <GuideButton />
             <StreakBadge streak={streak} />
             <NotificationBell />
             {(isAdmin || isCollaborator || isSuperAdmin) && (
@@ -298,6 +299,7 @@ const Diario = () => {
 
         {/* PRIORITY: Check-in Giornaliero - TOP OF PAGE (RED) */}
         <motion.div
+          id="tour-checkin"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
@@ -314,6 +316,7 @@ const Diario = () => {
 
         {/* Momentum Circle */}
         <motion.section
+          id="tour-momentum"
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.1 }}
@@ -488,7 +491,7 @@ const Diario = () => {
         </motion.section>
 
         {/* Quick Actions */}
-        <div className="space-y-3 sm:space-y-4">
+        <div id="tour-actions" className="space-y-3 sm:space-y-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -591,8 +594,11 @@ const Diario = () => {
         />
       </div>
       
-      {/* Guide Onboarding Popup */}
-      <GuideOnboarding userId={user.id} />
+      {/* Guide Onboarding Tour interattivo */}
+      <GuideOnboarding
+        userId={user.id}
+        onOpenCheckin={() => setIsCheckinOpen(true)}
+      />
 
       {/* Bottom Dock */}
       <BottomDock />
