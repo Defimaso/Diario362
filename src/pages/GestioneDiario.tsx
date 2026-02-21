@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target, Key, Crown, Copy, Loader2, BarChart3, Trophy, Send } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target, Key, Crown, Copy, Loader2, BarChart3, Trophy, Send, UserCheck } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -91,6 +91,13 @@ const GestioneDiario = () => {
   const [messageClient, setMessageClient] = useState<ClientData | null>(null);
   const [messageContent, setMessageContent] = useState('');
   const [isSendingMessage, setIsSendingMessage] = useState(false);
+
+  // Coach assignment dialog
+  const [coachAssignDialogOpen, setCoachAssignDialogOpen] = useState(false);
+  const [coachAssignClient, setCoachAssignClient] = useState<ClientData | null>(null);
+  const [availableCoaches, setAvailableCoaches] = useState<{ id: string; name: string }[]>([]);
+  const [coachAssignLoading, setCoachAssignLoading] = useState(false);
+  const [assignedCoachId, setAssignedCoachId] = useState<string | null>(null);
 
   // Premium status tracking (from user_subscriptions via useAdminClients)
   const [premiumClients, setPremiumClients] = useState<Set<string>>(new Set());
@@ -842,6 +849,32 @@ const GestioneDiario = () => {
                             )}
                           </Button>
 
+                          {/* Assign Coach Button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-teal-500/40 text-teal-500 hover:bg-teal-500/10"
+                            onClick={async () => {
+                              setCoachAssignClient(client);
+                              setCoachAssignLoading(true);
+                              setCoachAssignDialogOpen(true);
+                              // Carica coach disponibili
+                              const { data: coachData } = await supabase.rpc('get_coaches' as any);
+                              if (coachData) setAvailableCoaches((coachData as any[]).map((d: any) => ({ id: d.id, name: d.name })));
+                              // Carica coach attualmente assegnato
+                              const { data: profileData } = await supabase
+                                .from('profiles')
+                                .select('coach_id')
+                                .eq('id', client.id)
+                                .single();
+                              setAssignedCoachId((profileData as any)?.coach_id || null);
+                              setCoachAssignLoading(false);
+                            }}
+                          >
+                            <UserCheck className="w-4 h-4 mr-1.5" />
+                            Assegna Coach
+                          </Button>
+
                           {/* Premium Buttons */}
                           {premiumClients.has(client.id) ? (
                             <Button
@@ -938,6 +971,64 @@ const GestioneDiario = () => {
           onMarkAsRead={markAsRead}
         />
       )}
+
+      {/* Coach Assignment Dialog */}
+      <Dialog open={coachAssignDialogOpen} onOpenChange={(open) => {
+        setCoachAssignDialogOpen(open);
+        if (!open) { setCoachAssignClient(null); setAssignedCoachId(null); setAvailableCoaches([]); }
+      }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="w-5 h-5 text-teal-500" />
+              Assegna Coach
+            </DialogTitle>
+            <DialogDescription>
+              {coachAssignClient?.full_name || coachAssignClient?.email}
+            </DialogDescription>
+          </DialogHeader>
+          {coachAssignLoading ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-3 pt-2">
+              {availableCoaches.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">Nessun coach disponibile</p>
+              )}
+              {availableCoaches.map(coach => {
+                const isAssigned = assignedCoachId === coach.id;
+                return (
+                  <div key={coach.id} className={`flex items-center justify-between rounded-lg border p-3 ${isAssigned ? 'border-teal-500/50 bg-teal-500/5' : 'border-border'}`}>
+                    <span className={`text-sm font-medium ${isAssigned ? 'text-teal-500' : ''}`}>{coach.name}</span>
+                    <Button
+                      size="sm"
+                      variant={isAssigned ? 'default' : 'outline'}
+                      className={isAssigned ? 'bg-teal-500 hover:bg-red-500 text-white' : ''}
+                      onClick={async () => {
+                        if (!coachAssignClient) return;
+                        setCoachAssignLoading(true);
+                        if (isAssigned) {
+                          const { error } = await supabase.rpc('remove_coach' as any, { p_client_id: coachAssignClient.id });
+                          if (!error) { setAssignedCoachId(null); toast({ title: 'Coach rimosso' }); refetchClients(); }
+                          else toast({ variant: 'destructive', title: 'Errore', description: error.message });
+                        } else {
+                          const { error } = await supabase.rpc('assign_coach' as any, { p_client_id: coachAssignClient.id, p_coach_id: coach.id });
+                          if (!error) { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); refetchClients(); }
+                          else toast({ variant: 'destructive', title: 'Errore', description: error.message });
+                        }
+                        setCoachAssignLoading(false);
+                      }}
+                    >
+                      {isAssigned ? 'Rimuovi' : 'Assegna'}
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Delete User Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={(open) => {
