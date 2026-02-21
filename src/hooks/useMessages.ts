@@ -143,6 +143,14 @@ export function useMessages(otherUserId?: string) {
     return { error: null };
   }, [user]);
 
+  // Reset messaggi quando cambia la conversazione
+  useEffect(() => {
+    if (otherUserId) {
+      setMessages([]);
+      setLoading(true);
+    }
+  }, [otherUserId]);
+
   // Initial fetch
   useEffect(() => {
     if (otherUserId) {
