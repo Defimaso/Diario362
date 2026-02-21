@@ -1034,19 +1034,13 @@ const GestioneDiario = () => {
                         setCoachAssignLoading(true);
                         try {
                           if (isAssigned) {
-                            // Rimuovi coach
-                            const { error } = await supabase
-                              .from('profiles')
-                              .update({ coach_id: null })
-                              .eq('id', coachAssignClient.id);
+                            // Rimuovi coach via RPC
+                            const { error } = await supabase.rpc('remove_coach', { p_client_id: coachAssignClient.id });
                             if (!error) { setAssignedCoachId(null); toast({ title: 'Coach rimosso' }); refetchClients(); }
                             else toast({ variant: 'destructive', title: 'Errore', description: error.message });
                           } else {
-                            // Assegna coach
-                            const { error } = await supabase
-                              .from('profiles')
-                              .update({ coach_id: coach.id })
-                              .eq('id', coachAssignClient.id);
+                            // Assegna coach via RPC
+                            const { error } = await supabase.rpc('assign_coach', { p_client_id: coachAssignClient.id, p_coach_id: coach.id });
                             if (!error) { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); refetchClients(); }
                             else toast({ variant: 'destructive', title: 'Errore', description: error.message });
                           }
