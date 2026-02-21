@@ -93,13 +93,13 @@ export function PremiumGate() {
         <Button
           className="w-full bg-accent text-accent-foreground hover:bg-accent/90 coral-glow"
           size="lg"
-          onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
+          onClick={() => window.open('https://362gradi.ae/shop', '_blank')}
         >
           <Crown className="w-4 h-4 mr-2" />
           Acquista il Percorso
         </Button>
         <p className="text-xs text-muted-foreground text-center mt-2">
-          Verrai reindirizzato alla piattaforma di allenamento
+          Verrai reindirizzato al negozio 362gradi
         </p>
       </motion.div>
 

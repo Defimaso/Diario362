@@ -234,7 +234,7 @@ const DailyCheckinModal = ({ isOpen, onClose, onComplete }: DailyCheckinModalPro
                         <AlertTriangle className="w-5 h-5 text-warning" />
                         <p className="text-sm">
                           <a 
-                            href="https://sso.teachable.com/secure/564301/identity/login/otp"
+                            href="https://362gradi.ae/shop"
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-primary underline hover:no-underline"

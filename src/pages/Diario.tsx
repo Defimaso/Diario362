@@ -529,7 +529,7 @@ const Diario = () => {
               description={isPremium ? "Accedi al tuo programma di allenamento" : "Premium - Sblocca per accedere"}
               icon={isPremium ? GraduationCap : Lock}
               variant="orange"
-              onClick={() => isPremium ? window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank') : navigate('/upgrade')}
+              onClick={() => isPremium ? window.open('https://362gradi.ae/shop', '_blank') : navigate('/upgrade')}
             />
             {isPremium && (
               <p className="text-xs text-muted-foreground mt-1 px-2 flex items-center gap-1">

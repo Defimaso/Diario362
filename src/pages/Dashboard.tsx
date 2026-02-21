@@ -108,7 +108,7 @@ const Dashboard = () => {
               description="Accedi al tuo programma di allenamento"
               icon={GraduationCap}
               variant="gold"
-              onClick={() => window.open('https://sso.teachable.com/secure/564301/identity/login/otp', '_blank')}
+              onClick={() => window.open('https://362gradi.ae/shop', '_blank')}
             />
           </motion.div>
         </div>
