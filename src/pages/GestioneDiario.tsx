@@ -1035,12 +1035,12 @@ const GestioneDiario = () => {
                         try {
                           if (isAssigned) {
                             // Rimuovi coach via RPC
-                            const { error } = await supabase.rpc('remove_coach', { p_client_id: coachAssignClient.id });
+                            const { error } = await supabase.rpc('remove_coach' as any, { p_client_id: coachAssignClient.id });
                             if (!error) { setAssignedCoachId(null); toast({ title: 'Coach rimosso' }); refetchClients(); }
                             else toast({ variant: 'destructive', title: 'Errore', description: error.message });
                           } else {
                             // Assegna coach via RPC
-                            const { error } = await supabase.rpc('assign_coach', { p_client_id: coachAssignClient.id, p_coach_id: coach.id });
+                            const { error } = await supabase.rpc('assign_coach' as any, { p_client_id: coachAssignClient.id, p_coach_id: coach.id });
                             if (!error) { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); refetchClients(); }
                             else toast({ variant: 'destructive', title: 'Errore', description: error.message });
                           }
