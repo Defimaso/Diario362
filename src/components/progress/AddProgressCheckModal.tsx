@@ -121,7 +121,7 @@ const AddProgressCheckModal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
             onClick={onClose}
           />
 
@@ -130,7 +130,7 @@ const AddProgressCheckModal = ({
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className="fixed inset-x-4 bottom-4 top-auto max-h-[85vh] overflow-y-auto bg-card rounded-2xl z-50 shadow-2xl"
+            className="fixed inset-x-4 bottom-4 top-auto max-h-[85vh] overflow-y-auto bg-card rounded-2xl z-[201] shadow-2xl"
           >
             <div className="sticky top-0 bg-card/95 backdrop-blur-sm p-4 border-b border-border flex items-center justify-between">
               <h2 className="text-lg font-bold">Nuovo Check Mensile</h2>

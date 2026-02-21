@@ -341,7 +341,7 @@ const CheckFormModal = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200]"
               onClick={handleClose}
             />
 
@@ -349,7 +349,7 @@ const CheckFormModal = ({
               initial={{ opacity: 0, y: 100 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 100 }}
-              className="fixed inset-x-0 bottom-0 top-auto max-h-[90vh] bg-card rounded-t-2xl z-50 shadow-2xl flex flex-col"
+              className="fixed inset-x-0 bottom-0 top-auto max-h-[90vh] bg-card rounded-t-2xl z-[201] shadow-2xl flex flex-col"
             >
               {/* Sticky Header */}
               <div className="sticky top-0 bg-card/95 backdrop-blur-sm p-4 border-b border-border flex items-center justify-between shrink-0 rounded-t-2xl">

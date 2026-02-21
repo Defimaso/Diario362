@@ -159,7 +159,7 @@ function CoachSelector({ onSelect, onClose }: CoachSelectorProps) {
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 flex items-end justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center" onClick={onClose}>
       <motion.div
         initial={{ y: 60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
