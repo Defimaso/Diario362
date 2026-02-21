@@ -858,16 +858,40 @@ const GestioneDiario = () => {
                               setCoachAssignClient(client);
                               setCoachAssignLoading(true);
                               setCoachAssignDialogOpen(true);
-                              // Carica coach disponibili
-                              const { data: coachData } = await supabase.rpc('get_coaches' as any);
-                              if (coachData) setAvailableCoaches((coachData as any[]).map((d: any) => ({ id: d.id, name: d.name })));
-                              // Carica coach attualmente assegnato
-                              const { data: profileData } = await supabase
-                                .from('profiles')
-                                .select('coach_id')
-                                .eq('id', client.id)
-                                .single();
-                              setAssignedCoachId((profileData as any)?.coach_id || null);
+
+                              try {
+                                // Carica coach disponibili (admin + collaborator) da user_roles + profiles
+                                const { data: roleData } = await supabase
+                                  .from('user_roles')
+                                  .select('user_id')
+                                  .in('role', ['admin', 'collaborator']);
+
+                                if (roleData && roleData.length > 0) {
+                                  const userIds = (roleData as any[]).map((r: any) => r.user_id);
+                                  const { data: profileData } = await supabase
+                                    .from('profiles')
+                                    .select('id, full_name, email')
+                                    .in('id', userIds);
+
+                                  if (profileData) {
+                                    const coaches = (profileData as any[]).map((p: any) => ({
+                                      id: p.id,
+                                      name: p.full_name || p.email
+                                    }));
+                                    setAvailableCoaches(coaches);
+                                  }
+                                }
+
+                                // Carica coach attualmente assegnato
+                                const { data: profileData } = await supabase
+                                  .from('profiles')
+                                  .select('coach_id')
+                                  .eq('id', client.id)
+                                  .single();
+                                setAssignedCoachId((profileData as any)?.coach_id || null);
+                              } catch (err) {
+                                console.error('Errore caricamento coach:', err);
+                              }
                               setCoachAssignLoading(false);
                             }}
                           >
@@ -1008,14 +1032,27 @@ const GestioneDiario = () => {
                       onClick={async () => {
                         if (!coachAssignClient) return;
                         setCoachAssignLoading(true);
-                        if (isAssigned) {
-                          const { error } = await supabase.rpc('remove_coach' as any, { p_client_id: coachAssignClient.id });
-                          if (!error) { setAssignedCoachId(null); toast({ title: 'Coach rimosso' }); refetchClients(); }
-                          else toast({ variant: 'destructive', title: 'Errore', description: error.message });
-                        } else {
-                          const { error } = await supabase.rpc('assign_coach' as any, { p_client_id: coachAssignClient.id, p_coach_id: coach.id });
-                          if (!error) { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); refetchClients(); }
-                          else toast({ variant: 'destructive', title: 'Errore', description: error.message });
+                        try {
+                          if (isAssigned) {
+                            // Rimuovi coach
+                            const { error } = await supabase
+                              .from('profiles')
+                              .update({ coach_id: null })
+                              .eq('id', coachAssignClient.id);
+                            if (!error) { setAssignedCoachId(null); toast({ title: 'Coach rimosso' }); refetchClients(); }
+                            else toast({ variant: 'destructive', title: 'Errore', description: error.message });
+                          } else {
+                            // Assegna coach
+                            const { error } = await supabase
+                              .from('profiles')
+                              .update({ coach_id: coach.id })
+                              .eq('id', coachAssignClient.id);
+                            if (!error) { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); refetchClients(); }
+                            else toast({ variant: 'destructive', title: 'Errore', description: error.message });
+                          }
+                        } catch (err) {
+                          console.error('Errore assegnazione coach:', err);
+                          toast({ variant: 'destructive', title: 'Errore', description: 'Errore nell\'operazione' });
                         }
                         setCoachAssignLoading(false);
                       }}
