@@ -244,6 +244,7 @@ export const GuideOnboarding = ({ userId, onOpenCheckin }: GuideOnboardingProps)
             transition={{ type: 'spring', damping: 24, stiffness: 300 }}
             className="fixed z-[305] pointer-events-auto"
             style={{ top: tooltipTop, left: tooltipLeft, width: tooltipW }}
+            onClick={(e) => e.stopPropagation()}
           >
             <div className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
               {/* progress bar */}
