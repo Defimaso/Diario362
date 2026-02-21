@@ -10,9 +10,11 @@ function isClientAtRiskSimple(lastCheckinDate: string | null): boolean {
 import { Users, CheckCircle2, AlertTriangle, XCircle, TrendingUp, Activity, Target, Flame } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import CoachAssignmentPanel from './CoachAssignmentPanel';
 
 interface Props {
   clients: ClientData[];
+  onRefresh?: () => void;
 }
 
 const COACHES = ['Ilaria', 'Marco', 'Martina', 'Michela', 'Cristina'] as const;
@@ -189,7 +191,7 @@ function CoachPanel({ coach, clients }: { coach: CoachName; clients: ClientData[
   );
 }
 
-export default function AdminCoachDashboard({ clients }: Props) {
+export default function AdminCoachDashboard({ clients, onRefresh }: Props) {
   const [activeTab, setActiveTab] = useState<string>('overview');
 
   const coachData = useMemo(() =>
@@ -210,7 +212,7 @@ export default function AdminCoachDashboard({ clients }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-6 mb-4 h-auto">
+        <TabsList className="w-full grid grid-cols-7 mb-4 h-auto">
           <TabsTrigger value="overview" className="text-[11px] py-1.5">
             Overview
           </TabsTrigger>
@@ -221,6 +223,9 @@ export default function AdminCoachDashboard({ clients }: Props) {
               <span className="ml-0.5 text-[10px] text-muted-foreground">({coachData[coach].length})</span>
             </TabsTrigger>
           ))}
+          <TabsTrigger value="assegnazioni" className="text-[11px] py-1.5">
+            👤 Coach
+          </TabsTrigger>
         </TabsList>
 
         {/* Overview tab */}
@@ -282,6 +287,11 @@ export default function AdminCoachDashboard({ clients }: Props) {
             <CoachPanel coach={coach} clients={coachData[coach]} />
           </TabsContent>
         ))}
+
+        {/* Assegnazioni tab */}
+        <TabsContent value="assegnazioni" className="mt-0">
+          <CoachAssignmentPanel clients={clients} onRefresh={onRefresh ?? (() => {})} />
+        </TabsContent>
       </Tabs>
     </div>
   );

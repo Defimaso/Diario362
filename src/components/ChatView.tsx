@@ -130,24 +130,19 @@ interface CoachSelectorProps {
 }
 
 function CoachSelector({ onSelect, onClose }: CoachSelectorProps) {
-  const [coaches, setCoaches] = useState<Coach[]>([]);
+  const [myCoach, setMyCoach] = useState<Coach | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCoaches = async () => {
-      const { data, error } = await supabase.rpc('get_coaches' as any);
-
-      if (error || !data) { setLoading(false); return; }
-
-      const list: Coach[] = (data as any[]).map((r: any) => ({
-        id: r.id,
-        name: r.name,
-      }));
-
-      setCoaches(list);
+    const fetchMyCoach = async () => {
+      const { data, error } = await supabase.rpc('get_my_coach' as any);
+      if (!error && data && (data as any[]).length > 0) {
+        const r = (data as any[])[0];
+        setMyCoach({ id: r.id, name: r.name });
+      }
       setLoading(false);
     };
-    fetchCoaches();
+    fetchMyCoach();
   }, []);
 
   return createPortal(
@@ -167,22 +162,22 @@ function CoachSelector({ onSelect, onClose }: CoachSelectorProps) {
         </div>
         {loading ? (
           <p className="text-sm text-muted-foreground text-center py-4">Caricamento...</p>
-        ) : coaches.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">Nessun coach disponibile</p>
+        ) : !myCoach ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">Nessun coach assegnato.</p>
+            <p className="text-xs text-muted-foreground mt-1">Contatta l'amministratore per l'assegnazione.</p>
+          </div>
         ) : (
           <div className="space-y-2">
-            {coaches.map((coach) => (
-              <button
-                key={coach.id}
-                onClick={() => { onSelect(coach.id, coach.name); onClose(); }}
-                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
-              >
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="text-sm font-medium text-primary">{coach.name.charAt(0).toUpperCase()}</span>
-                </div>
-                <span className="font-medium text-sm">{coach.name}</span>
-              </button>
-            ))}
+            <button
+              onClick={() => { onSelect(myCoach.id, myCoach.name); onClose(); }}
+              className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+            >
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-sm font-medium text-primary">{myCoach.name.charAt(0).toUpperCase()}</span>
+              </div>
+              <span className="font-medium text-sm">{myCoach.name}</span>
+            </button>
           </div>
         )}
       </motion.div>

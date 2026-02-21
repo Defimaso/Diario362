@@ -528,7 +528,7 @@ const GestioneDiario = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
           >
-            <AdminCoachDashboard clients={clients} />
+            <AdminCoachDashboard clients={clients} onRefresh={refetchClients} />
           </motion.div>
         )}
 
