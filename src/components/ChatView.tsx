@@ -135,22 +135,13 @@ function CoachSelector({ onSelect, onClose }: CoachSelectorProps) {
 
   useEffect(() => {
     const fetchCoaches = async () => {
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .in('role', ['admin', 'collaborator'] as any);
+      const { data, error } = await supabase.rpc('get_coaches' as any);
 
-      if (!roles || roles.length === 0) { setLoading(false); return; }
+      if (error || !data) { setLoading(false); return; }
 
-      const ids = roles.map((r: any) => r.user_id);
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name, email')
-        .in('id', ids);
-
-      const list: Coach[] = (profiles || []).map((p: any) => ({
-        id: p.id,
-        name: p.full_name || p.email,
+      const list: Coach[] = (data as any[]).map((r: any) => ({
+        id: r.id,
+        name: r.name,
       }));
 
       setCoaches(list);
