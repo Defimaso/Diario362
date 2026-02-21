@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion } from 'framer-motion';
 import { Send, ArrowLeft, MessageCircle, Plus, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -158,8 +159,8 @@ function CoachSelector({ onSelect, onClose }: CoachSelectorProps) {
     fetchCoaches();
   }, []);
 
-  return (
-    <div className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center" onClick={onClose}>
+  return createPortal(
+    <div className="fixed inset-0 z-[500] bg-black/60 flex items-end justify-center" onClick={onClose}>
       <motion.div
         initial={{ y: 60, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
@@ -194,7 +195,8 @@ function CoachSelector({ onSelect, onClose }: CoachSelectorProps) {
           </div>
         )}
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
