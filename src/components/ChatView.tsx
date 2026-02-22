@@ -186,13 +186,120 @@ function CoachSelector({ onSelect, onClose }: CoachSelectorProps) {
   );
 }
 
+// ─── ClientSelectorForCoach ───────────────────────────────────────────────────
+// Usato da coach/admin per selezionare un cliente con cui avviare una chat
+
+interface ClientSelectorForCoachProps {
+  onSelect: (userId: string, userName: string) => void;
+  onClose: () => void;
+}
+
+function ClientSelectorForCoach({ onSelect, onClose }: ClientSelectorForCoachProps) {
+  const { user, isAdmin, isSuperAdmin } = useAuth();
+  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    const fetchClients = async () => {
+      if (isAdmin || isSuperAdmin) {
+        // Admin: prendi tutti i client_id da user_roles, poi i profili
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('user_id')
+          .eq('role', 'client');
+        const ids = (roles || []).map((r: any) => r.user_id);
+        if (ids.length > 0) {
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, full_name, email')
+            .in('id', ids)
+            .order('full_name');
+          setClients((profs || []).map((p: any) => ({ id: p.id, name: p.full_name || p.email })));
+        }
+      } else {
+        // Coach: solo i propri clienti (coach_id = user.id)
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .eq('coach_id', user?.id)
+          .order('full_name');
+        setClients((profs || []).map((p: any) => ({ id: p.id, name: p.full_name || p.email })));
+      }
+      setLoading(false);
+    };
+    fetchClients();
+  }, []);
+
+  const filtered = clients.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return createPortal(
+    <div className="fixed inset-0 z-[500] bg-black/60 flex items-end justify-center" onClick={onClose}>
+      <motion.div
+        initial={{ y: 60, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 60, opacity: 0 }}
+        className="w-full max-w-lg bg-card rounded-t-2xl p-5 pb-10"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-base">Scrivi a un cliente</h2>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted text-muted-foreground">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        <Input
+          placeholder="Cerca per nome o email..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="mb-3"
+        />
+        {loading ? (
+          <p className="text-sm text-muted-foreground text-center py-4">Caricamento...</p>
+        ) : filtered.length === 0 ? (
+          <div className="text-center py-4">
+            <p className="text-sm text-muted-foreground">
+              {search ? 'Nessun cliente trovato.' : 'Nessun cliente assegnato.'}
+            </p>
+            {!search && (
+              <p className="text-xs text-muted-foreground mt-1">Assegna prima i clienti dalla Gestione Diario.</p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            {filtered.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => { onSelect(c.id, c.name); onClose(); }}
+                className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
+                  <span className="text-sm font-medium text-accent-foreground">{c.name.charAt(0).toUpperCase()}</span>
+                </div>
+                <span className="font-medium text-sm truncate">{c.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </motion.div>
+    </div>,
+    document.body
+  );
+}
+
+// ─── ConversationList ──────────────────────────────────────────────────────────
+
 interface ConversationListProps {
   onSelectConversation: (userId: string, userName: string) => void;
 }
 
 export function ConversationList({ onSelectConversation }: ConversationListProps) {
   const { conversations, loading } = useMessages();
-  const [showCoachSelector, setShowCoachSelector] = useState(false);
+  const { isAdmin, isCollaborator, isSuperAdmin } = useAuth();
+  const isStaff = isAdmin || isCollaborator || isSuperAdmin;
+  const [showSelector, setShowSelector] = useState(false);
 
   if (loading) {
     return <p className="text-center text-muted-foreground text-sm py-8">Caricamento...</p>;
@@ -204,18 +311,22 @@ export function ConversationList({ onSelectConversation }: ConversationListProps
         <div className="text-center py-8">
           <MessageCircle className="w-12 h-12 mx-auto mb-3 text-muted-foreground/30" />
           <p className="text-muted-foreground text-sm">Nessuna conversazione</p>
-          <p className="text-xs text-muted-foreground mt-1 mb-5">I messaggi con il tuo coach appariranno qui</p>
-          <Button onClick={() => setShowCoachSelector(true)} className="gap-2">
+          <p className="text-xs text-muted-foreground mt-1 mb-5">
+            {isStaff
+              ? 'I messaggi con i tuoi clienti appariranno qui'
+              : 'I messaggi con il tuo coach appariranno qui'}
+          </p>
+          <Button onClick={() => setShowSelector(true)} className="gap-2">
             <Plus className="w-4 h-4" />
-            Scrivi al Coach
+            {isStaff ? 'Scrivi a un cliente' : 'Scrivi al Coach'}
           </Button>
         </div>
       ) : (
         <>
           <div className="flex justify-end mb-3">
-            <Button size="sm" variant="outline" onClick={() => setShowCoachSelector(true)} className="gap-1.5 text-xs">
+            <Button size="sm" variant="outline" onClick={() => setShowSelector(true)} className="gap-1.5 text-xs">
               <Plus className="w-3.5 h-3.5" />
-              Nuova conversazione
+              {isStaff ? 'Nuova chat cliente' : 'Nuova conversazione'}
             </Button>
           </div>
           <div className="space-y-2">
@@ -256,10 +367,16 @@ export function ConversationList({ onSelectConversation }: ConversationListProps
         </>
       )}
 
-      {showCoachSelector && (
+      {showSelector && isStaff && (
+        <ClientSelectorForCoach
+          onSelect={onSelectConversation}
+          onClose={() => setShowSelector(false)}
+        />
+      )}
+      {showSelector && !isStaff && (
         <CoachSelector
           onSelect={onSelectConversation}
-          onClose={() => setShowCoachSelector(false)}
+          onClose={() => setShowSelector(false)}
         />
       )}
     </>

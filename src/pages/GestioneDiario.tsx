@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target, Key, Crown, Copy, Loader2, BarChart3, Trophy, Send, UserCheck } from "lucide-react";
+import { Users, CheckCircle2, AlertTriangle, XCircle, ArrowLeft, LogOut, Filter, GraduationCap, Phone, Mail, AlertCircle, Trash2, MessageSquare, ChevronDown, Download, TrendingUp, Activity, Target, Key, Crown, Copy, Loader2, BarChart3, Trophy, Send, UserCheck, Search } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +59,7 @@ const GestioneDiario = () => {
   const { notes, addNote, markAsRead, hasUnreadNotes } = useCoachNotes();
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
   const [coachFilter, setCoachFilter] = useState<CoachFilter>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [teachableModalOpen, setTeachableModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<ClientData | null>(null);
   
@@ -182,6 +183,15 @@ const GestioneDiario = () => {
 
   if (statusFilter !== 'all') {
     filteredClients = filteredClients.filter(c => c.status === statusFilter);
+  }
+
+  // Filtro ricerca per nome/email
+  if (searchQuery.trim()) {
+    const q = searchQuery.toLowerCase();
+    filteredClients = filteredClients.filter(c =>
+      (c.full_name || '').toLowerCase().includes(q) ||
+      (c.email || '').toLowerCase().includes(q)
+    );
   }
 
   if (coachFilter !== 'all') {
@@ -609,6 +619,22 @@ const GestioneDiario = () => {
             <CoachAnalytics clients={clients} coachFilter={coachFilter} />
           </motion.div>
         )}
+
+        {/* Search clienti */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15 }}
+          className="relative mb-3"
+        >
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <Input
+            placeholder="Cerca cliente per nome o email..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="pl-9 bg-card border-border"
+          />
+        </motion.div>
 
         {/* Filters */}
         <motion.div

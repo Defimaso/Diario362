@@ -7,7 +7,8 @@ export interface ClientData {
   email: string;
   full_name: string;
   phone_number: string | null;
-  coach_names: string[];
+  coach_id: string | null;   // UUID del coach assegnato (profiles.coach_id)
+  coach_names: string[];     // Derivato da full_name del coach (per filtro/display)
   streak: number;
   need_profile: string | null;
   referral_source: string | null;
@@ -24,26 +25,10 @@ export interface ClientData {
   premium_code: string | null;
 }
 
-type CoachName = 'Ilaria' | 'Marco' | 'Martina' | 'Michela' | 'Cristina';
-
 export const useAdminClients = () => {
   const { user, isAdmin, isCollaborator, isSuperAdmin } = useAuth();
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const getCollaboratorCoachName = (email: string): CoachName | null => {
-    switch (email) {
-      case 'ilaria@362gradi.it': return 'Ilaria';
-      case 'marco@362gradi.it': return 'Marco';
-      case 'martina@362gradi.it':
-      case 'martina.fienga@hotmail.it': return 'Martina';
-      case 'michela@362gradi.it':
-      case 'michela.amadei@hotmail.it': return 'Michela';
-      case 'cristina@362gradi.it':
-      case 'spicri@gmail.com': return 'Cristina';
-      default: return null;
-    }
-  };
 
   const calculateStatus = (checkin: ClientData['last_checkin']): 'green' | 'yellow' | 'red' => {
     if (!checkin) return 'red';
@@ -122,12 +107,22 @@ export const useAdminClients = () => {
       const clientProfiles = profilesData?.filter(p => clientUserIds.includes(p.id)) || [];
       console.log('useAdminClients - Client profiles:', clientProfiles.length);
 
-      // Fetch coach assignments
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('coach_assignments')
-        .select('*');
+      // Fetch coach profiles for all coach_ids referenced in client profiles
+      const coachIds = clientProfiles
+        .map(p => (p as any).coach_id as string | null)
+        .filter((id): id is string => !!id);
 
-      if (assignmentsError) throw assignmentsError;
+      let coachProfileMap: Record<string, string> = {};
+      if (coachIds.length > 0) {
+        const uniqueCoachIds = [...new Set(coachIds)];
+        const { data: coachProfs } = await supabase
+          .from('profiles')
+          .select('id, full_name, email')
+          .in('id', uniqueCoachIds);
+        (coachProfs || []).forEach((cp: any) => {
+          coachProfileMap[cp.id] = cp.full_name || cp.email;
+        });
+      }
 
       // Fetch checkins (last 365 days only for performance)
       const cutoffDate = new Date();
@@ -144,7 +139,6 @@ export const useAdminClients = () => {
       console.log('useAdminClients - Checkins loaded:', checkinsData?.length);
 
       // Build client data
-      const collaboratorCoachName = user.email ? getCollaboratorCoachName(user.email) : null;
 
       // Fetch premium status from secondary project API
       let premiumMap: Record<string, { plan: string; activation_code: string | null }> = {};
@@ -167,8 +161,9 @@ export const useAdminClients = () => {
       }
 
       const clientsData: ClientData[] = clientProfiles.map(profile => {
-        const assignments = assignmentsData?.filter(a => a.client_id === profile.id) || [];
-        const coachNames = assignments.map(a => a.coach_name);
+        const coachId = (profile as any).coach_id as string | null;
+        const coachName = coachId ? coachProfileMap[coachId] : null;
+        const coachNames = coachName ? [coachName] : [];
 
         const userCheckins = checkinsData?.filter(c => c.user_id === profile.id) || [];
         const lastCheckin = userCheckins[0] || null;
@@ -181,6 +176,7 @@ export const useAdminClients = () => {
           phone_number: profile.phone_number || null,
           need_profile: (profile as any).need_profile || null,
           referral_source: (profile as any).referral_source || null,
+          coach_id: coachId,
           coach_names: coachNames,
           is_premium: premium?.plan === 'premium' || false,
           premium_code: premium?.activation_code || null,
@@ -204,51 +200,11 @@ export const useAdminClients = () => {
         };
       });
 
-      // Filter by collaborator if not admin/superadmin
+      // Filter by collaborator: mostra solo i propri clienti (coach_id === user.id)
       let filteredClients = clientsData;
-      
-      if (isCollaborator && !isSuperAdmin && !isAdmin && collaboratorCoachName) {
-        filteredClients = clientsData.filter(client => {
-          // Check for Ilaria's assignments
-          if (collaboratorCoachName === 'Ilaria') {
-            return client.coach_names.some(name => 
-              name === 'Ilaria' || 
-              name === 'Ilaria_Marco' || 
-              name === 'Ilaria_Marco_Michela' || 
-              name === 'Ilaria_Michela' || 
-              name === 'Ilaria_Martina'
-            );
-          }
-          // Check for Marco's assignments
-          if (collaboratorCoachName === 'Marco') {
-            return client.coach_names.some(name => 
-              name === 'Marco' || 
-              name === 'Ilaria_Marco' || 
-              name === 'Ilaria_Marco_Michela'
-            );
-          }
-          // Check for Martina's assignments
-          if (collaboratorCoachName === 'Martina') {
-            return client.coach_names.some(name => 
-              name === 'Martina' || 
-              name === 'Michela_Martina' ||
-              name === 'Ilaria_Martina' ||
-              name === 'Martina_Michela'
-            );
-          }
-          // Check for Michela's assignments
-          if (collaboratorCoachName === 'Michela') {
-            return client.coach_names.some(name => 
-              name === 'Michela' || 
-              name === 'Michela_Martina' ||
-              name === 'Ilaria_Marco_Michela' ||
-              name === 'Ilaria_Michela' ||
-              name === 'Martina_Michela'
-            );
-          }
-          // Cristina only has single assignment
-          return client.coach_names.includes(collaboratorCoachName);
-        });
+
+      if (isCollaborator && !isSuperAdmin && !isAdmin) {
+        filteredClients = clientsData.filter(client => client.coach_id === user.id);
       }
 
       setClients(filteredClients);

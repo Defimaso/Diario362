@@ -3,6 +3,8 @@ export const STAFF_WHITELIST: Record<string, { role: 'admin' | 'coach'; name: st
   // ADMIN
   'info@362gradi.it': { role: 'admin', name: '362 Gradi Admin' },
   'valentina362g@gmail.com': { role: 'admin', name: 'Valentina' },
+  'ilaria@362gradi.it': { role: 'admin', name: 'Ilaria' },
+  'marco@362gradi.it': { role: 'admin', name: 'Marco' },
   // COACH
   'michela.amadei@hotmail.it': { role: 'coach', name: 'Michela' },
   'martina.fienga@hotmail.it': { role: 'coach', name: 'Martina' },
