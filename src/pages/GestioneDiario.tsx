@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { useCoachNotes } from "@/hooks/useCoachNotes";
+import { useMessages } from "@/hooks/useMessages";
 import { STAFF_WHITELIST, getAvailableCoaches } from "@/lib/staffWhitelist";
 import CoachNotesDialog from "@/components/CoachNotesDialog";
 import ClientExpandedView from "@/components/ClientExpandedView";
@@ -107,6 +108,7 @@ const GestioneDiario = () => {
 
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { conversations: msgConversations, unreadTotal } = useMessages();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -531,6 +533,74 @@ const GestioneDiario = () => {
             <AdminCoachDashboard clients={clients} onRefresh={refetchClients} />
           </motion.div>
         )}
+
+        {/* ── Messaggi ─────────────────────────────────────────────── */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 }}
+          className="card-elegant rounded-xl p-4 mb-5"
+        >
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              <span className="font-semibold text-sm">Messaggi</span>
+              {unreadTotal > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                  {unreadTotal}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => navigate('/messaggi')}
+              className="text-xs text-primary hover:underline"
+            >
+              Vedi tutti →
+            </button>
+          </div>
+
+          {msgConversations.length === 0 ? (
+            <p className="text-xs text-muted-foreground text-center py-3">
+              Nessuna conversazione attiva
+            </p>
+          ) : (
+            <div className="space-y-1">
+              {msgConversations.slice(0, 4).map((conv) => (
+                <button
+                  key={conv.userId}
+                  onClick={() => navigate('/messaggi', { state: { openChat: { userId: conv.userId, userName: conv.userName } } })}
+                  className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-semibold text-primary">{conv.userName.charAt(0).toUpperCase()}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-medium truncate">{conv.userName}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{conv.lastMessage}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-[10px] text-muted-foreground">
+                      {new Date(conv.lastMessageAt).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                    </span>
+                    {conv.unreadCount > 0 && (
+                      <span className="w-4 h-4 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                        {conv.unreadCount}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              ))}
+              {msgConversations.length > 4 && (
+                <button
+                  onClick={() => navigate('/messaggi')}
+                  className="w-full text-center text-xs text-muted-foreground hover:text-foreground py-1.5 transition-colors"
+                >
+                  + altri {msgConversations.length - 4} →
+                </button>
+              )}
+            </div>
+          )}
+        </motion.div>
 
         {/* Stats Overview */}
         <motion.div
