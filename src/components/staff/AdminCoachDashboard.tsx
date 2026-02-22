@@ -212,21 +212,23 @@ export default function AdminCoachDashboard({ clients, onRefresh }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full flex overflow-x-auto gap-1 mb-4 h-auto p-1 no-scrollbar">
-          <TabsTrigger value="overview" className="text-[11px] py-1.5 px-2.5 shrink-0">
-            Overview
-          </TabsTrigger>
-          {COACHES.map(coach => (
-            <TabsTrigger key={coach} value={coach} className="text-[11px] py-1.5 px-2 shrink-0 flex items-center gap-1">
-              <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', COACH_DOT[coach])} />
-              {coach}
-              <span className="ml-0.5 text-[10px] text-muted-foreground">({coachData[coach].length})</span>
+        <div className="overflow-x-auto no-scrollbar -mx-1 px-1 mb-4">
+          <TabsList className="inline-flex w-max gap-0.5 h-auto p-1">
+            <TabsTrigger value="overview" className="text-[11px] py-1.5 px-2.5 whitespace-nowrap">
+              Overview
             </TabsTrigger>
-          ))}
-          <TabsTrigger value="assegnazioni" className="text-[11px] py-1.5 px-2.5 shrink-0">
-            👤 Coach
-          </TabsTrigger>
-        </TabsList>
+            {COACHES.map(coach => (
+              <TabsTrigger key={coach} value={coach} className="text-[11px] py-1.5 px-2 whitespace-nowrap inline-flex items-center gap-1">
+                <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', COACH_DOT[coach])} />
+                {coach}
+                <span className="text-[10px] text-muted-foreground">({coachData[coach].length})</span>
+              </TabsTrigger>
+            ))}
+            <TabsTrigger value="assegnazioni" className="text-[11px] py-1.5 px-2.5 whitespace-nowrap">
+              👤 Coach
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Overview tab */}
         <TabsContent value="overview" className="mt-0">
