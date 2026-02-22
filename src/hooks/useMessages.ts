@@ -31,7 +31,7 @@ export function useMessages(otherUserId?: string) {
     if (!user) return;
 
     const { data, error } = await supabase
-      .from('messages' as any)
+      .from('messages')
       .select('*')
       .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
       .order('created_at', { ascending: false });
@@ -97,7 +97,7 @@ export function useMessages(otherUserId?: string) {
     if (!user || !otherUserId) return;
 
     const { data, error } = await supabase
-      .from('messages' as any)
+      .from('messages')
       .select('*')
       .or(
         `and(sender_id.eq.${user.id},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${user.id})`
@@ -114,8 +114,8 @@ export function useMessages(otherUserId?: string) {
 
       if (unreadIds.length > 0) {
         await supabase
-          .from('messages' as any)
-          .update({ read_at: new Date().toISOString() } as any)
+          .from('messages')
+          .update({ read_at: new Date().toISOString() })
           .in('id', unreadIds);
       }
     }
@@ -128,12 +128,12 @@ export function useMessages(otherUserId?: string) {
     if (!user || !content.trim()) return { error: 'Messaggio vuoto' };
 
     const { data, error } = await supabase
-      .from('messages' as any)
+      .from('messages')
       .insert({
         sender_id: user.id,
         receiver_id: receiverId,
         content: content.trim(),
-      } as any)
+      })
       .select()
       .single();
 
@@ -179,8 +179,8 @@ export function useMessages(otherUserId?: string) {
                 // Auto-mark as read
                 if (msg.receiver_id === user.id) {
                   supabase
-                    .from('messages' as any)
-                    .update({ read_at: new Date().toISOString() } as any)
+                    .from('messages')
+                    .update({ read_at: new Date().toISOString() })
                     .eq('id', msg.id);
                 }
               }

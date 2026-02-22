@@ -8,9 +8,6 @@ import { ClientData } from '@/hooks/useAdminClients';
 import { cn } from '@/lib/utils';
 import { getAvailableCoaches } from '@/lib/staffWhitelist';
 
-const SUPA_URL = 'https://ppbbqchycxffsfavtsjp.supabase.co';
-// Chiave hardcodata perché Lovable inietta la sua chiave errata come VITE_SUPABASE_PUBLISHABLE_KEY
-const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYmJxY2h5Y3hmZnNmYXZ0c2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NDQwNTAsImV4cCI6MjA4NjAyMDA1MH0.JqotNOYaUUUdFGHbxZpU5WZQg2f1OlQxWJ92Ou07aAQ';
 
 interface Coach {
   id: string;
@@ -34,23 +31,20 @@ export default function CoachAssignmentPanel({ clients, onRefresh }: CoachAssign
     getAvailableCoaches(supabase).then(c => setCoaches(c));
   }, []);
 
-  // Carica assegnazioni attuali (coach_id da profiles) via REST
+  // Carica assegnazioni attuali (coach_id da profiles) via supabase client
   useEffect(() => {
     const ids = clients.map(c => c.id);
     if (!ids.length) return;
-    supabase.auth.getSession().then(({ data }) => {
-      const token = data.session?.access_token;
-      if (!token) return;
-      const idList = ids.map(id => `id=eq.${id}`).join(',');
-      fetch(`${SUPA_URL}/rest/v1/profiles?select=id,coach_id&or=(${idList})`, {
-        headers: { 'apikey': SUPA_KEY, 'Authorization': `Bearer ${token}` },
-      }).then(r => r.json()).then((data: any[]) => {
-        if (!Array.isArray(data)) return;
+    supabase
+      .from('profiles')
+      .select('id, coach_id')
+      .in('id', ids)
+      .then(({ data, error }) => {
+        if (error || !data) return;
         const map: Record<string, string | null> = {};
-        data.forEach((p: any) => { map[p.id] = p.coach_id || null; });
+        data.forEach((p) => { map[p.id] = p.coach_id || null; });
         setAssignments(map);
-      }).catch(() => {});
-    });
+      });
   }, [clients]);
 
   const handleAssign = async (clientId: string, coachId: string) => {
