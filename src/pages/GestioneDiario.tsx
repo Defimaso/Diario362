@@ -1033,19 +1033,33 @@ const GestioneDiario = () => {
                         if (!coachAssignClient) return;
                         setCoachAssignLoading(true);
                         try {
-                          if (isAssigned) {
-                            // Rimuovi coach via RPC
-                            const { error } = await supabase.rpc('remove_coach' as any, { p_client_id: coachAssignClient.id });
-                            if (!error) { setAssignedCoachId(null); toast({ title: 'Coach rimosso' }); refetchClients(); }
-                            else toast({ variant: 'destructive', title: 'Errore', description: error.message });
+                          const { data: { session } } = await supabase.auth.getSession();
+                          if (!session?.access_token) { toast({ variant: 'destructive', title: 'Errore', description: 'Non autenticato' }); return; }
+
+                          const rpcName = isAssigned ? 'remove_coach' : 'assign_coach';
+                          const payload = isAssigned
+                            ? { p_client_id: coachAssignClient.id }
+                            : { p_client_id: coachAssignClient.id, p_coach_id: coach.id };
+
+                          const res = await fetch(`https://ppbbqchycxffsfavtsjp.supabase.co/rest/v1/rpc/${rpcName}`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${session.access_token}`,
+                            },
+                            body: JSON.stringify(payload),
+                          });
+
+                          if (res.ok) {
+                            if (isAssigned) { setAssignedCoachId(null); toast({ title: 'Coach rimosso' }); }
+                            else { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); }
+                            refetchClients();
                           } else {
-                            // Assegna coach via RPC
-                            const { error } = await supabase.rpc('assign_coach' as any, { p_client_id: coachAssignClient.id, p_coach_id: coach.id });
-                            if (!error) { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); refetchClients(); }
-                            else toast({ variant: 'destructive', title: 'Errore', description: error.message });
+                            const errData = await res.json();
+                            toast({ variant: 'destructive', title: 'Errore', description: errData.message || 'Errore sconosciuto' });
                           }
                         } catch (err) {
-                          console.error('Errore assegnazione coach:', err);
+                          console.error('Errore:', err);
                           toast({ variant: 'destructive', title: 'Errore', description: 'Errore nell\'operazione' });
                         }
                         setCoachAssignLoading(false);
