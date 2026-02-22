@@ -825,12 +825,12 @@ const GestioneDiario = () => {
                             Task Academy
                           </Button>
 
-                          {/* Send Message Button */}
+                          {/* Send Message Button → apre chat completa */}
                           <Button
                             size="sm"
                             variant="outline"
                             className="border-blue-500/40 text-blue-500 hover:bg-blue-500/10"
-                            onClick={() => { setMessageClient(client); setMessageContent(''); setMessageDialogOpen(true); }}
+                            onClick={() => navigate('/messaggi', { state: { openChat: { userId: client.id, userName: client.full_name || client.email } } })}
                           >
                             <Send className="w-4 h-4 mr-1.5" />
                             Messaggio

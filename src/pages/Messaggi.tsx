@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { MessageCircle, ArrowLeft } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { ChatView, ConversationList } from '@/components/ChatView';
 import BottomDock from '@/components/BottomDock';
@@ -9,7 +9,18 @@ import Footer from '@/components/legal/Footer';
 
 const Messaggi = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [activeChat, setActiveChat] = useState<{ userId: string; userName: string } | null>(null);
+
+  // Auto-apre la chat se navigato con state.openChat (es. da GestioneDiario → Messaggio)
+  useEffect(() => {
+    const openChat = (location.state as any)?.openChat;
+    if (openChat?.userId && openChat?.userName) {
+      setActiveChat({ userId: openChat.userId, userName: openChat.userName });
+      // Pulisce lo state per evitare ri-apertura al back
+      window.history.replaceState({}, '');
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-background pb-24">
