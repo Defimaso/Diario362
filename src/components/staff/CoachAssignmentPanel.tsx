@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 import { getAvailableCoaches } from '@/lib/staffWhitelist';
 
 const SUPA_URL = 'https://ppbbqchycxffsfavtsjp.supabase.co';
-const SUPA_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// Chiave hardcodata perché Lovable inietta la sua chiave errata come VITE_SUPABASE_PUBLISHABLE_KEY
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYmJxY2h5Y3hmZnNmYXZ0c2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NDQwNTAsImV4cCI6MjA4NjAyMDA1MH0.JqotNOYaUUUdFGHbxZpU5WZQg2f1OlQxWJ92Ou07aAQ';
 
 interface Coach {
   id: string;

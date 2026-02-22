@@ -1025,7 +1025,7 @@ const GestioneDiario = () => {
                             method: 'PATCH',
                             headers: {
                               'Content-Type': 'application/json',
-                              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+                              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYmJxY2h5Y3hmZnNmYXZ0c2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NDQwNTAsImV4cCI6MjA4NjAyMDA1MH0.JqotNOYaUUUdFGHbxZpU5WZQg2f1OlQxWJ92Ou07aAQ',
                               'Authorization': `Bearer ${session.access_token}`,
                               'Prefer': 'return=representation',
                             },
