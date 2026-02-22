@@ -818,6 +818,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      assign_coach: {
+        Args: { p_client_id: string; p_coach_id: string; p_coach_name: string }
+        Returns: Json
+      }
       can_collaborator_see_client: {
         Args: { _client_id: string; _collaborator_id: string }
         Returns: boolean
@@ -842,6 +846,7 @@ export type Database = {
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      remove_coach: { Args: { p_client_id: string }; Returns: Json }
     }
     Enums: {
       app_role: "admin" | "collaborator" | "client"
