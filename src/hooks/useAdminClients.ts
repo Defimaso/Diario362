@@ -98,20 +98,20 @@ export const useAdminClients = () => {
           .eq('coach_id', user.id);
         const newIds = new Set((newProfiles || []).map((p: any) => p.id));
 
-        // LEGACY sistema: coach_assignments WHERE coach_name LIKE 'NomeCoach%'
+        // LEGACY sistema: fetch tutti i coach_assignments, filtra in JS (ilike non funziona su enum)
         const myEntry = STAFF_WHITELIST[user.email || ''];
         const myLegacyName = myEntry?.name.split(' / ')[0]; // es. 'Martina'
         let legacyClientIds: string[] = [];
-        if (myLegacyName) {
-          const { data: legacyRows } = await supabase
-            .from('coach_assignments')
-            .select('client_id, coach_name')
-            .ilike('coach_name', `%${myLegacyName}%`);
-          (legacyRows || []).forEach((a: any) => {
+        const { data: allAssignments } = await supabase
+          .from('coach_assignments')
+          .select('client_id, coach_name');
+        (allAssignments || []).forEach((a: any) => {
+          const cn = String(a.coach_name).toLowerCase();
+          if (myLegacyName && cn.includes(myLegacyName.toLowerCase())) {
             legacyAssignmentMap[a.client_id] = a.coach_name;
             if (!newIds.has(a.client_id)) legacyClientIds.push(a.client_id);
-          });
-        }
+          }
+        });
 
         // Fetch profili legacy che non sono già nel nuovo sistema
         let legacyProfiles: any[] = [];
@@ -252,9 +252,8 @@ export const useAdminClients = () => {
         };
       });
 
-      // Per collaboratori il filtro è già applicato nel fetch; per admin tutti i clienti
       setClients(clientsData);
-      console.log('useAdminClients - Final filtered clients:', filteredClients.length);
+      console.log('useAdminClients - Final clients:', clientsData.length);
     } catch (error) {
       console.error('Error fetching clients:', error);
     } finally {
