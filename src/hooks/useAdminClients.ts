@@ -83,32 +83,78 @@ export const useAdminClients = () => {
 
     try {
       console.log('useAdminClients - Starting fetch...');
-      
-      // Fetch all profiles with client role
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('*');
 
-      if (profilesError) throw profilesError;
-      console.log('useAdminClients - Profiles loaded:', profilesData?.length);
+      let clientProfiles: any[] = [];
+      const legacyAssignmentMap: Record<string, string> = {};
 
-      // Fetch all user roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_roles')
-        .select('*');
+      if (isCollaborator && !isSuperAdmin && !isAdmin) {
+        // ── PATH COLLABORATORE ──────────────────────────────────────────
+        // Evita user_roles (RLS lo blocca) — usa direttamente i due sistemi di assegnazione
 
-      if (rolesError) throw rolesError;
-      console.log('useAdminClients - Roles loaded:', rolesData?.length);
+        // NUOVO sistema: profiles WHERE coach_id = user.id
+        const { data: newProfiles } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('coach_id', user.id);
+        const newIds = new Set((newProfiles || []).map((p: any) => p.id));
 
-      // Filter only clients
-      const clientUserIds = rolesData
-        ?.filter(r => r.role === 'client')
-        .map(r => r.user_id) || [];
+        // LEGACY sistema: coach_assignments WHERE coach_name LIKE 'NomeCoach%'
+        const myEntry = STAFF_WHITELIST[user.email || ''];
+        const myLegacyName = myEntry?.name.split(' / ')[0]; // es. 'Martina'
+        let legacyClientIds: string[] = [];
+        if (myLegacyName) {
+          const { data: legacyRows } = await supabase
+            .from('coach_assignments')
+            .select('client_id, coach_name')
+            .ilike('coach_name', `%${myLegacyName}%`);
+          (legacyRows || []).forEach((a: any) => {
+            legacyAssignmentMap[a.client_id] = a.coach_name;
+            if (!newIds.has(a.client_id)) legacyClientIds.push(a.client_id);
+          });
+        }
 
-      const clientProfiles = profilesData?.filter(p => clientUserIds.includes(p.id)) || [];
-      console.log('useAdminClients - Client profiles:', clientProfiles.length);
+        // Fetch profili legacy che non sono già nel nuovo sistema
+        let legacyProfiles: any[] = [];
+        if (legacyClientIds.length > 0) {
+          const { data: lp } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', legacyClientIds);
+          legacyProfiles = lp || [];
+        }
 
-      // Fetch coach profiles for all coach_ids referenced in client profiles (nuovo sistema)
+        clientProfiles = [...(newProfiles || []), ...legacyProfiles];
+        console.log('useAdminClients - Collaborator clients:', clientProfiles.length);
+
+      } else {
+        // ── PATH ADMIN / SUPERADMIN ─────────────────────────────────────
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*');
+        if (profilesError) throw profilesError;
+
+        const { data: rolesData, error: rolesError } = await supabase
+          .from('user_roles')
+          .select('*');
+        if (rolesError) throw rolesError;
+
+        const clientUserIds = rolesData
+          ?.filter(r => r.role === 'client')
+          .map(r => r.user_id) || [];
+
+        clientProfiles = profilesData?.filter(p => clientUserIds.includes(p.id)) || [];
+        console.log('useAdminClients - Admin client profiles:', clientProfiles.length);
+
+        // Fetch coach_assignments per display (solo admin)
+        const { data: assignmentsData } = await supabase
+          .from('coach_assignments')
+          .select('client_id, coach_name');
+        (assignmentsData || []).forEach((a: any) => {
+          legacyAssignmentMap[a.client_id] = a.coach_name;
+        });
+      }
+
+      // Fetch coach profiles per nome (nuovo sistema)
       const coachIds = clientProfiles
         .map(p => (p as any).coach_id as string | null)
         .filter((id): id is string => !!id);
@@ -124,17 +170,6 @@ export const useAdminClients = () => {
           coachProfileMap[cp.id] = cp.full_name || cp.email;
         });
       }
-
-      // Fetch coach_assignments (vecchio sistema legacy — fallback per clienti non ancora migrati)
-      const { data: assignmentsData } = await supabase
-        .from('coach_assignments')
-        .select('client_id, coach_name');
-
-      // Mappa: client_id → coach_name enum (es. 'Michela', 'Michela_Martina')
-      const legacyAssignmentMap: Record<string, string> = {};
-      (assignmentsData || []).forEach((a: any) => {
-        legacyAssignmentMap[a.client_id] = a.coach_name;
-      });
 
       // Fetch checkins (last 365 days only for performance)
       const cutoffDate = new Date();
@@ -217,21 +252,8 @@ export const useAdminClients = () => {
         };
       });
 
-      // Filter by collaborator: nuovo sistema (coach_id UUID) + vecchio sistema (nome legacy)
-      let filteredClients = clientsData;
-
-      if (isCollaborator && !isSuperAdmin && !isAdmin) {
-        const myEntry = STAFF_WHITELIST[user.email || ''];
-        const myLegacyName = myEntry?.name.split(' / ')[0]; // es. 'Michela', 'Ilaria'
-        filteredClients = clientsData.filter(client =>
-          client.coach_id === user.id || // nuovo sistema
-          (myLegacyName && client.coach_names.some(n =>
-            n.toLowerCase().includes(myLegacyName.toLowerCase())
-          )) // vecchio sistema legacy
-        );
-      }
-
-      setClients(filteredClients);
+      // Per collaboratori il filtro è già applicato nel fetch; per admin tutti i clienti
+      setClients(clientsData);
       console.log('useAdminClients - Final filtered clients:', filteredClients.length);
     } catch (error) {
       console.error('Error fetching clients:', error);
