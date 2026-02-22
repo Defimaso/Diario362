@@ -799,6 +799,13 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      get_my_coach: {
+        Args: never
+        Returns: {
+          id: string
+          name: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
