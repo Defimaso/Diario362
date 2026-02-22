@@ -128,12 +128,12 @@ export const useAdminClients = () => {
       // Fetch coach_assignments (vecchio sistema legacy — fallback per clienti non ancora migrati)
       const { data: assignmentsData } = await supabase
         .from('coach_assignments')
-        .select('user_id, coach_name');
+        .select('client_id, coach_name');
 
-      // Mappa: user_id → coach_name enum (es. 'Michela', 'Michela_Martina')
+      // Mappa: client_id → coach_name enum (es. 'Michela', 'Michela_Martina')
       const legacyAssignmentMap: Record<string, string> = {};
       (assignmentsData || []).forEach((a: any) => {
-        legacyAssignmentMap[a.user_id] = a.coach_name;
+        legacyAssignmentMap[a.client_id] = a.coach_name;
       });
 
       // Fetch checkins (last 365 days only for performance)
