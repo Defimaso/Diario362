@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { STAFF_WHITELIST } from '@/lib/staffWhitelist';
 
 export interface ClientData {
   id: string;
@@ -107,7 +108,7 @@ export const useAdminClients = () => {
       const clientProfiles = profilesData?.filter(p => clientUserIds.includes(p.id)) || [];
       console.log('useAdminClients - Client profiles:', clientProfiles.length);
 
-      // Fetch coach profiles for all coach_ids referenced in client profiles
+      // Fetch coach profiles for all coach_ids referenced in client profiles (nuovo sistema)
       const coachIds = clientProfiles
         .map(p => (p as any).coach_id as string | null)
         .filter((id): id is string => !!id);
@@ -123,6 +124,17 @@ export const useAdminClients = () => {
           coachProfileMap[cp.id] = cp.full_name || cp.email;
         });
       }
+
+      // Fetch coach_assignments (vecchio sistema legacy — fallback per clienti non ancora migrati)
+      const { data: assignmentsData } = await supabase
+        .from('coach_assignments')
+        .select('user_id, coach_name');
+
+      // Mappa: user_id → coach_name enum (es. 'Michela', 'Michela_Martina')
+      const legacyAssignmentMap: Record<string, string> = {};
+      (assignmentsData || []).forEach((a: any) => {
+        legacyAssignmentMap[a.user_id] = a.coach_name;
+      });
 
       // Fetch checkins (last 365 days only for performance)
       const cutoffDate = new Date();
@@ -162,8 +174,13 @@ export const useAdminClients = () => {
 
       const clientsData: ClientData[] = clientProfiles.map(profile => {
         const coachId = (profile as any).coach_id as string | null;
+        // Nuovo sistema: coach_id UUID → nome profilo
         const coachName = coachId ? coachProfileMap[coachId] : null;
-        const coachNames = coachName ? [coachName] : [];
+        // Vecchio sistema: coach_assignments enum (es. 'Michela_Martina' → ['Michela', 'Martina'])
+        const legacyRaw = legacyAssignmentMap[profile.id];
+        const legacyNames = legacyRaw ? legacyRaw.split('_') : [];
+        // Usa il nuovo sistema se disponibile, altrimenti fallback su legacy
+        const coachNames = coachName ? [coachName] : legacyNames;
 
         const userCheckins = checkinsData?.filter(c => c.user_id === profile.id) || [];
         const lastCheckin = userCheckins[0] || null;
@@ -200,11 +217,18 @@ export const useAdminClients = () => {
         };
       });
 
-      // Filter by collaborator: mostra solo i propri clienti (coach_id === user.id)
+      // Filter by collaborator: nuovo sistema (coach_id UUID) + vecchio sistema (nome legacy)
       let filteredClients = clientsData;
 
       if (isCollaborator && !isSuperAdmin && !isAdmin) {
-        filteredClients = clientsData.filter(client => client.coach_id === user.id);
+        const myEntry = STAFF_WHITELIST[user.email || ''];
+        const myLegacyName = myEntry?.name.split(' / ')[0]; // es. 'Michela', 'Ilaria'
+        filteredClients = clientsData.filter(client =>
+          client.coach_id === user.id || // nuovo sistema
+          (myLegacyName && client.coach_names.some(n =>
+            n.toLowerCase().includes(myLegacyName.toLowerCase())
+          )) // vecchio sistema legacy
+        );
       }
 
       setClients(filteredClients);
