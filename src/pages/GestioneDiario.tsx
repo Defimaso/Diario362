@@ -1019,18 +1019,16 @@ const GestioneDiario = () => {
                           const { data: { session } } = await supabase.auth.getSession();
                           if (!session?.access_token) { toast({ variant: 'destructive', title: 'Errore', description: 'Non autenticato' }); return; }
 
-                          const rpcName = isAssigned ? 'remove_coach' : 'assign_coach';
-                          const payload = isAssigned
-                            ? { p_client_id: coachAssignClient.id }
-                            : { p_client_id: coachAssignClient.id, p_coach_id: coach.id };
-
-                          const res = await fetch(`https://ppbbqchycxffsfavtsjp.supabase.co/rest/v1/rpc/${rpcName}`, {
-                            method: 'POST',
+                          // Aggiorna direttamente via API REST (bypass RPC)
+                          const updateData = isAssigned ? { coach_id: null } : { coach_id: coach.id };
+                          const res = await fetch(`https://ppbbqchycxffsfavtsjp.supabase.co/rest/v1/profiles?id=eq.${coachAssignClient.id}`, {
+                            method: 'PATCH',
                             headers: {
                               'Content-Type': 'application/json',
                               'Authorization': `Bearer ${session.access_token}`,
+                              'Prefer': 'return=representation',
                             },
-                            body: JSON.stringify(payload),
+                            body: JSON.stringify(updateData),
                           });
 
                           if (res.ok) {
@@ -1038,8 +1036,8 @@ const GestioneDiario = () => {
                             else { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); }
                             refetchClients();
                           } else {
-                            const errData = await res.json();
-                            toast({ variant: 'destructive', title: 'Errore', description: errData.message || 'Errore sconosciuto' });
+                            const errData = await res.json().catch(() => ({}));
+                            toast({ variant: 'destructive', title: 'Errore', description: (errData as any).message || 'Errore sconosciuto' });
                           }
                         } catch (err) {
                           console.error('Errore:', err);
