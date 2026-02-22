@@ -42,6 +42,7 @@ import {
 } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { useCoachNotes } from "@/hooks/useCoachNotes";
+import { STAFF_WHITELIST, getAvailableCoaches } from "@/lib/staffWhitelist";
 import CoachNotesDialog from "@/components/CoachNotesDialog";
 import ClientExpandedView from "@/components/ClientExpandedView";
 import CoachAnalytics from "@/components/CoachAnalytics";
@@ -860,27 +861,9 @@ const GestioneDiario = () => {
                               setCoachAssignDialogOpen(true);
 
                               try {
-                                // Carica coach disponibili (admin + collaborator) da user_roles + profiles
-                                const { data: roleData } = await supabase
-                                  .from('user_roles')
-                                  .select('user_id')
-                                  .in('role', ['admin', 'collaborator']);
-
-                                if (roleData && roleData.length > 0) {
-                                  const userIds = (roleData as any[]).map((r: any) => r.user_id);
-                                  const { data: profileData } = await supabase
-                                    .from('profiles')
-                                    .select('id, full_name, email')
-                                    .in('id', userIds);
-
-                                  if (profileData) {
-                                    const coaches = (profileData as any[]).map((p: any) => ({
-                                      id: p.id,
-                                      name: p.full_name || p.email
-                                    }));
-                                    setAvailableCoaches(coaches);
-                                  }
-                                }
+                                // Carica coach disponibili da whitelist
+                                const coaches = await getAvailableCoaches(supabase);
+                                setAvailableCoaches(coaches);
 
                                 // Carica coach attualmente assegnato
                                 const { data: profileData } = await supabase
