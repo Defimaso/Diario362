@@ -33,53 +33,120 @@ export default function CoachAssignmentPanel({ clients, onRefresh }: CoachAssign
   const [search, setSearch] = useState('');
   const { toast } = useToast();
 
-  // Carica coach da whitelist (bypass RPC)
+  // Carica coach da whitelist
   useEffect(() => {
-    getAvailableCoaches(supabase).then(c => setCoaches(c));
+    getAvailableCoaches(supabase).then(c => {
+      console.log('[CoachPanel] coaches caricati:', c);
+      setCoaches(c);
+    });
   }, []);
 
-  // Carica assegnazioni attuali (coach_id da profiles) via supabase client
+  // Carica assegnazioni attuali da coach_assignments (legacy, più affidabile)
   useEffect(() => {
     const ids = clients.map(c => c.id);
     if (!ids.length) return;
+
+    // Legge coach_assignments (legacy) per costruire la mappa
     supabase
-      .from('profiles')
-      .select('id, coach_id')
-      .in('id', ids)
-      .then(({ data, error }) => {
-        if (error || !data) return;
-        const map: Record<string, string | null> = {};
-        data.forEach((p) => { map[p.id] = p.coach_id || null; });
-        setAssignments(map);
+      .from('coach_assignments')
+      .select('client_id, coach_name')
+      .in('client_id', ids)
+      .then(({ data: legacyData }) => {
+        // Legge anche profiles.coach_id (nuovo sistema)
+        supabase
+          .from('profiles')
+          .select('id, coach_id')
+          .in('id', ids)
+          .then(({ data: profileData }) => {
+            const map: Record<string, string | null> = {};
+
+            // Prima popola con profiles.coach_id (nuovo sistema ha priorità display)
+            (profileData || []).forEach(p => { map[p.id] = p.coach_id || null; });
+
+            // Per chi non ha coach_id nel profilo, cerca nell'assegnazione legacy
+            // e poi riconcilia: se c'è in coach_assignments, mostra il coach corrispondente
+            (legacyData || []).forEach(a => {
+              if (!map[a.client_id]) {
+                // Cerca l'UUID del coach dal nome enum
+                const coachEntry = Object.entries(STAFF_WHITELIST).find(([, info]) =>
+                  info.name.split(' / ')[0] === a.coach_name
+                );
+                if (coachEntry) {
+                  const coachProfile = coaches.find(c => c.email === coachEntry[0]);
+                  if (coachProfile) map[a.client_id] = coachProfile.id;
+                }
+              }
+            });
+
+            console.log('[CoachPanel] assignments mappa:', map);
+            setAssignments(map);
+          });
       });
-  }, [clients]);
+  }, [clients, coaches]);
 
   const handleAssign = async (clientId: string, coachId: string) => {
     setLoadingCoach(clientId);
 
-    // 1) Aggiorna profiles.coach_id (nuovo sistema)
-    const { error: profileError } = await (supabase as any)
-      .from('profiles')
-      .update({ coach_id: coachId })
-      .eq('id', clientId);
-
-    // 2) Upsert coach_assignments (legacy — garantisce visibilità ai collaboratori)
     const coach = coaches.find(c => c.id === coachId);
     const coachEmail = (coach as any)?.email as string | undefined;
     const whitelistName = coachEmail ? STAFF_WHITELIST[coachEmail]?.name : undefined;
     const coachEnumName = whitelistName ? whitelistName.split(' / ')[0] : undefined;
+
+    console.log('[CoachAssign] assegno:', { clientId, coachId, coachEmail, coachEnumName });
+
+    let legacyOk = false;
+    let profileOk = false;
+
+    // 1) coach_assignments: DELETE poi INSERT (evita problemi unique constraint)
     if (coachEnumName && VALID_COACH_ENUMS.includes(coachEnumName)) {
-      await (supabase as any)
+      const { error: delErr } = await (supabase as any)
         .from('coach_assignments')
-        .upsert({ client_id: clientId, coach_name: coachEnumName }, { onConflict: 'client_id' });
+        .delete()
+        .eq('client_id', clientId);
+      console.log('[CoachAssign] delete legacy:', delErr || 'OK');
+
+      const { error: insErr } = await (supabase as any)
+        .from('coach_assignments')
+        .insert({ client_id: clientId, coach_name: coachEnumName });
+      if (insErr) {
+        console.error('[CoachAssign] insert legacy ERRORE:', insErr);
+        toast({ variant: 'destructive', title: 'Errore coach_assignments', description: insErr.message });
+      } else {
+        legacyOk = true;
+        console.log('[CoachAssign] coach_assignments INSERT OK:', coachEnumName);
+      }
+    } else {
+      console.warn('[CoachAssign] enum non trovato per coach:', coachEmail, '→', coachEnumName);
     }
 
-    if (!profileError || coachEnumName) {
+    // 2) profiles.coach_id (nuovo sistema — potrebbe fallire per RLS, non bloccante)
+    const { error: profileError, data: profileData } = await (supabase as any)
+      .from('profiles')
+      .update({ coach_id: coachId })
+      .eq('id', clientId)
+      .select('id, coach_id');
+    if (profileError) {
+      console.error('[CoachAssign] profiles.coach_id ERRORE:', profileError);
+    } else if (!profileData || profileData.length === 0) {
+      console.warn('[CoachAssign] profiles.coach_id: 0 righe aggiornate (RLS bloccato?)');
+    } else {
+      profileOk = true;
+      console.log('[CoachAssign] profiles.coach_id OK:', profileData);
+    }
+
+    if (legacyOk || profileOk) {
       setAssignments(prev => ({ ...prev, [clientId]: coachId }));
-      toast({ title: 'Coach assegnato', description: coach?.name });
+      toast({
+        title: 'Coach assegnato ✓',
+        description: `${coach?.name}${!profileOk ? ' (legacy only)' : ''}`,
+      });
       onRefresh();
     } else {
-      toast({ variant: 'destructive', title: 'Errore', description: profileError.message || 'Errore sconosciuto' });
+      toast({
+        variant: 'destructive',
+        title: 'Nessuna scrittura riuscita',
+        description: 'Apri DevTools → Console per vedere l\'errore esatto',
+      });
     }
     setLoadingCoach(null);
   };
@@ -87,25 +154,25 @@ export default function CoachAssignmentPanel({ clients, onRefresh }: CoachAssign
   const handleRemove = async (clientId: string) => {
     setLoadingCoach(clientId);
 
-    // 1) Rimuovi profiles.coach_id (nuovo sistema)
-    const { error } = await (supabase as any)
-      .from('profiles')
-      .update({ coach_id: null })
-      .eq('id', clientId);
-
-    // 2) Elimina da coach_assignments (legacy)
-    await (supabase as any)
+    // 1) Elimina da coach_assignments (legacy)
+    const { error: delErr } = await (supabase as any)
       .from('coach_assignments')
       .delete()
       .eq('client_id', clientId);
+    if (delErr) console.error('[CoachAssign] remove legacy ERRORE:', delErr);
+    else console.log('[CoachAssign] remove legacy OK');
 
-    if (!error) {
-      setAssignments(prev => ({ ...prev, [clientId]: null }));
-      toast({ title: 'Coach rimosso' });
-      onRefresh();
-    } else {
-      toast({ variant: 'destructive', title: 'Errore', description: error.message || 'Errore' });
-    }
+    // 2) Rimuovi profiles.coach_id (nuovo sistema)
+    const { error: profileErr } = await (supabase as any)
+      .from('profiles')
+      .update({ coach_id: null })
+      .eq('id', clientId);
+    if (profileErr) console.error('[CoachAssign] remove profile ERRORE:', profileErr);
+    else console.log('[CoachAssign] remove profile OK');
+
+    setAssignments(prev => ({ ...prev, [clientId]: null }));
+    toast({ title: 'Coach rimosso' });
+    onRefresh();
     setLoadingCoach(null);
   };
 
