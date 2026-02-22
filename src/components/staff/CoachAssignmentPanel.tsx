@@ -6,12 +6,19 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { ClientData } from '@/hooks/useAdminClients';
 import { cn } from '@/lib/utils';
-import { getAvailableCoaches } from '@/lib/staffWhitelist';
+import { getAvailableCoaches, STAFF_WHITELIST } from '@/lib/staffWhitelist';
 
+// Valori enum validi per coach_assignments.coach_name
+const VALID_COACH_ENUMS = [
+  "Martina","Michela","Cristina","Michela_Martina",
+  "Ilaria","Ilaria_Marco","Ilaria_Marco_Michela","Ilaria_Michela",
+  "Ilaria_Martina","Martina_Michela","Marco"
+];
 
 interface Coach {
   id: string;
   name: string;
+  email?: string;
 }
 
 interface CoachAssignmentPanelProps {
@@ -49,26 +56,49 @@ export default function CoachAssignmentPanel({ clients, onRefresh }: CoachAssign
 
   const handleAssign = async (clientId: string, coachId: string) => {
     setLoadingCoach(clientId);
-    const { error } = await (supabase as any)
+
+    // 1) Aggiorna profiles.coach_id (nuovo sistema)
+    const { error: profileError } = await (supabase as any)
       .from('profiles')
       .update({ coach_id: coachId })
       .eq('id', clientId);
-    if (!error) {
+
+    // 2) Upsert coach_assignments (legacy — garantisce visibilità ai collaboratori)
+    const coach = coaches.find(c => c.id === coachId);
+    const coachEmail = (coach as any)?.email as string | undefined;
+    const whitelistName = coachEmail ? STAFF_WHITELIST[coachEmail]?.name : undefined;
+    const coachEnumName = whitelistName ? whitelistName.split(' / ')[0] : undefined;
+    if (coachEnumName && VALID_COACH_ENUMS.includes(coachEnumName)) {
+      await (supabase as any)
+        .from('coach_assignments')
+        .upsert({ client_id: clientId, coach_name: coachEnumName }, { onConflict: 'client_id' });
+    }
+
+    if (!profileError || coachEnumName) {
       setAssignments(prev => ({ ...prev, [clientId]: coachId }));
-      toast({ title: 'Coach assegnato', description: coaches.find(c => c.id === coachId)?.name });
+      toast({ title: 'Coach assegnato', description: coach?.name });
       onRefresh();
     } else {
-      toast({ variant: 'destructive', title: 'Errore', description: error.message || 'Errore sconosciuto' });
+      toast({ variant: 'destructive', title: 'Errore', description: profileError.message || 'Errore sconosciuto' });
     }
     setLoadingCoach(null);
   };
 
   const handleRemove = async (clientId: string) => {
     setLoadingCoach(clientId);
+
+    // 1) Rimuovi profiles.coach_id (nuovo sistema)
     const { error } = await (supabase as any)
       .from('profiles')
       .update({ coach_id: null })
       .eq('id', clientId);
+
+    // 2) Elimina da coach_assignments (legacy)
+    await (supabase as any)
+      .from('coach_assignments')
+      .delete()
+      .eq('client_id', clientId);
+
     if (!error) {
       setAssignments(prev => ({ ...prev, [clientId]: null }));
       toast({ title: 'Coach rimosso' });
