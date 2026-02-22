@@ -1025,6 +1025,7 @@ const GestioneDiario = () => {
                             method: 'PATCH',
                             headers: {
                               'Content-Type': 'application/json',
+                              'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
                               'Authorization': `Bearer ${session.access_token}`,
                               'Prefer': 'return=representation',
                             },
