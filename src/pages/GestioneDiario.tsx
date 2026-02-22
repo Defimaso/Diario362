@@ -51,7 +51,7 @@ import { useChallenges } from "@/hooks/useChallenges";
 import { Textarea } from "@/components/ui/textarea";
 
 type FilterStatus = 'all' | 'green' | 'yellow' | 'red';
-type CoachFilter = 'all' | 'Ilaria' | 'Marco' | 'Martina' | 'Michela' | 'Cristina';
+type CoachFilter = 'all' | 'Ilaria / Marco' | 'Valentina' | 'Martina' | 'Michela' | 'Cristina';
 
 const GestioneDiario = () => {
   const { user, signOut, isAdmin, isCollaborator, isSuperAdmin, loading: authLoading } = useAuth();
@@ -195,29 +195,11 @@ const GestioneDiario = () => {
   }
 
   if (coachFilter !== 'all') {
-    filteredClients = filteredClients.filter(c => {
-      if (coachFilter === 'Ilaria') {
-        return c.coach_names.some(name => 
-          name === 'Ilaria' || name.includes('Ilaria')
-        );
-      }
-      if (coachFilter === 'Marco') {
-        return c.coach_names.some(name => 
-          name === 'Marco' || name.includes('Marco')
-        );
-      }
-      if (coachFilter === 'Martina') {
-        return c.coach_names.some(name => 
-          name === 'Martina' || name.includes('Martina')
-        );
-      }
-      if (coachFilter === 'Michela') {
-        return c.coach_names.some(name => 
-          name === 'Michela' || name.includes('Michela')
-        );
-      }
-      return c.coach_names.includes(coachFilter);
-    });
+    filteredClients = filteredClients.filter(c =>
+      c.coach_names.some(name =>
+        name.toLowerCase().includes(coachFilter.split(' / ')[0].toLowerCase())
+      )
+    );
   }
 
   // Count by status
@@ -673,8 +655,8 @@ const GestioneDiario = () => {
               </SelectTrigger>
               <SelectContent className="bg-card border-border z-50">
                 <SelectItem value="all">Tutti i coach</SelectItem>
-                <SelectItem value="Ilaria">Ilaria</SelectItem>
-                <SelectItem value="Marco">Marco</SelectItem>
+                <SelectItem value="Ilaria / Marco">Ilaria / Marco</SelectItem>
+                <SelectItem value="Valentina">Valentina</SelectItem>
                 <SelectItem value="Martina">Martina</SelectItem>
                 <SelectItem value="Michela">Michela</SelectItem>
                 <SelectItem value="Cristina">Cristina</SelectItem>
