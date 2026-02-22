@@ -212,25 +212,25 @@ export default function AdminCoachDashboard({ clients, onRefresh }: Props) {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full grid grid-cols-7 mb-4 h-auto">
-          <TabsTrigger value="overview" className="text-[11px] py-1.5">
+        <TabsList className="w-full flex overflow-x-auto gap-1 mb-4 h-auto p-1 no-scrollbar">
+          <TabsTrigger value="overview" className="text-[11px] py-1.5 px-2.5 shrink-0">
             Overview
           </TabsTrigger>
           {COACHES.map(coach => (
-            <TabsTrigger key={coach} value={coach} className="text-[11px] py-1.5 flex items-center gap-1">
+            <TabsTrigger key={coach} value={coach} className="text-[11px] py-1.5 px-2 shrink-0 flex items-center gap-1">
               <span className={cn('w-1.5 h-1.5 rounded-full shrink-0', COACH_DOT[coach])} />
               {coach}
               <span className="ml-0.5 text-[10px] text-muted-foreground">({coachData[coach].length})</span>
             </TabsTrigger>
           ))}
-          <TabsTrigger value="assegnazioni" className="text-[11px] py-1.5">
+          <TabsTrigger value="assegnazioni" className="text-[11px] py-1.5 px-2.5 shrink-0">
             👤 Coach
           </TabsTrigger>
         </TabsList>
 
         {/* Overview tab */}
         <TabsContent value="overview" className="mt-0">
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {COACHES.map(coach => {
               const s = computeStats(coachData[coach]);
               const today = new Date().toISOString().split('T')[0];
