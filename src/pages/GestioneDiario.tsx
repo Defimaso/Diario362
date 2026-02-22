@@ -1019,26 +1019,19 @@ const GestioneDiario = () => {
                           const { data: { session } } = await supabase.auth.getSession();
                           if (!session?.access_token) { toast({ variant: 'destructive', title: 'Errore', description: 'Non autenticato' }); return; }
 
-                          // Aggiorna direttamente via API REST (bypass RPC)
-                          const updateData = isAssigned ? { coach_id: null } : { coach_id: coach.id };
-                          const res = await fetch(`https://ppbbqchycxffsfavtsjp.supabase.co/rest/v1/profiles?id=eq.${coachAssignClient.id}`, {
-                            method: 'PATCH',
-                            headers: {
-                              'Content-Type': 'application/json',
-                              'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBwYmJxY2h5Y3hmZnNmYXZ0c2pwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA0NDQwNTAsImV4cCI6MjA4NjAyMDA1MH0.JqotNOYaUUUdFGHbxZpU5WZQg2f1OlQxWJ92Ou07aAQ',
-                              'Authorization': `Bearer ${session.access_token}`,
-                              'Prefer': 'return=representation',
-                            },
-                            body: JSON.stringify(updateData),
-                          });
+                          // Aggiorna tramite supabase client (usa il DB corretto del deployment)
+                          const newCoachId = isAssigned ? null : coach.id;
+                          const { error: updateErr } = await (supabase as any)
+                            .from('profiles')
+                            .update({ coach_id: newCoachId })
+                            .eq('id', coachAssignClient.id);
 
-                          if (res.ok) {
+                          if (!updateErr) {
                             if (isAssigned) { setAssignedCoachId(null); toast({ title: 'Coach rimosso' }); }
                             else { setAssignedCoachId(coach.id); toast({ title: 'Coach assegnato', description: coach.name }); }
                             refetchClients();
                           } else {
-                            const errData = await res.json().catch(() => ({}));
-                            toast({ variant: 'destructive', title: 'Errore', description: (errData as any).message || 'Errore sconosciuto' });
+                            toast({ variant: 'destructive', title: 'Errore', description: updateErr.message || 'Errore sconosciuto' });
                           }
                         } catch (err) {
                           console.error('Errore:', err);

@@ -55,50 +55,32 @@ export default function CoachAssignmentPanel({ clients, onRefresh }: CoachAssign
 
   const handleAssign = async (clientId: string, coachId: string) => {
     setLoadingCoach(clientId);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) { setLoadingCoach(null); return; }
-    const res = await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${clientId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPA_KEY,
-        'Authorization': `Bearer ${session.access_token}`,
-        'Prefer': 'return=representation',
-      },
-      body: JSON.stringify({ coach_id: coachId }),
-    });
-    if (res.ok) {
+    const { error } = await (supabase as any)
+      .from('profiles')
+      .update({ coach_id: coachId })
+      .eq('id', clientId);
+    if (!error) {
       setAssignments(prev => ({ ...prev, [clientId]: coachId }));
       toast({ title: 'Coach assegnato', description: coaches.find(c => c.id === coachId)?.name });
       onRefresh();
     } else {
-      const err = await res.json().catch(() => ({}));
-      toast({ variant: 'destructive', title: 'Errore', description: (err as any).message || 'Errore sconosciuto' });
+      toast({ variant: 'destructive', title: 'Errore', description: error.message || 'Errore sconosciuto' });
     }
     setLoadingCoach(null);
   };
 
   const handleRemove = async (clientId: string) => {
     setLoadingCoach(clientId);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session?.access_token) { setLoadingCoach(null); return; }
-    const res = await fetch(`${SUPA_URL}/rest/v1/profiles?id=eq.${clientId}`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPA_KEY,
-        'Authorization': `Bearer ${session.access_token}`,
-        'Prefer': 'return=representation',
-      },
-      body: JSON.stringify({ coach_id: null }),
-    });
-    if (res.ok) {
+    const { error } = await (supabase as any)
+      .from('profiles')
+      .update({ coach_id: null })
+      .eq('id', clientId);
+    if (!error) {
       setAssignments(prev => ({ ...prev, [clientId]: null }));
       toast({ title: 'Coach rimosso' });
       onRefresh();
     } else {
-      const err = await res.json().catch(() => ({}));
-      toast({ variant: 'destructive', title: 'Errore', description: (err as any).message || 'Errore' });
+      toast({ variant: 'destructive', title: 'Errore', description: error.message || 'Errore' });
     }
     setLoadingCoach(null);
   };
