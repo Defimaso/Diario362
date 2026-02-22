@@ -92,61 +92,27 @@ export default function CoachAssignmentPanel({ clients, onRefresh }: CoachAssign
     const whitelistName = coachEmail ? STAFF_WHITELIST[coachEmail]?.name : undefined;
     const coachEnumName = whitelistName ? whitelistName.split(' / ')[0] : undefined;
 
-    console.log('[CoachAssign] assegno:', { clientId, coachId, coachEmail, coachEnumName });
+    console.log('[CoachAssign] RPC assign_coach:', { clientId, coachId, coachEnumName });
 
-    let legacyOk = false;
-    let profileOk = false;
+    // Usa RPC SECURITY DEFINER — bypassa RLS completamente
+    const { data, error } = await (supabase as any).rpc('assign_coach', {
+      p_client_id: clientId,
+      p_coach_id: coachId,
+      p_coach_name: (coachEnumName && VALID_COACH_ENUMS.includes(coachEnumName)) ? coachEnumName : '',
+    });
 
-    // 1) coach_assignments: DELETE poi INSERT (evita problemi unique constraint)
-    if (coachEnumName && VALID_COACH_ENUMS.includes(coachEnumName)) {
-      const { error: delErr } = await (supabase as any)
-        .from('coach_assignments')
-        .delete()
-        .eq('client_id', clientId);
-      console.log('[CoachAssign] delete legacy:', delErr || 'OK');
+    console.log('[CoachAssign] RPC result:', data, error);
 
-      const { error: insErr } = await (supabase as any)
-        .from('coach_assignments')
-        .insert({ client_id: clientId, coach_name: coachEnumName });
-      if (insErr) {
-        console.error('[CoachAssign] insert legacy ERRORE:', insErr);
-        toast({ variant: 'destructive', title: 'Errore coach_assignments', description: insErr.message });
-      } else {
-        legacyOk = true;
-        console.log('[CoachAssign] coach_assignments INSERT OK:', coachEnumName);
-      }
+    if (error) {
+      console.error('[CoachAssign] RPC error:', error);
+      toast({ variant: 'destructive', title: 'Errore assegnazione', description: error.message });
+    } else if (data && data.success === false) {
+      console.error('[CoachAssign] RPC DB error:', data.error);
+      toast({ variant: 'destructive', title: 'Errore DB', description: data.error });
     } else {
-      console.warn('[CoachAssign] enum non trovato per coach:', coachEmail, '→', coachEnumName);
-    }
-
-    // 2) profiles.coach_id (nuovo sistema — potrebbe fallire per RLS, non bloccante)
-    const { error: profileError, data: profileData } = await (supabase as any)
-      .from('profiles')
-      .update({ coach_id: coachId })
-      .eq('id', clientId)
-      .select('id, coach_id');
-    if (profileError) {
-      console.error('[CoachAssign] profiles.coach_id ERRORE:', profileError);
-    } else if (!profileData || profileData.length === 0) {
-      console.warn('[CoachAssign] profiles.coach_id: 0 righe aggiornate (RLS bloccato?)');
-    } else {
-      profileOk = true;
-      console.log('[CoachAssign] profiles.coach_id OK:', profileData);
-    }
-
-    if (legacyOk || profileOk) {
       setAssignments(prev => ({ ...prev, [clientId]: coachId }));
-      toast({
-        title: 'Coach assegnato ✓',
-        description: `${coach?.name}${!profileOk ? ' (legacy only)' : ''}`,
-      });
+      toast({ title: 'Coach assegnato ✓', description: coach?.name });
       onRefresh();
-    } else {
-      toast({
-        variant: 'destructive',
-        title: 'Nessuna scrittura riuscita',
-        description: 'Apri DevTools → Console per vedere l\'errore esatto',
-      });
     }
     setLoadingCoach(null);
   };
@@ -154,25 +120,22 @@ export default function CoachAssignmentPanel({ clients, onRefresh }: CoachAssign
   const handleRemove = async (clientId: string) => {
     setLoadingCoach(clientId);
 
-    // 1) Elimina da coach_assignments (legacy)
-    const { error: delErr } = await (supabase as any)
-      .from('coach_assignments')
-      .delete()
-      .eq('client_id', clientId);
-    if (delErr) console.error('[CoachAssign] remove legacy ERRORE:', delErr);
-    else console.log('[CoachAssign] remove legacy OK');
+    console.log('[CoachAssign] RPC remove_coach:', clientId);
 
-    // 2) Rimuovi profiles.coach_id (nuovo sistema)
-    const { error: profileErr } = await (supabase as any)
-      .from('profiles')
-      .update({ coach_id: null })
-      .eq('id', clientId);
-    if (profileErr) console.error('[CoachAssign] remove profile ERRORE:', profileErr);
-    else console.log('[CoachAssign] remove profile OK');
+    const { data, error } = await (supabase as any).rpc('remove_coach', {
+      p_client_id: clientId,
+    });
 
-    setAssignments(prev => ({ ...prev, [clientId]: null }));
-    toast({ title: 'Coach rimosso' });
-    onRefresh();
+    console.log('[CoachAssign] RPC remove result:', data, error);
+
+    if (error) {
+      console.error('[CoachAssign] RPC remove error:', error);
+      toast({ variant: 'destructive', title: 'Errore rimozione', description: error.message });
+    } else {
+      setAssignments(prev => ({ ...prev, [clientId]: null }));
+      toast({ title: 'Coach rimosso' });
+      onRefresh();
+    }
     setLoadingCoach(null);
   };
 
