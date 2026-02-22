@@ -1,4 +1,4 @@
-// Whitelist email collaboratori/coach che possono gestire i clienti
+// Whitelist email collaboratori/coach che possono gestire i clienti (v2)
 export const STAFF_WHITELIST: Record<string, { role: 'admin' | 'coach'; name: string }> = {
   // ADMIN
   'info@362gradi.it': { role: 'admin', name: '362 Gradi Admin' },
