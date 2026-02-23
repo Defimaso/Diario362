@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Lock, Crown, CheckCircle2, Sparkles, Loader2 } from 'lucide-react';
+import { Lock, Crown, CheckCircle2, Sparkles, Loader2, Video } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -101,6 +101,20 @@ export function PremiumGate() {
         <p className="text-xs text-muted-foreground text-center mt-2">
           Verrai reindirizzato al negozio 362gradi
         </p>
+
+        <div className="text-center mt-3">
+          <span className="text-xs text-muted-foreground">oppure</span>
+        </div>
+
+        <Button
+          variant="outline"
+          className="w-full mt-2 border-primary/30 text-primary hover:bg-primary/5"
+          size="lg"
+          onClick={() => window.open('https://362gradi.ae/prenota', '_blank')}
+        >
+          <Video className="w-4 h-4 mr-2" />
+          Prenota una call gratuita con Ilaria
+        </Button>
       </motion.div>
 
       {/* Activation Code */}
