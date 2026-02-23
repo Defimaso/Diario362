@@ -272,24 +272,33 @@ const CheckFormModal = ({
     preview: string | null;
     photoType: 'front' | 'side' | 'back';
   }) => {
+    const inputRef = useRef<HTMLInputElement>(null);
     const isDraftOnly = draftOnlyPreviews.has(photoType);
+
+    const triggerFileSelect = () => {
+      inputRef.current?.click();
+    };
+
     return (
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">{label}</Label>
-        <label className={`relative block aspect-[3/4] rounded-lg border-2 border-dashed transition-colors cursor-pointer overflow-hidden bg-muted/30 ${
-          isDraftOnly ? 'border-amber-400' : 'border-border hover:border-primary/50'
-        }`}>
-          <input
-            type="file"
-            accept="image/*"
-            capture={undefined}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
-            onChange={(e) => {
-              handleFileSelect(e.target.files?.[0] || null, photoType);
-              // Reset input so the same file can be re-selected
-              e.target.value = '';
-            }}
-          />
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            handleFileSelect(e.target.files?.[0] || null, photoType);
+            e.target.value = '';
+          }}
+        />
+        <button
+          type="button"
+          onClick={triggerFileSelect}
+          className={`relative block w-full aspect-[3/4] rounded-lg border-2 border-dashed transition-colors cursor-pointer overflow-hidden bg-muted/30 ${
+            isDraftOnly ? 'border-amber-400' : 'border-border hover:border-primary/50 active:border-primary'
+          }`}
+        >
           {preview ? (
             <div className="relative w-full h-full">
               <img src={preview} alt={label} className="w-full h-full object-cover" />
@@ -301,7 +310,7 @@ const CheckFormModal = ({
                   </span>
                 </div>
               ) : (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
                   <Camera className="w-6 h-6 text-white" />
                 </div>
               )}
@@ -312,7 +321,7 @@ const CheckFormModal = ({
               <span className="text-xs">Carica</span>
             </div>
           )}
-        </label>
+        </button>
       </div>
     );
   };
