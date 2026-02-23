@@ -355,13 +355,14 @@ const CheckFormModal = ({
     return (
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">{label}</Label>
-        <label className={`block aspect-[3/4] rounded-lg border-2 border-dashed transition-colors cursor-pointer overflow-hidden bg-muted/30 ${
+        <label className={`relative block aspect-[3/4] rounded-lg border-2 border-dashed transition-colors cursor-pointer overflow-hidden bg-muted/30 ${
           isDraftOnly ? 'border-amber-400' : 'border-border hover:border-primary/50'
         }`}>
           <input
             type="file"
             accept="image/*"
-            className="hidden"
+            capture={undefined}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
             onChange={(e) => {
               handleFileSelect(e.target.files?.[0] || null, photoType);
               // Reset input so the same file can be re-selected
