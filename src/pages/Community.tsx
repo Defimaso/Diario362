@@ -4,7 +4,7 @@ import BottomDock from '@/components/BottomDock';
 
 export default function Community() {
   return (
-    <div className="min-h-screen bg-background flex flex-col pb-24">
+    <div className="min-h-screen bg-background flex flex-col pb-36">
       {/* Fixed Header */}
       <div className="sticky top-0 z-40 bg-card/90 backdrop-blur-xl border-b border-border/50">
         <div className="max-w-lg mx-auto px-4 py-3 flex items-center gap-3">

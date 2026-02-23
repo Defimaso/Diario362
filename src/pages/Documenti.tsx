@@ -33,7 +33,7 @@ const Documenti = () => {
 
   if (!subLoading && !isPremium) {
     return (
-      <div className="min-h-screen bg-background pb-24">
+      <div className="min-h-screen bg-background pb-36">
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         </div>
@@ -63,7 +63,7 @@ const Documenti = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-36">
       {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />

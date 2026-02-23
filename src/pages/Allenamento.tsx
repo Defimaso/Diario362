@@ -49,7 +49,7 @@ const Allenamento = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-36">
       {/* Header */}
       <header className="bg-gradient-to-br from-primary/20 via-background to-background pt-12 pb-6 px-4">
         <motion.div
