@@ -67,7 +67,7 @@ const Progressi = () => {
   const firstCheck = getFirstCheckWithPhotos();
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="min-h-screen bg-background pb-36">
       {/* Header */}
       <header className="bg-gradient-to-br from-green-500/20 via-background to-background pt-6 sm:pt-12 pb-4 sm:pb-6 px-4">
         <motion.div
