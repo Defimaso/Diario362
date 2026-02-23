@@ -156,11 +156,22 @@ Deno.serve(async (req) => {
       }
       case 'app_feedback': {
         // User submitted app feedback → notify super admin (info@362gradi.it)
-        const { data: adminProfiles } = await supabase
+        const { data: adminProfiles, error: adminError } = await supabase
           .from('profiles')
           .select('id')
           .eq('email', 'info@362gradi.it')
+        
+        console.log('Admin profiles query result:', { adminProfiles, adminError })
+        
+        if (adminError) {
+          console.error('Error fetching admin profiles:', adminError)
+        }
+        
         targetUserIds = adminProfiles?.map(p => p.id) || []
+        
+        // If the sender IS info@362gradi.it, still notify them (self-notification for feedback)
+        // No need to filter out the author for feedback
+        
         const feedbackRating = metadata?.rating || 'N/A'
         const feedbackBugs = metadata?.bugs || 'Nessuno'
         const feedbackWishlist = metadata?.wishlist || 'Nessuna'
@@ -184,7 +195,7 @@ Deno.serve(async (req) => {
     // Create in-app notifications
     for (const userId of targetUserIds) {
       try {
-        await supabase.from('notifications').insert({
+        const { error: insertError } = await supabase.from('notifications').insert({
           user_id: userId,
           type: notificationType,
           title,
@@ -193,8 +204,11 @@ Deno.serve(async (req) => {
           metadata: metadata || null,
           is_read: false,
         } as never)
+        if (insertError) {
+          console.error('Error creating in-app notification for', userId, ':', insertError)
+        }
       } catch (err) {
-        console.error('Error creating in-app notification:', err)
+        console.error('Exception creating in-app notification:', err)
       }
     }
 
