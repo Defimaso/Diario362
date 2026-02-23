@@ -53,36 +53,6 @@ export type Database = {
         }
         Relationships: []
       }
-      app_feedback: {
-        Row: {
-          id: string
-          user_id: string | null
-          rating: number | null
-          bugs: string | null
-          wishlist: string | null
-          user_agent: string | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id?: string | null
-          rating?: number | null
-          bugs?: string | null
-          wishlist?: string | null
-          user_agent?: string | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string | null
-          rating?: number | null
-          bugs?: string | null
-          wishlist?: string | null
-          user_agent?: string | null
-          created_at?: string
-        }
-        Relationships: []
-      }
       client_documents: {
         Row: {
           created_at: string

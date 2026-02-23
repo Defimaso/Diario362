@@ -50,7 +50,7 @@ export default function FeedbackPrompt() {
     setSending(true);
     try {
       // Insert feedback using RPC or direct table insert
-      const { error } = await supabase.from('app_feedback').insert({
+      const { error } = await (supabase.from as any)('app_feedback').insert({
         user_id: user?.id || null,
         rating,
         bugs: bugs.trim() || null,
