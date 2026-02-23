@@ -191,6 +191,28 @@ const CheckFormModal = ({
     };
   }, []);
 
+  // Fallback: use photo directly without cropping
+  const usePhotoDirectly = async (file: File, photoType: 'front' | 'side' | 'back') => {
+    try {
+      const { compressImage } = await import('@/lib/imageCompression');
+      const compressed = await compressImage(file);
+      const finalFile = new File([compressed], `${photoType}_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const previewUrl = URL.createObjectURL(compressed);
+      objectUrlsRef.current.push(previewUrl);
+
+      switch (photoType) {
+        case 'front': setPhotoFront(finalFile); setPhotoFrontPreview(previewUrl); break;
+        case 'side': setPhotoSide(finalFile); setPhotoSidePreview(previewUrl); break;
+        case 'back': setPhotoBack(finalFile); setPhotoBackPreview(previewUrl); break;
+      }
+      setDraftOnlyPreviews(prev => { const next = new Set(prev); next.delete(photoType); return next; });
+      toast.success('Foto caricata (senza ritaglio)');
+    } catch (err) {
+      console.error('Direct photo fallback failed:', err);
+      toast.error('Impossibile caricare la foto.');
+    }
+  };
+
   // Handle file selection - open cropper
   const handleFileSelect = (
     file: File | null,
@@ -202,7 +224,6 @@ const CheckFormModal = ({
       // Security: Validate MIME type - only allow images
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
       const fileType = file.type?.toLowerCase() || '';
-      // On some mobile devices file.type can be empty — allow if extension looks like an image
       const ext = file.name?.split('.').pop()?.toLowerCase() || '';
       const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
       if (fileType && !allowedTypes.includes(fileType) && !allowedExts.includes(ext)) {
@@ -220,17 +241,28 @@ const CheckFormModal = ({
         return;
       }
 
-      // Use blob URL instead of base64 — MUCH lighter on mobile memory (~33% less)
+      // Try to open cropper with blob URL
       const objectUrl = createObjectURLFromFile(file);
       objectUrlsRef.current.push(objectUrl);
-      setCropperState({
-        isOpen: true,
-        imageSrc: objectUrl,
-        photoType,
-      });
+      
+      // Test that the image can actually load before opening cropper
+      const testImg = new Image();
+      testImg.onload = () => {
+        setCropperState({
+          isOpen: true,
+          imageSrc: objectUrl,
+          photoType,
+        });
+      };
+      testImg.onerror = () => {
+        console.warn('Blob URL failed to load image, using direct fallback');
+        usePhotoDirectly(file, photoType);
+      };
+      testImg.src = objectUrl;
     } catch (error) {
       console.error('Error reading file:', error);
-      toast.error('Impossibile leggere la foto. Prova con un\'altra immagine.');
+      // Fallback: use photo directly
+      usePhotoDirectly(file, photoType);
     }
   };
 
