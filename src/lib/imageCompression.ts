@@ -127,19 +127,25 @@ export const compressImage = async (
 
 /**
  * Helper to create an image element from a source URL
+ * Only sets crossOrigin for http(s) URLs — blob: and data: URLs don't need it
+ * and setting it can cause CORS failures on some mobile browsers.
  */
 const createImage = (url: string): Promise<HTMLImageElement> => {
   return new Promise((resolve, reject) => {
     const image = new Image();
     image.addEventListener('load', () => resolve(image));
     image.addEventListener('error', (error) => reject(error));
-    image.crossOrigin = 'anonymous';
+    // Only set crossOrigin for remote URLs — blob:/data: URLs break on some mobile browsers
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      image.crossOrigin = 'anonymous';
+    }
     image.src = url;
   });
 };
 
 /**
  * Reads a file and returns a base64 data URL
+ * @deprecated Prefer createObjectURLFromFile for better memory efficiency on mobile
  */
 export const readFileAsDataURL = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -148,4 +154,13 @@ export const readFileAsDataURL = (file: File): Promise<string> => {
     reader.addEventListener('error', reject);
     reader.readAsDataURL(file);
   });
+};
+
+/**
+ * Creates a memory-efficient blob URL from a File.
+ * Much better for mobile — avoids base64 encoding overhead (~33% less memory).
+ * IMPORTANT: Caller must revoke the URL when done via URL.revokeObjectURL()
+ */
+export const createObjectURLFromFile = (file: File): string => {
+  return URL.createObjectURL(file);
 };

@@ -108,11 +108,20 @@ export const useUserChecks = (clientId?: string) => {
 
       const { error: uploadError } = await supabase.storage
         .from('progress-photos')
-        .upload(fileName, file, { contentType: file.type || 'image/jpeg' });
+        .upload(fileName, file, {
+          contentType: 'image/jpeg',
+          upsert: true, // Prevent "already exists" errors on retry/race conditions
+        });
 
       if (uploadError) {
-        console.error('Error uploading photo:', uploadError);
-        toast.error(`Errore upload foto ${type}`);
+        console.error('Error uploading photo:', uploadError.message, uploadError);
+        // Show specific error message to help debug
+        const msg = uploadError.message?.includes('security')
+          ? 'Permesso negato. Riprova il login.'
+          : uploadError.message?.includes('size')
+          ? 'Foto troppo grande.'
+          : `Errore upload foto ${type}`;
+        toast.error(msg);
         return null;
       }
 
@@ -123,7 +132,7 @@ export const useUserChecks = (clientId?: string) => {
       return publicUrl;
     } catch (err) {
       console.error('Upload photo failed:', err);
-      toast.error(`Errore upload foto ${type}`);
+      toast.error(`Errore upload foto ${type}. Controlla la connessione.`);
       return null;
     }
   };

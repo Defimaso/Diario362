@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Camera, Scale, Calendar, Upload, Check, AlertCircle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { UserCheck } from '@/hooks/useUserChecks';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { readFileAsDataURL } from '@/lib/imageCompression';
+import { createObjectURLFromFile } from '@/lib/imageCompression';
 import { toast } from 'sonner';
 import { useCheckDraft } from '@/hooks/useCheckDraft';
 import ImageCropperModal from './ImageCropperModal';
@@ -118,6 +118,9 @@ const CheckFormModal = ({
     return () => clearTimeout(timer);
   }, [autoSaveDraft]);
 
+  // Track which previews are "draft-only" (no File object — need re-upload)
+  const [draftOnlyPreviews, setDraftOnlyPreviews] = useState<Set<string>>(new Set());
+
   // Handle restoring draft
   const handleRestoreDraft = () => {
     const draft = getDraft();
@@ -125,11 +128,15 @@ const CheckFormModal = ({
       setDate(draft.date || new Date().toISOString().split('T')[0]);
       setWeight(draft.weight || '');
       setNotes(draft.notes || '');
-      // Note: We can't restore actual File objects, only previews for display
-      // Photos will need to be re-uploaded
-      if (draft.photoFrontPreview) setPhotoFrontPreview(draft.photoFrontPreview);
-      if (draft.photoSidePreview) setPhotoSidePreview(draft.photoSidePreview);
-      if (draft.photoBackPreview) setPhotoBackPreview(draft.photoBackPreview);
+      // Restore previews but mark them as "draft-only" since File objects can't be serialized
+      const draftOnly = new Set<string>();
+      if (draft.photoFrontPreview) { setPhotoFrontPreview(draft.photoFrontPreview); draftOnly.add('front'); }
+      if (draft.photoSidePreview) { setPhotoSidePreview(draft.photoSidePreview); draftOnly.add('side'); }
+      if (draft.photoBackPreview) { setPhotoBackPreview(draft.photoBackPreview); draftOnly.add('back'); }
+      setDraftOnlyPreviews(draftOnly);
+      if (draftOnly.size > 0) {
+        toast.info('Le foto della bozza sono solo anteprima. Tocca per ricaricarle prima di salvare.');
+      }
     }
     setShowDraftDialog(false);
   };
@@ -152,6 +159,7 @@ const CheckFormModal = ({
     setPhotoFrontPreview(null);
     setPhotoSidePreview(null);
     setPhotoBackPreview(null);
+    setDraftOnlyPreviews(new Set());
   };
 
   // Reset form when opening with existing data
@@ -173,8 +181,18 @@ const CheckFormModal = ({
     }
   }, [isOpen, existingData, hasDraft]);
 
+  // Track object URLs for cleanup to prevent memory leaks
+  const objectUrlsRef = useRef<string[]>([]);
+
+  useEffect(() => {
+    return () => {
+      objectUrlsRef.current.forEach(u => URL.revokeObjectURL(u));
+      objectUrlsRef.current = [];
+    };
+  }, []);
+
   // Handle file selection - open cropper
-  const handleFileSelect = async (
+  const handleFileSelect = (
     file: File | null,
     photoType: 'front' | 'side' | 'back'
   ) => {
@@ -202,10 +220,12 @@ const CheckFormModal = ({
         return;
       }
 
-      const dataUrl = await readFileAsDataURL(file);
+      // Use blob URL instead of base64 — MUCH lighter on mobile memory (~33% less)
+      const objectUrl = createObjectURLFromFile(file);
+      objectUrlsRef.current.push(objectUrl);
       setCropperState({
         isOpen: true,
-        imageSrc: dataUrl,
+        imageSrc: objectUrl,
         photoType,
       });
     } catch (error) {
@@ -217,13 +237,15 @@ const CheckFormModal = ({
   // Handle crop complete
   const handleCropComplete = (croppedBlob: Blob) => {
     const file = new File(
-      [croppedBlob], 
-      `${cropperState.photoType}_${Date.now()}.jpg`, 
+      [croppedBlob],
+      `${cropperState.photoType}_${Date.now()}.jpg`,
       { type: 'image/jpeg' }
     );
     const previewUrl = URL.createObjectURL(croppedBlob);
+    objectUrlsRef.current.push(previewUrl);
 
-    switch (cropperState.photoType) {
+    const photoType = cropperState.photoType;
+    switch (photoType) {
       case 'front':
         setPhotoFront(file);
         setPhotoFrontPreview(previewUrl);
@@ -236,6 +258,15 @@ const CheckFormModal = ({
         setPhotoBack(file);
         setPhotoBackPreview(previewUrl);
         break;
+    }
+
+    // Remove "draft-only" flag — user has a real File now
+    if (photoType) {
+      setDraftOnlyPreviews(prev => {
+        const next = new Set(prev);
+        next.delete(photoType);
+        return next;
+      });
     }
 
     setCropperState({ isOpen: false, imageSrc: null, photoType: null });
@@ -287,32 +318,50 @@ const CheckFormModal = ({
     label: string;
     preview: string | null;
     photoType: 'front' | 'side' | 'back';
-  }) => (
-    <div className="space-y-1">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      <label className="block aspect-[3/4] rounded-lg border-2 border-dashed border-border hover:border-primary/50 transition-colors cursor-pointer overflow-hidden bg-muted/30">
-        <input
-          type="file"
-          accept="image/*"
-          className="hidden"
-          onChange={(e) => handleFileSelect(e.target.files?.[0] || null, photoType)}
-        />
-        {preview ? (
-          <div className="relative w-full h-full">
-            <img src={preview} alt={label} className="w-full h-full object-cover" />
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-              <Camera className="w-6 h-6 text-white" />
+  }) => {
+    const isDraftOnly = draftOnlyPreviews.has(photoType);
+    return (
+      <div className="space-y-1">
+        <Label className="text-xs text-muted-foreground">{label}</Label>
+        <label className={`block aspect-[3/4] rounded-lg border-2 border-dashed transition-colors cursor-pointer overflow-hidden bg-muted/30 ${
+          isDraftOnly ? 'border-amber-400' : 'border-border hover:border-primary/50'
+        }`}>
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              handleFileSelect(e.target.files?.[0] || null, photoType);
+              // Reset input so the same file can be re-selected
+              e.target.value = '';
+            }}
+          />
+          {preview ? (
+            <div className="relative w-full h-full">
+              <img src={preview} alt={label} className="w-full h-full object-cover" />
+              {isDraftOnly ? (
+                <div className="absolute inset-0 bg-amber-500/30 flex flex-col items-center justify-center">
+                  <Upload className="w-5 h-5 text-white mb-1" />
+                  <span className="text-[10px] text-white font-medium bg-amber-600/80 px-1.5 py-0.5 rounded">
+                    Ricarica
+                  </span>
+                </div>
+              ) : (
+                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                  <Camera className="w-6 h-6 text-white" />
+                </div>
+              )}
             </div>
-          </div>
-        ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
-            <Upload className="w-6 h-6" />
-            <span className="text-xs">Carica</span>
-          </div>
-        )}
-      </label>
-    </div>
-  );
+          ) : (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
+              <Upload className="w-6 h-6" />
+              <span className="text-xs">Carica</span>
+            </div>
+          )}
+        </label>
+      </div>
+    );
+  };
 
   const hasAnyData = weight || photoFront || photoSide || photoBack || 
     (existingData && (existingData.weight || existingData.photo_front_url || existingData.photo_side_url || existingData.photo_back_url));

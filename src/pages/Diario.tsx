@@ -31,6 +31,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useOnboardingData } from "@/hooks/useOnboardingData";
 import { GuideOnboarding, GuideButton } from "@/components/GuideOnboarding";
+import FeedbackPrompt from "@/components/FeedbackPrompt";
 import { supabase } from "@/integrations/supabase/client";
 
 const Diario = () => {
@@ -292,6 +293,9 @@ const Diario = () => {
             App in fase di test — non è la versione definitiva. Grazie per la pazienza!
           </p>
         </motion.div>
+
+        {/* Feedback Prompt — banner (1 volta) + FAB permanente */}
+        <FeedbackPrompt />
 
         {/* Messages notification */}
         {unreadTotal > 0 && (
