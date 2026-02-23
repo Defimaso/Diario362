@@ -11,7 +11,7 @@ const corsHeaders = {
 }
 
 interface InteractionRequest {
-  type: 'coach_note' | 'daily_checkin' | 'check_submitted' | 'diet_uploaded'
+  type: 'coach_note' | 'daily_checkin' | 'check_submitted' | 'diet_uploaded' | 'app_feedback'
   clientId: string
   authorId: string
   authorName?: string
@@ -152,6 +152,21 @@ Deno.serve(async (req) => {
         title = '🥗 Nuovo Piano Alimentare'
         body = `Il tuo coach ha caricato un nuovo piano alimentare`
         url = '/nutrizione'
+        break
+      }
+      case 'app_feedback': {
+        // User submitted app feedback → notify super admin (info@362gradi.it)
+        const { data: adminProfiles } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', 'info@362gradi.it')
+        targetUserIds = adminProfiles?.map(p => p.id) || []
+        const feedbackRating = metadata?.rating || 'N/A'
+        const feedbackBugs = metadata?.bugs || 'Nessuno'
+        const feedbackWishlist = metadata?.wishlist || 'Nessuna'
+        title = '💬 Nuovo Feedback App'
+        body = `${clientName} ha lasciato un feedback:\nVoto: ${feedbackRating}\nBug: ${feedbackBugs}\nDesideri: ${feedbackWishlist}`
+        url = '/gestionediario'
         break
       }
     }

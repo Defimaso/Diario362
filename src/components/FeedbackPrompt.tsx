@@ -73,6 +73,21 @@ export default function FeedbackPrompt() {
         localStorage.setItem('pending_feedback', JSON.stringify(existing));
       }
 
+      // Send email notification to info@362gradi.it via edge function
+      const ratingEmoji = rating ? emojiOptions.find(o => o.value === rating)?.emoji || '' : '';
+      supabase.functions.invoke('notify-interaction', {
+        body: {
+          type: 'app_feedback',
+          clientId: user?.id || '00000000-0000-0000-0000-000000000000',
+          authorId: user?.id || '00000000-0000-0000-0000-000000000000',
+          metadata: {
+            rating: rating ? `${ratingEmoji} ${rating}/5` : 'N/A',
+            bugs: bugs.trim() || 'Nessuno',
+            wishlist: wishlist.trim() || 'Nessuna',
+          },
+        },
+      }).catch(err => console.error('Feedback notify error:', err));
+
       localStorage.setItem(FEEDBACK_SENT_KEY, 'true');
       setFeedbackSent(true);
       setModalOpen(false);

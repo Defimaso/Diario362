@@ -58,7 +58,7 @@ const AreaPersonale = () => {
         <div className="fixed inset-0 pointer-events-none overflow-hidden">
           <div className="absolute top-0 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
         </div>
-        <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
+        <div className="relative max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
           <PremiumGate />
         </div>
         <BottomDock />
@@ -83,7 +83,7 @@ const AreaPersonale = () => {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
+      <div className="relative max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}

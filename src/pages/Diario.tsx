@@ -157,7 +157,7 @@ const Diario = () => {
         <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-accent/5 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative z-10 max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8 pb-24">
+      <div className="relative max-w-lg mx-auto px-4 sm:px-5 py-6 sm:py-8 pb-24">
         {/* Header */}
         <motion.header
           initial={{ opacity: 0, y: -20 }}
