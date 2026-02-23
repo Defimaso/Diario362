@@ -183,7 +183,15 @@ const CheckFormModal = ({
     try {
       // Security: Validate MIME type - only allow images
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-      if (!allowedTypes.includes(file.type.toLowerCase())) {
+      const fileType = file.type?.toLowerCase() || '';
+      // On some mobile devices file.type can be empty — allow if extension looks like an image
+      const ext = file.name?.split('.').pop()?.toLowerCase() || '';
+      const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+      if (fileType && !allowedTypes.includes(fileType) && !allowedExts.includes(ext)) {
+        toast.error('Formato non supportato. Usa JPG, PNG, WEBP o HEIC.');
+        return;
+      }
+      if (!fileType && !allowedExts.includes(ext)) {
         toast.error('Formato non supportato. Usa JPG, PNG, WEBP o HEIC.');
         return;
       }
