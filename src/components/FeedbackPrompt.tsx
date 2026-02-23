@@ -153,7 +153,7 @@ export default function FeedbackPrompt() {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           onClick={() => setModalOpen(true)}
-          className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,8px))] right-4 z-[45] w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-violet-500 shadow-lg shadow-pink-500/30 flex items-center justify-center text-white"
+          className="fixed bottom-[calc(6rem+env(safe-area-inset-bottom,8px))] right-4 z-[45] w-12 h-12 rounded-full bg-gradient-to-br from-pink-500 to-violet-500 shadow-lg shadow-pink-500/30 flex items-center justify-center text-white"
         >
           <MessageSquareHeart className="w-5 h-5" />
           {feedbackSent && (
