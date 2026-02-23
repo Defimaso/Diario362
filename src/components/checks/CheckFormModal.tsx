@@ -263,60 +263,63 @@ const CheckFormModal = ({
     onClose();
   };
 
-  const PhotoUploadBox = ({
-    label,
-    preview,
-    photoType,
-  }: {
-    label: string;
-    preview: string | null;
-    photoType: 'front' | 'side' | 'back';
-  }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
-    const isDraftOnly = draftOnlyPreviews.has(photoType);
+  // Refs for file inputs - stable across renders (not inside nested component)
+  const frontInputRef = useRef<HTMLInputElement>(null);
+  const sideInputRef = useRef<HTMLInputElement>(null);
+  const backInputRef = useRef<HTMLInputElement>(null);
 
-    const triggerFileSelect = () => {
-      inputRef.current?.click();
-    };
+  const getInputRef = (type: 'front' | 'side' | 'back') => {
+    switch (type) {
+      case 'front': return frontInputRef;
+      case 'side': return sideInputRef;
+      case 'back': return backInputRef;
+    }
+  };
+
+  const renderPhotoBox = (label: string, preview: string | null, photoType: 'front' | 'side' | 'back') => {
+    const isDraftOnly = draftOnlyPreviews.has(photoType);
+    const ref = getInputRef(photoType);
 
     return (
       <div className="space-y-1">
         <Label className="text-xs text-muted-foreground">{label}</Label>
         <input
-          ref={inputRef}
+          ref={ref}
           type="file"
           accept="image/*"
-          className="hidden"
+          style={{ display: 'none' }}
           onChange={(e) => {
+            console.log('[PhotoUpload] file selected for', photoType, e.target.files?.[0]?.name);
             handleFileSelect(e.target.files?.[0] || null, photoType);
             e.target.value = '';
           }}
         />
         <button
           type="button"
-          onClick={triggerFileSelect}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('[PhotoUpload] button clicked for', photoType, 'ref exists:', !!ref.current);
+            ref.current?.click();
+          }}
           className={`relative block w-full aspect-[3/4] rounded-lg border-2 border-dashed transition-colors cursor-pointer overflow-hidden bg-muted/30 ${
             isDraftOnly ? 'border-amber-400' : 'border-border hover:border-primary/50 active:border-primary'
           }`}
         >
           {preview ? (
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full pointer-events-none">
               <img src={preview} alt={label} className="w-full h-full object-cover" />
-              {isDraftOnly ? (
+              {isDraftOnly && (
                 <div className="absolute inset-0 bg-amber-500/30 flex flex-col items-center justify-center">
                   <Upload className="w-5 h-5 text-white mb-1" />
                   <span className="text-[10px] text-white font-medium bg-amber-600/80 px-1.5 py-0.5 rounded">
                     Ricarica
                   </span>
                 </div>
-              ) : (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
-                  <Camera className="w-6 h-6 text-white" />
-                </div>
               )}
             </div>
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-muted-foreground pointer-events-none">
               <Upload className="w-6 h-6" />
               <span className="text-xs">Carica</span>
             </div>
@@ -435,21 +438,9 @@ const CheckFormModal = ({
                     Foto Progresso
                   </Label>
                   <div className="grid grid-cols-3 gap-1.5 sm:gap-3">
-                    <PhotoUploadBox
-                      label="Fronte"
-                      preview={photoFrontPreview}
-                      photoType="front"
-                    />
-                    <PhotoUploadBox
-                      label="Lato"
-                      preview={photoSidePreview}
-                      photoType="side"
-                    />
-                    <PhotoUploadBox
-                      label="Schiena"
-                      preview={photoBackPreview}
-                      photoType="back"
-                    />
+                    {renderPhotoBox("Fronte", photoFrontPreview, "front")}
+                    {renderPhotoBox("Lato", photoSidePreview, "side")}
+                    {renderPhotoBox("Schiena", photoBackPreview, "back")}
                   </div>
                 </div>
 
