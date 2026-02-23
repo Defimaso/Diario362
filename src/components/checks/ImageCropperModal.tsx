@@ -85,7 +85,7 @@ const ImageCropperModal = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[210]"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[250]"
             onClick={handleClose}
           />
 
@@ -94,7 +94,7 @@ const ImageCropperModal = ({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed inset-0 bg-card z-[210] flex flex-col overflow-hidden"
+            className="fixed inset-0 bg-card z-[250] flex flex-col overflow-hidden"
           >
             {/* Header — altezza fissa, non si comprime */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0 pt-[calc(0.75rem+env(safe-area-inset-top,0px))]">
