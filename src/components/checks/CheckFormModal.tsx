@@ -7,10 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { UserCheck } from '@/hooks/useUserChecks';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { createObjectURLFromFile } from '@/lib/imageCompression';
+import { createObjectURLFromFile, compressImage } from '@/lib/imageCompression';
 import { toast } from 'sonner';
 import { useCheckDraft } from '@/hooks/useCheckDraft';
-import ImageCropperModal from './ImageCropperModal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -40,12 +39,6 @@ interface CheckFormModalProps {
   firstCheckData?: UserCheck | null;
 }
 
-interface CropperState {
-  isOpen: boolean;
-  imageSrc: string | null;
-  photoType: 'front' | 'side' | 'back' | null;
-}
-
 const CheckFormModal = ({
   isOpen,
   onClose,
@@ -66,16 +59,9 @@ const CheckFormModal = ({
   const [photoBackPreview, setPhotoBackPreview] = useState<string | null>(null);
   const [showDraftDialog, setShowDraftDialog] = useState(false);
   const [draftChecked, setDraftChecked] = useState(false);
-  
+
   // Draft system
   const { hasDraft, saveDraft, clearDraft, getDraft } = useCheckDraft(checkNumber);
-  
-  // Cropper state
-  const [cropperState, setCropperState] = useState<CropperState>({
-    isOpen: false,
-    imageSrc: null,
-    photoType: null,
-  });
 
   // Check for draft when opening modal
   useEffect(() => {
@@ -97,7 +83,7 @@ const CheckFormModal = ({
   // Auto-save draft when fields change
   const autoSaveDraft = useCallback(() => {
     if (!isOpen || existingData) return;
-    
+
     // Only save if there's actual data
     if (weight || notes || photoFrontPreview || photoSidePreview || photoBackPreview) {
       saveDraft({
@@ -191,30 +177,8 @@ const CheckFormModal = ({
     };
   }, []);
 
-  // Fallback: use photo directly without cropping
-  const usePhotoDirectly = async (file: File, photoType: 'front' | 'side' | 'back') => {
-    try {
-      const { compressImage } = await import('@/lib/imageCompression');
-      const compressed = await compressImage(file);
-      const finalFile = new File([compressed], `${photoType}_${Date.now()}.jpg`, { type: 'image/jpeg' });
-      const previewUrl = URL.createObjectURL(compressed);
-      objectUrlsRef.current.push(previewUrl);
-
-      switch (photoType) {
-        case 'front': setPhotoFront(finalFile); setPhotoFrontPreview(previewUrl); break;
-        case 'side': setPhotoSide(finalFile); setPhotoSidePreview(previewUrl); break;
-        case 'back': setPhotoBack(finalFile); setPhotoBackPreview(previewUrl); break;
-      }
-      setDraftOnlyPreviews(prev => { const next = new Set(prev); next.delete(photoType); return next; });
-      toast.success('Foto caricata (senza ritaglio)');
-    } catch (err) {
-      console.error('Direct photo fallback failed:', err);
-      toast.error('Impossibile caricare la foto.');
-    }
-  };
-
-  // Handle file selection - open cropper
-  const handleFileSelect = (
+  // Handle file selection - compress and set directly (no cropper)
+  const handleFileSelect = async (
     file: File | null,
     photoType: 'front' | 'side' | 'back'
   ) => {
@@ -235,88 +199,45 @@ const CheckFormModal = ({
         return;
       }
 
-      // Validate file size (max 25MB for mobile photos)
       if (file.size > 25 * 1024 * 1024) {
         toast.error('Foto troppo grande. Massimo 25MB.');
         return;
       }
 
-      // Try to open cropper with blob URL
-      const objectUrl = createObjectURLFromFile(file);
-      objectUrlsRef.current.push(objectUrl);
-      
-      // Test that the image can actually load before opening cropper
-      const testImg = new Image();
-      testImg.onload = () => {
-        setCropperState({
-          isOpen: true,
-          imageSrc: objectUrl,
-          photoType,
-        });
-      };
-      testImg.onerror = () => {
-        console.warn('Blob URL failed to load image, using direct fallback');
-        usePhotoDirectly(file, photoType);
-      };
-      testImg.src = objectUrl;
-    } catch (error) {
-      console.error('Error reading file:', error);
-      // Fallback: use photo directly
-      usePhotoDirectly(file, photoType);
-    }
-  };
+      // Compress image directly (no cropper)
+      const compressed = await compressImage(file);
+      const compressedFile = new File(
+        [compressed],
+        `${photoType}_${Date.now()}.jpg`,
+        { type: 'image/jpeg' }
+      );
+      const previewUrl = URL.createObjectURL(compressed);
+      objectUrlsRef.current.push(previewUrl);
 
-  // Handle crop complete
-  const handleCropComplete = (croppedBlob: Blob) => {
-    const file = new File(
-      [croppedBlob],
-      `${cropperState.photoType}_${Date.now()}.jpg`,
-      { type: 'image/jpeg' }
-    );
-    const previewUrl = URL.createObjectURL(croppedBlob);
-    objectUrlsRef.current.push(previewUrl);
+      switch (photoType) {
+        case 'front':
+          setPhotoFront(compressedFile);
+          setPhotoFrontPreview(previewUrl);
+          break;
+        case 'side':
+          setPhotoSide(compressedFile);
+          setPhotoSidePreview(previewUrl);
+          break;
+        case 'back':
+          setPhotoBack(compressedFile);
+          setPhotoBackPreview(previewUrl);
+          break;
+      }
 
-    const photoType = cropperState.photoType;
-    switch (photoType) {
-      case 'front':
-        setPhotoFront(file);
-        setPhotoFrontPreview(previewUrl);
-        break;
-      case 'side':
-        setPhotoSide(file);
-        setPhotoSidePreview(previewUrl);
-        break;
-      case 'back':
-        setPhotoBack(file);
-        setPhotoBackPreview(previewUrl);
-        break;
-    }
-
-    // Remove "draft-only" flag — user has a real File now
-    if (photoType) {
+      // Remove "draft-only" flag
       setDraftOnlyPreviews(prev => {
         const next = new Set(prev);
         next.delete(photoType);
         return next;
       });
-    }
-
-    setCropperState({ isOpen: false, imageSrc: null, photoType: null });
-  };
-
-  // Get ghost image for current photo type
-  const getGhostImage = (): string | null => {
-    if (!firstCheckData || !cropperState.photoType) return null;
-
-    switch (cropperState.photoType) {
-      case 'front':
-        return firstCheckData.photo_front_url;
-      case 'side':
-        return firstCheckData.photo_side_url;
-      case 'back':
-        return firstCheckData.photo_back_url;
-      default:
-        return null;
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast.error('Impossibile leggere la foto. Prova con un\'altra immagine.');
     }
   };
 
@@ -396,7 +317,7 @@ const CheckFormModal = ({
     );
   };
 
-  const hasAnyData = weight || photoFront || photoSide || photoBack || 
+  const hasAnyData = weight || photoFront || photoSide || photoBack ||
     (existingData && (existingData.weight || existingData.photo_front_url || existingData.photo_side_url || existingData.photo_back_url));
 
   return (
@@ -463,21 +384,10 @@ const CheckFormModal = ({
                 <Alert className="bg-amber-500/10 border-amber-500/30">
                   <AlertCircle className="h-4 w-4 text-amber-500" />
                   <AlertDescription className="text-sm text-amber-700 dark:text-amber-300">
-                    Promemoria: Compila questa sezione ogni volta che invii il modulo ufficiale su Google 
+                    Promemoria: Compila questa sezione ogni volta che invii il modulo ufficiale su Google
                     per mantenere aggiornati i tuoi progressi nell'app.
                   </AlertDescription>
                 </Alert>
-
-                {/* Ghost Overlay Info */}
-                {firstCheckData && checkNumber > 1 && (
-                  <Alert className="bg-primary/10 border-primary/30">
-                    <Camera className="h-4 w-4 text-primary" />
-                    <AlertDescription className="text-sm text-primary">
-                      Le tue foto del Check #1 verranno mostrate come riferimento durante il ritaglio 
-                      per aiutarti ad allineare la posizione.
-                    </AlertDescription>
-                  </Alert>
-                )}
 
                 {/* Date */}
                 <div className="space-y-2">
@@ -576,18 +486,6 @@ const CheckFormModal = ({
           </>
         )}
       </AnimatePresence>
-
-      {/* Image Cropper Modal */}
-      {cropperState.isOpen && cropperState.imageSrc && cropperState.photoType && (
-        <ImageCropperModal
-          isOpen={cropperState.isOpen}
-          onClose={() => setCropperState({ isOpen: false, imageSrc: null, photoType: null })}
-          imageSrc={cropperState.imageSrc}
-          ghostImageSrc={getGhostImage()}
-          photoType={cropperState.photoType}
-          onCropComplete={handleCropComplete}
-        />
-      )}
     </>
   );
 };
