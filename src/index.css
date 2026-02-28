@@ -8,29 +8,30 @@
 
 @layer base {
   :root {
-    /* 362gradi.ae Light Theme - Mint & Teal */
-    --background: 160 40% 96%;
-    --foreground: 200 25% 20%;
+    /* 362gradi.ae Light Theme — palette identica al sito */
+    --background: 142 38% 97%;
+    --foreground: 173 80% 9%;
 
     --card: 0 0% 100%;
-    --card-foreground: 200 25% 20%;
+    --card-foreground: 173 80% 9%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 200 25% 20%;
+    --popover-foreground: 173 80% 9%;
 
-    /* Teal primary - from 362gradi.ae */
-    --primary: 173 55% 40%;
-    --primary-foreground: 0 0% 100%;
+    /* Teal primary — #4ECDC4 */
+    --primary: 173 89% 45%;
+    --primary-foreground: 173 89% 99%;
 
-    /* Coral accent - from 362gradi.ae */
-    --accent: 0 65% 65%;
+    /* Coral accent — #FF6B6B */
+    --accent: 0 82% 70%;
     --accent-foreground: 0 0% 100%;
 
-    --secondary: 160 30% 92%;
-    --secondary-foreground: 200 25% 20%;
+    /* Green secondary — #7CB518 */
+    --secondary: 144 77% 44%;
+    --secondary-foreground: 144 77% 99%;
 
-    --muted: 160 20% 90%;
-    --muted-foreground: 200 15% 45%;
+    --muted: 173 5% 90%;
+    --muted-foreground: 173 5% 45%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -41,15 +42,15 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
-    --border: 160 20% 88%;
-    --input: 160 20% 88%;
-    --ring: 173 55% 40%;
+    --border: 173 20% 88%;
+    --input: 173 20% 88%;
+    --ring: 173 80% 30%;
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 
-    --teal-glow: 0 0 20px hsla(173, 55%, 40%, 0.25);
-    --coral-glow: 0 0 20px hsla(0, 65%, 65%, 0.3);
-    
+    --teal-glow: 0 0 20px hsla(173, 89%, 45%, 0.25);
+    --coral-glow: 0 0 20px hsla(0, 82%, 70%, 0.3);
+
     /* Elite Evolution Badge System */
     --badge-gold: 45 100% 50%;
     --badge-gold-glow: 0 0 25px hsla(45, 100%, 50%, 0.4);
@@ -61,40 +62,44 @@
     --section-orange: 25 95% 53%;
     --section-purple: 271 81% 56%;
 
-    --sidebar-background: 160 40% 96%;
-    --sidebar-foreground: 200 25% 20%;
-    --sidebar-primary: 173 55% 40%;
+    /* WhatsApp */
+    --whatsapp: 142 86% 49%;
+    --whatsapp-foreground: 0 0% 100%;
+
+    --sidebar-background: 142 38% 97%;
+    --sidebar-foreground: 173 80% 9%;
+    --sidebar-primary: 173 89% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 160 30% 92%;
-    --sidebar-accent-foreground: 200 25% 20%;
-    --sidebar-border: 160 20% 88%;
-    --sidebar-ring: 173 55% 40%;
+    --sidebar-accent: 142 30% 92%;
+    --sidebar-accent-foreground: 173 80% 9%;
+    --sidebar-border: 173 20% 88%;
+    --sidebar-ring: 173 89% 45%;
   }
 
   .dark {
-    /* 362gradi.ae Dark Theme - Deep Teal */
-    --background: 200 30% 8%;
-    --foreground: 160 20% 95%;
+    /* 362gradi.ae Dark Theme — teal deep */
+    --background: 173 40% 6%;
+    --foreground: 142 20% 95%;
 
-    --card: 200 25% 12%;
-    --card-foreground: 160 20% 95%;
+    --card: 173 25% 11%;
+    --card-foreground: 142 20% 95%;
 
-    --popover: 200 25% 12%;
-    --popover-foreground: 160 20% 95%;
+    --popover: 173 25% 11%;
+    --popover-foreground: 142 20% 95%;
 
-    /* Teal primary */
-    --primary: 173 55% 45%;
+    /* Teal primary — più luminoso nel dark */
+    --primary: 173 89% 50%;
     --primary-foreground: 0 0% 100%;
 
     /* Coral accent */
-    --accent: 0 65% 60%;
+    --accent: 0 82% 65%;
     --accent-foreground: 0 0% 100%;
 
-    --secondary: 200 20% 18%;
-    --secondary-foreground: 160 20% 95%;
+    --secondary: 173 20% 18%;
+    --secondary-foreground: 142 20% 95%;
 
-    --muted: 200 20% 20%;
-    --muted-foreground: 160 15% 55%;
+    --muted: 173 15% 20%;
+    --muted-foreground: 173 10% 55%;
 
     --destructive: 0 62% 50%;
     --destructive-foreground: 0 0% 100%;
@@ -105,13 +110,13 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 0%;
 
-    --border: 200 20% 22%;
-    --input: 200 20% 22%;
-    --ring: 173 55% 45%;
+    --border: 173 15% 22%;
+    --input: 173 15% 22%;
+    --ring: 173 80% 35%;
 
-    --teal-glow: 0 0 25px hsla(173, 55%, 45%, 0.35);
-    --coral-glow: 0 0 20px hsla(0, 65%, 60%, 0.35);
-    
+    --teal-glow: 0 0 25px hsla(173, 89%, 50%, 0.35);
+    --coral-glow: 0 0 20px hsla(0, 82%, 65%, 0.35);
+
     /* Elite Evolution Badge System */
     --badge-gold: 45 100% 50%;
     --badge-gold-glow: 0 0 30px hsla(45, 100%, 50%, 0.5);
@@ -123,14 +128,18 @@
     --section-orange: 25 95% 53%;
     --section-purple: 271 81% 56%;
 
-    --sidebar-background: 200 30% 6%;
-    --sidebar-foreground: 160 20% 95%;
-    --sidebar-primary: 173 55% 45%;
+    /* WhatsApp */
+    --whatsapp: 142 86% 49%;
+    --whatsapp-foreground: 0 0% 100%;
+
+    --sidebar-background: 173 40% 5%;
+    --sidebar-foreground: 142 20% 95%;
+    --sidebar-primary: 173 89% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 20% 18%;
-    --sidebar-accent-foreground: 160 20% 95%;
-    --sidebar-border: 200 20% 22%;
-    --sidebar-ring: 173 55% 45%;
+    --sidebar-accent: 173 20% 18%;
+    --sidebar-accent-foreground: 142 20% 95%;
+    --sidebar-border: 173 15% 22%;
+    --sidebar-ring: 173 89% 50%;
   }
 }
 
@@ -182,7 +191,7 @@
   }
 
   .gradient-text {
-    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(173, 55%, 55%) 100%);
+    background: linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(173, 89%, 60%) 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;

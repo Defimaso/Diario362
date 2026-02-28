@@ -68,6 +68,18 @@ export default {
         badge: {
           gold: "hsl(var(--badge-gold))",
         },
+        whatsapp: {
+          DEFAULT: "hsl(var(--whatsapp))",
+          foreground: "hsl(var(--whatsapp-foreground))",
+        },
+        brand: {
+          teal: "#4ECDC4",
+          green: "#7CB518",
+          sage: "#A8C256",
+          coral: "#FF6B6B",
+          navy: "#1A535C",
+          light: "#F7FFF7",
+        },
       },
       boxShadow: {
         'badge-glow': 'var(--badge-gold-glow)',

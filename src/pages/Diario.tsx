@@ -167,8 +167,8 @@ const Diario = () => {
           <div className="flex items-center gap-3">
             <div>
               <h1 className="text-xl sm:text-2xl font-bold">
-                <span className="text-primary">362</span>
-                <span className="text-foreground">gradi</span>
+                <span className="text-primary">Diario</span>
+                <span className="text-foreground">362</span>
               </h1>
               <DropdownMenu>
                 <DropdownMenuTrigger className="flex items-center gap-1 text-xs sm:text-sm text-muted-foreground hover:text-foreground transition-colors outline-none">

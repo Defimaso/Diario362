@@ -66,7 +66,7 @@ const InstallApp = () => {
             </div>
             <CardTitle className="text-2xl">App Installata!</CardTitle>
             <CardDescription>
-              Diario 362gradi è ora installata sul tuo dispositivo
+              Diario362 è ora installata sul tuo dispositivo
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -84,9 +84,9 @@ const InstallApp = () => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 w-20 h-20 rounded-2xl overflow-hidden shadow-lg">
-            <img src="/pwa-192x192.png" alt="362gradi" className="w-full h-full object-cover" />
+            <img src="/pwa-192x192.png" alt="Diario362" className="w-full h-full object-cover" />
           </div>
-          <CardTitle className="text-2xl">Installa Diario 362gradi</CardTitle>
+          <CardTitle className="text-2xl">Installa Diario362</CardTitle>
           <CardDescription>
             Installa l'app sul tuo telefono per accesso rapido e funzionalità offline
           </CardDescription>

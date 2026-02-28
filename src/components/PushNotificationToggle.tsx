@@ -62,7 +62,7 @@ export function PushNotificationToggle({ variant = 'card' }: PushNotificationTog
             <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
               <li>Installa l'app sulla Home: tocca <strong>Condividi</strong> → <strong>Aggiungi a schermata Home</strong></li>
               <li>Vai in <strong>Impostazioni iPhone</strong> → <strong>Notifiche</strong></li>
-              <li>Cerca l'app <strong>362gradi</strong> nella lista</li>
+              <li>Cerca l'app <strong>Diario362</strong> nella lista</li>
               <li>Attiva <strong>Consenti notifiche</strong></li>
               <li>Torna qui e ricarica la pagina</li>
             </ol>

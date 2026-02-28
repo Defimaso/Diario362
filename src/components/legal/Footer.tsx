@@ -12,8 +12,8 @@ const Footer = () => {
         {/* Logo */}
         <div className="text-center mb-4">
           <span className="text-lg font-bold">
-            <span className="text-primary">362</span>
-            <span className="text-foreground">gradi</span>
+            <span className="text-primary">Diario</span>
+            <span className="text-foreground">362</span>
           </span>
         </div>
 

@@ -333,7 +333,7 @@ const Auth = () => {
 
           toast({
             title: 'Registrazione completata!',
-            description: 'Benvenuto nel Diario 362gradi',
+            description: 'Benvenuto in Diario362',
           });
         }
       }
@@ -356,8 +356,8 @@ const Auth = () => {
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold">
-            <span className="text-primary">362</span>
-            <span className="text-foreground">gradi</span>
+            <span className="text-primary">Diario</span>
+            <span className="text-foreground">362</span>
           </h1>
           <p className="text-muted-foreground mt-2">Il Diario del tuo 2% Extra</p>
         </div>
@@ -420,7 +420,7 @@ const Auth = () => {
               </p>
             </div>
             <p className="text-xs text-muted-foreground">
-              Registrati per iniziare a tracciare i tuoi progressi con il Diario 362gradi. E' gratuito!
+              Registrati per iniziare a tracciare i tuoi progressi con Diario362. E' gratuito!
             </p>
           </motion.div>
         )}

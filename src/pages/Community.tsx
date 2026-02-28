@@ -28,7 +28,7 @@ export default function Community() {
           </div>
           <h2 className="text-2xl font-bold mb-3">Coming Soon</h2>
           <p className="text-muted-foreground leading-relaxed">
-            La community di 362gradi sta per arrivare! Presto potrai condividere
+            La community di Diario362 sta per arrivare! Presto potrai condividere
             pensieri, confrontarti con gli altri e crescere insieme.
           </p>
           <div className="mt-6 inline-flex items-center gap-2 text-xs text-primary bg-primary/10 px-4 py-2 rounded-full">

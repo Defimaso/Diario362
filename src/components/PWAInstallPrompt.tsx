@@ -63,7 +63,7 @@ const PWAInstallPrompt = () => {
             
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm">
-                Porta 362gradi sempre con te! 📱
+                Porta Diario362 sempre con te! 📱
               </h3>
               <p className="text-xs text-muted-foreground mt-1">
                 {isIOS ? (

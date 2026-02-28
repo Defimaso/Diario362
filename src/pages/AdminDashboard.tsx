@@ -151,7 +151,7 @@ const AdminDashboard = () => {
         transition={{ delay: 0.5 }}
         className="pb-8 text-center"
       >
-        <span className="text-sm gradient-text font-bold">362°</span>
+        <span className="text-sm gradient-text font-bold">Diario362</span>
         <span className="text-sm text-muted-foreground ml-1">Navigator • Vista Coach</span>
       </motion.div>
     </div>
