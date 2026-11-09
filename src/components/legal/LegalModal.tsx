@@ -36,8 +36,9 @@ const TermsContent = () => (
     <h3 className="text-foreground font-semibold">1. Accettazione dei Termini</h3>
     <p>
       Utilizzando l'applicazione 362gradi.ae ("App"), l'utente accetta di essere vincolato 
-      dai presenti Termini e Condizioni. L'App è di proprietà di MerryProject Global, 
-      con sede a Dubai, UAE.
+      dai presenti Termini e Condizioni. L'App è di proprietà di MerryProject Trading Ltd.,
+      con sede in Ta' Maggi Industrial Park, Administration Building, Level 0,
+      Triq San Leonardu, Xgħajra XJR 2306, Malta.
     </p>
 
     <h3 className="text-foreground font-semibold">2. Descrizione del Servizio</h3>
@@ -68,13 +69,13 @@ const TermsContent = () => (
     <h3 className="text-foreground font-semibold">5. Proprietà Intellettuale</h3>
     <p>
       Tutti i contenuti dell'App, inclusi loghi, design e software, sono di proprietà 
-      esclusiva di MerryProject Global e sono protetti dalle leggi sulla proprietà 
+      esclusiva di MerryProject Trading Ltd. e sono protetti dalle leggi sulla proprietà 
       intellettuale.
     </p>
 
     <h3 className="text-foreground font-semibold">6. Limitazione di Responsabilità</h3>
     <p>
-      L'App è fornita "così com'è". MerryProject Global non garantisce risultati specifici 
+      L'App è fornita "così com'è". MerryProject Trading Ltd. non garantisce risultati specifici 
       dall'uso del servizio. Il coaching fornito non sostituisce consulenza medica 
       professionale.
     </p>
@@ -87,8 +88,8 @@ const TermsContent = () => (
 
     <h3 className="text-foreground font-semibold">8. Legge Applicabile</h3>
     <p>
-      Questi Termini sono regolati dalle leggi degli Emirati Arabi Uniti. Per qualsiasi 
-      controversia sarà competente il foro di Dubai.
+      Questi Termini sono regolati dalla legge maltese. Per qualsiasi controversia
+      saranno competenti i tribunali di Malta.
     </p>
 
     <h3 className="text-foreground font-semibold">9. Contatti</h3>
@@ -97,7 +98,7 @@ const TermsContent = () => (
     </p>
 
     <p className="text-xs text-muted-foreground/70 pt-4">
-      Ultimo aggiornamento: Gennaio 2026
+      Ultimo aggiornamento: 9 novembre 2026
     </p>
   </div>
 );
@@ -106,7 +107,9 @@ const PrivacyContent = () => (
   <div className="space-y-4 text-sm text-muted-foreground">
     <h3 className="text-foreground font-semibold">1. Titolare del Trattamento</h3>
     <p>
-      Il Titolare del trattamento dei dati è MerryProject Global, con sede a Dubai, UAE. 
+      Il Titolare del trattamento dei dati è MerryProject Trading Ltd., con sede in
+      Ta' Maggi Industrial Park, Administration Building, Level 0, Triq San Leonardu,
+      Xgħajra XJR 2306, Malta.
       Email DPO: dpo@362gradi.ae
     </p>
 
@@ -179,7 +182,7 @@ const PrivacyContent = () => (
     </p>
 
     <p className="text-xs text-muted-foreground/70 pt-4">
-      Ultimo aggiornamento: Gennaio 2026
+      Ultimo aggiornamento: 9 novembre 2026
     </p>
   </div>
 );

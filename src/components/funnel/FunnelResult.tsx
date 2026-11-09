@@ -239,7 +239,7 @@ const FunnelResult = ({
           animate={{ opacity: 1 }}
           transition={{ delay: 1 }}
         >
-          © 2026 MerryProject Global - Dubai
+          © 2026 MerryProject Trading Ltd. - Malta
         </motion.p>
       </div>
     </motion.div>
